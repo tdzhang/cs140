@@ -1,4 +1,11 @@
 cscope.files
 cscope.out
-TAGS
-tags
+# tags
+*.TAGS*
+*.tags*
+
+# object files
+*.o
+
+# subline text
+*.sublime-*
