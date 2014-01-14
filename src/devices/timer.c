@@ -39,7 +39,7 @@ static void real_time_delay (int64_t num, int32_t denom);
 
 /*self defined function*/
 /* wake up thread in sleep_list and update sleep_list */
-void sleep_list_update() {
+void sleep_list_update(void) {
 	int64_t current_ticks = timer_ticks ();
 	  struct list_elem *e;
 	  for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
