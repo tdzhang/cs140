@@ -75,6 +75,8 @@ static tid_t allocate_tid (void);
 static void ready_list_init(void);
 static void thread_set_actual_priority (struct thread *t,
 		int act_priority);
+static bool is_ready_list_empty();
+static struct thread *pick_max_priority_thread();
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
