@@ -1,0 +1,8 @@
+new element in Thread struct
+
+int64_t wakeup_ticks;
+struct list_elem sleep_elem;
+
+
+new element in thread.c
+static struct list sleep_list 
