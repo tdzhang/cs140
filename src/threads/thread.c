@@ -246,7 +246,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list[t->priority], &t->elem);
+  list_push_back (&ready_list[t->actual_priority], &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -317,7 +317,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list[cur->priority], &cur->elem);
+    list_push_back (&ready_list[cur->actual_priority], &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -347,7 +347,8 @@ thread_set_priority (int new_priority)
 	// TODO: modify actual_priority
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  /*thread_set_actual_priority(cur, new_priority);*/
+  if(new_priority > cur->actual_priority)
+	  thread_set_actual_priority(cur, new_priority);
 }
 
 /* when new actual priority if different from the current
@@ -358,10 +359,17 @@ static void thread_set_actual_priority (struct thread *t,
 	if (t->actual_priority == act_priority) return;
 	enum intr_level old_level;
 	old_level = intr_disable ();
-	list_remove (&t->elem);
+
 	t->actual_priority = act_priority;
-	list_push_back (&ready_list[t->actual_priority],
-			&t->elem);
+	if(t->status==THREAD_READY){
+		list_remove (&t->elem);
+		list_push_back (&ready_list[t->actual_priority],
+		&t->elem);
+	}
+	else if(t->status==THREAD_RUNNING){
+		thread_yield();
+	}
+
 	intr_set_level (old_level);
 }
 
