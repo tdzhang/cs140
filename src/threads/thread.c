@@ -136,15 +136,7 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  int64_t current_ticks = timer_ticks ();
-  struct list_elem *e;
-  for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
-         e = list_next (e)) {
-	  struct thread *cur = list_entry (e, struct thread, sleep_elem);
-	  if (cur->wakeup_ticks > current_ticks) break;
-	  list_remove (&cur->sleep_elem);
-	  thread_unblock(cur);
-  }
+  sleep_list_update();
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)

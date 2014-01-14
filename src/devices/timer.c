@@ -20,6 +20,9 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
+/* List of all sleeping threads */
+struct list sleep_list;
+
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -30,12 +33,32 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+
+
+
+
 /*self defined function*/
+/* wake up thread in sleep_list and update sleep_list */
+void sleep_list_update() {
+	int64_t current_ticks = timer_ticks ();
+	  struct list_elem *e;
+	  for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
+			 e = list_next (e)) {
+		  struct thread *cur = list_entry (e, struct thread, sleep_elem);
+		  if (cur->wakeup_ticks > current_ticks) break;
+		  list_remove (&cur->sleep_elem);
+		  thread_unblock(cur);
+	  }
+}
 
 /*compare func for thread's wakeup_ticks, used for list_insert_ordered*/
 static bool
 time_compare_less (const struct list_elem *a_, const struct list_elem *b_,
             void *aux UNUSED);
+
+
+
+
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -44,6 +67,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
