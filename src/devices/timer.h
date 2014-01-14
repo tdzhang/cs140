@@ -28,7 +28,7 @@ void timer_print_stats (void);
 
 /*self defined func*/
 
-/* wake up thread in sleep_list and update sleep_list */
+/* wake up thread in sleep_list and update sleep_list */mak
 void sleep_list_update (void);
 
 #endif /* devices/timer.h */
