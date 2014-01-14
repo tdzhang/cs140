@@ -9,3 +9,8 @@ cscope.out
 
 # subline text
 *.sublime-*
+
+# eclipse
+*.cproject*
+*.project*
+
