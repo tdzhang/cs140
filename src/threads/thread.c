@@ -21,9 +21,10 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
-static struct list ready_list;
+static struct list ready_list[PRI_MAX+1];
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -71,6 +72,9 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
+static void ready_list_init(void);
+static void thread_set_actual_priority (struct thread *t,
+		int act_priority);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -91,7 +95,7 @@ thread_init (void)
   ASSERT (intr_get_level () == INTR_OFF);
 
   lock_init (&tid_lock);
-  list_init (&ready_list);
+  ready_list_init();
   list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
@@ -240,7 +244,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_push_back (&ready_list[t->actual_priority], &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -311,7 +315,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    list_push_back (&ready_list[cur->actual_priority], &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -338,7 +342,25 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+	// TODO: modify actual_priority
+  struct thread *cur = thread_current ();
+  cur->priority = new_priority;
+  thread_set_actual_priority(cur, new_priority);
+}
+
+/* when new actual priority if different from the current
+   one, set it to the new actual priority and update the
+   ready_list as well. */
+static void thread_set_actual_priority (struct thread *t,
+		int act_priority) {
+	if (t->actual_priority == act_priority) return;
+	enum intr_level old_level;
+	old_level = intr_disable ();
+	list_remove (&t->elem);
+	t->actual_priority = act_priority;
+	list_push_back (&ready_list[t->actual_priority],
+			&t->elem);
+	intr_set_level (old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -465,6 +487,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->actual_priority = priority;
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
@@ -493,10 +516,11 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
-  if (list_empty (&ready_list))
+	// TODO: modify ready_list
+  if (is_ready_list_empty())
     return idle_thread;
   else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    return pick_max_priority_thread();
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -585,3 +609,33 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/* initialize ready_list array*/
+static void ready_list_init() {
+	int i;
+	for (i = 0; i <= PRI_MAX; i++) {
+		list_init(&ready_list[i]);
+	}
+}
+
+/* decide if ready_list is completely empty */
+static bool is_ready_list_empty() {
+	int i;
+	for (i = 0; i <= PRI_MAX; i++) {
+		if (!list_empty(&ready_list[i])) return false;
+	}
+	return true;
+}
+
+/* pick up the thread with max priority from ready_list */
+static struct thread *pick_max_priority_thread() {
+	int i;
+	for (i = PRI_MAX; i >=0; i--) {
+		if (!list_empty(&ready_list[i])) break;
+	}
+
+	ASSERT(i >= 0);
+
+	return list_entry (list_pop_front (&ready_list[i]), struct thread, elem);
+}
+
