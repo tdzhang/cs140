@@ -142,4 +142,8 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+/*self defined*/
+/* List of all sleeping threads */
+struct list sleep_list;
+
 #endif /* threads/thread.h */
