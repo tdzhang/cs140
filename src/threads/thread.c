@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -27,6 +28,9 @@ static struct list ready_list;
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
+
+/* List of all sleeping threads */
+struct list sleep_list;
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -92,6 +96,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&sleep_list);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -133,6 +138,16 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  int64_t current_ticks = timer_ticks ();
+  struct list_elem e;
+  for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
+         e = list_next (e)) {
+	  struct thread *cur = list_entry (e, struct thread, sleep_elem);
+	  if (cur->wakeup_ticks > current_ticks) break;
+	  list_remove (&cur->sleep_elem);
+	  thread_unblock(cur);
+  }
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
