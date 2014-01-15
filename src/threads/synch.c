@@ -246,45 +246,45 @@ lock_release (struct lock *lock)
   struct semaphore *sema=&lock->semaphore;
   enum intr_level old_level;
 
+
   //TODO:handle original holder: actual_priority, waited_by_others_lock_list
   struct thread *old_holder=lock->holder;
   int max_priority;
   struct thread *new_holder;
 
-  /*remove lock from old_holder's waited_by_others_lock_list*/
-  old_level = intr_disable ();
-  printf ("*******************inside lock_release before*******************\n");
-  list_remove(&lock->lock_elem);
-  printf ("*******************inside list_remove after*******************\n");
-  max_priority = find_max_actual_priority(&old_holder->waited_by_other_lock_list);
-  intr_set_level (old_level);
-  /*update old_holder's actual priority*/
-  if(max_priority > old_holder->priority){
-	  thread_set_actual_priority(old_holder,max_priority);
-  }
-  else{
-	  thread_set_actual_priority(old_holder,old_holder->priority);
-  }
-
-  ASSERT (sema != NULL);
-  old_level = intr_disable ();
-
-  //TODO: get a thread with highest priority, remove it from the waiter queue
-  if (!list_empty (&sema->waiters)){
-	  new_holder=find_max_actual_priority_thread(&sema->waiters);
-	  /*updated lock's waiter queue*/
-	  list_remove(&new_holder->elem);
-	  new_holder->wanted_lock=NULL;
-	  if (!list_empty (&sema->waiters)){
-		 /*updated new_holder's waited_by_other_lock_list*/
-		 if(!list_exist(&new_holder->waited_by_other_lock_list,&lock->lock_elem)){
-			 list_push_back(&new_holder->waited_by_other_lock_list,&lock->lock_elem);
-		 }
+  if (list_exist(&old_holder->waited_by_other_lock_list, &lock->lock_elem)) {
+	  /*remove lock from old_holder's waited_by_others_lock_list*/
+	  old_level = intr_disable ();
+	  list_remove(&lock->lock_elem);
+	  max_priority = find_max_actual_priority(&old_holder->waited_by_other_lock_list);
+	  intr_set_level (old_level);
+	  /*update old_holder's actual priority*/
+	  if(max_priority > old_holder->priority){
+		  thread_set_actual_priority(old_holder,max_priority);
 	  }
-	  /*unblock new_holder*/
-	  thread_unblock (new_holder);
-  }
+	  else{
+		  thread_set_actual_priority(old_holder,old_holder->priority);
+	  }
 
+	  ASSERT (sema != NULL);
+	  old_level = intr_disable ();
+
+	  //TODO: get a thread with highest priority, remove it from the waiter queue
+	  if (!list_empty (&sema->waiters)){
+		  new_holder=find_max_actual_priority_thread(&sema->waiters);
+		  /*updated lock's waiter queue*/
+		  list_remove(&new_holder->elem);
+		  new_holder->wanted_lock=NULL;
+		  if (!list_empty (&sema->waiters)){
+			 /*updated new_holder's waited_by_other_lock_list*/
+			 if(!list_exist(&new_holder->waited_by_other_lock_list,&lock->lock_elem)){
+				 list_push_back(&new_holder->waited_by_other_lock_list,&lock->lock_elem);
+			 }
+		  }
+		  /*unblock new_holder*/
+		  thread_unblock (new_holder);
+	  }
+  }
   //TODO: thread's wanted_lock->NULL, update waited_by_other's list
   sema->value++;
   intr_set_level (old_level);
