@@ -73,7 +73,6 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static void ready_list_init(void);
-static void thread_set_actual_priority (struct thread *t, int act_priority);
 static bool is_ready_list_empty(void);
 static struct thread *pick_max_priority_thread(void);
 
@@ -353,7 +352,7 @@ thread_set_priority (int new_priority)
 /* when new actual priority if different from the current
    one, set it to the new actual priority and update the
    ready_list as well. */
-static void thread_set_actual_priority (struct thread *t,
+void thread_set_actual_priority (struct thread *t,
 		int act_priority) {
 	struct thread *wanted_lock_holder=NULL;
 
