@@ -97,8 +97,7 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     struct list_elem sleep_elem;         /* List element for thread sleep list */
-    struct lock *wanted_lock;  /*the lock that this thread is waiting for*/
-    struct list waited_by_other_lock_list; /*the locks waited by others*/
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -143,7 +142,5 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-
-void thread_set_actual_priority (struct thread *t, int act_priority);
 
 #endif /* threads/thread.h */

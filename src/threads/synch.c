@@ -32,10 +32,6 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
-/*doing donation related tasks*/
-static void donate_handler(struct lock *lock);
-static struct thread* find_max_actual_priority_thread(struct list* list);
-
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
    manipulating it:
@@ -65,6 +61,7 @@ void
 sema_down (struct semaphore *sema) 
 {
   enum intr_level old_level;
+
   ASSERT (sema != NULL);
   ASSERT (!intr_context ());
 
@@ -116,7 +113,6 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
-
   if (!list_empty (&sema->waiters)) 
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
@@ -200,22 +196,8 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  /*printf(">>>>**>>1 lock_acqure: before set lock->holder = thread_current ()");*/
-  if(sema_try_down(&lock->semaphore)){
-	  /*printf(">>>>**>>1 lock_acqure: before set lock->holder = thread_current ()");*/
-	  lock->holder = thread_current ();
-	  /*printf(">>>>**>>1 lock_acqure: after set lock->holder = thread_current () %d",lock->holder->tid);*/
-  }
-  else{
-	  /*handle donate related*/
-	  donate_handler(lock);
-
-	  thread_current()->wanted_lock=lock;
-	  sema_down (&lock->semaphore);
-	  /*printf(">>>>**>>2 lock_acqure: before set lock->holder = thread_current ()");*/
-	  lock->holder = thread_current ();
-	  /*printf(">>>>**>>2 lock_acqure: after set lock->holder = thread_current () %d",lock->holder->tid);*/
-  }
+  sema_down (&lock->semaphore);
+  lock->holder = thread_current ();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -248,51 +230,9 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
-  struct semaphore *sema=&lock->semaphore;
-  enum intr_level old_level;
 
-
-  //TODO:handle original holder: actual_priority, waited_by_others_lock_list
-  struct thread *old_holder=lock->holder;
-  int max_priority;
-  struct thread *new_holder;
-
-  if (list_exist(&old_holder->waited_by_other_lock_list, &lock->lock_elem)) {
-	  /*remove lock from old_holder's waited_by_others_lock_list*/
-	  old_level = intr_disable ();
-	  list_remove(&lock->lock_elem);
-	  max_priority = find_max_actual_priority(&old_holder->waited_by_other_lock_list);
-	  intr_set_level (old_level);
-	  /*update old_holder's actual priority*/
-	  if(max_priority > old_holder->priority){
-		  thread_set_actual_priority(old_holder,max_priority);
-	  }
-	  else{
-		  thread_set_actual_priority(old_holder,old_holder->priority);
-	  }
-
-	  ASSERT (sema != NULL);
-	  old_level = intr_disable ();
-
-	  //TODO: get a thread with highest priority, remove it from the waiter queue
-	  if (!list_empty (&sema->waiters)){
-		  new_holder=find_max_actual_priority_thread(&sema->waiters);
-		  /*updated lock's waiter queue*/
-		  list_remove(&new_holder->elem);
-		  new_holder->wanted_lock=NULL;
-		  if (!list_empty (&sema->waiters)){
-			 /*updated new_holder's waited_by_other_lock_list*/
-			 if(!list_exist(&new_holder->waited_by_other_lock_list,&lock->lock_elem)){
-				 list_push_back(&new_holder->waited_by_other_lock_list,&lock->lock_elem);
-			 }
-		  }
-		  /*unblock new_holder*/
-		  thread_unblock (new_holder);
-	  }
-  }
-  //TODO: thread's wanted_lock->NULL, update waited_by_other's list
-  sema->value++;
-  intr_set_level (old_level);
+  lock->holder = NULL;
+  sema_up (&lock->semaphore);
 }
 
 /* Returns true if the current thread holds LOCK, false
@@ -395,81 +335,4 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
-}
-
-/*self defined funcs*/
-
-/*doing donation related tasks*/
-static void donate_handler(struct lock *lock){
-	 struct thread *holder=lock->holder;
-	 struct thread *cur=thread_current();
-	 /*update holder's actual_priority*/
-	 if(cur->actual_priority > holder->actual_priority){
-		 thread_set_actual_priority (holder,
-				 cur->actual_priority);
-	 }
-	 /*update holder's waited_by_other_lock_list*/
-	 struct list *wl=&holder->waited_by_other_lock_list;
-
-
-	enum intr_level old_level;
-	old_level = intr_disable ();
-
-	 /*check if current lock is in the list*/
-	 if(!list_exist(wl,&lock->lock_elem)){
-		 list_push_back(wl,&lock->lock_elem);
-	 }
-
-	intr_set_level (old_level);
-}
-
-/*go through the waiter_list in the lock, find the highest
-  actual_priority among all the waiting_thread and return*/
-int find_max_actual_priority(struct list* list){
-	struct list_elem *e;
-	struct list_elem *inner_e;
-	struct list *waiters;
-	struct lock *l;
-	struct thread *waiting_thread;
-	int max_priority=-1;
-
-	ASSERT (intr_get_level () == INTR_OFF);
-
-	for (e = list_begin (list); e != list_end (list);
-	   e = list_next (e))
-	{
-	  l = list_entry (e, struct lock, lock_elem);
-	  waiters=&l->semaphore.waiters;
-	  for (inner_e = list_begin (waiters); inner_e != list_end (waiters);
-			  inner_e = list_next (inner_e))
-	  	{
-		  waiting_thread = list_entry (inner_e, struct thread, elem);
-	  	  if(waiting_thread->actual_priority > max_priority){
-	  		max_priority=waiting_thread->actual_priority;
-	  	  }
-	  	}
-	}
-	return max_priority;
-}
-
-/*go through the list, find the thread with highest
-  actual_priority and return it*/
-static struct thread* find_max_actual_priority_thread(struct list* list){
-	struct list_elem *e;
-	struct thread *t;
-	struct thread *max_t;
-	int max_priority=0;
-
-	ASSERT (intr_get_level () == INTR_OFF);
-
-	for (e = list_begin (list); e != list_end (list);
-		  e = list_next (e))
-	{
-	  t = list_entry (e, struct thread, elem);
-	  if(t->actual_priority > max_priority){
-		max_priority=t->actual_priority;
-		max_t=t;
-	  }
-	}
-	return max_t;
 }

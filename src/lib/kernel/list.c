@@ -248,8 +248,6 @@ list_push_back (struct list *list, struct list_elem *elem)
 struct list_elem *
 list_remove (struct list_elem *elem)
 {
-	printf ("*******************inside list_remove*******************\n");
-
   ASSERT (is_interior (elem));
   elem->prev->next = elem->next;
   elem->next->prev = elem->prev;
@@ -523,15 +521,4 @@ list_min (struct list *list, list_less_func *less, void *aux)
           min = e; 
     }
   return min;
-}
-
-/*self defined funcs*/
-
-/*Judge if a list contain a element*/
-bool list_exist(struct list *list,struct list_elem *elem){
-	struct list_elem *e;
-	for (e = list_next (list); e != list_end (list); e = list_next (e)){
-		 if(e==elem)return true;
-	}
-	return false;
 }

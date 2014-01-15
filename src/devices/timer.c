@@ -46,9 +46,7 @@ void sleep_list_update(void) {
 			 e = list_next (e)) {
 		  struct thread *cur = list_entry (e, struct thread, sleep_elem);
 		  if (cur->wakeup_ticks > current_ticks) break;
-		  printf ("*******************inside sleep_list_update before*******************\n");
 		  list_remove (&cur->sleep_elem);
-		  printf ("*******************inside sleep_list_update after*******************\n");
 		  thread_unblock(cur);
 	  }
 }
@@ -127,15 +125,17 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
+/*//////////////////////////////////////////////
+//  while (timer_elapsed (start) < ticks)
+//    thread_yield ();
+///////////////////////////////////////////////*/
 
-  if (timer_elapsed (start) < ticks) {
-	  struct thread *t = thread_current();
-	  enum intr_level old_level = intr_disable ();
-	  t->wakeup_ticks = start + ticks;
-	  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
-	  thread_block();
-	  intr_set_level (old_level);
-  }
+  struct thread *t = thread_current();
+  enum intr_level old_level = intr_disable ();
+  t->wakeup_ticks = start + ticks;
+  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
+  thread_block();
+  intr_set_level (old_level);
 }
 
 /*compare func for thread's wakeup_ticks, used for list_insert_ordered*/

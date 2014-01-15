@@ -73,8 +73,10 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static void ready_list_init(void);
-static bool is_ready_list_empty(void);
-static struct thread *pick_max_priority_thread(void);
+static void thread_set_actual_priority (struct thread *t,
+		int act_priority);
+static bool is_ready_list_empty();
+static struct thread *pick_max_priority_thread();
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -344,36 +346,23 @@ thread_set_priority (int new_priority)
 {
 	// TODO: modify actual_priority
   struct thread *cur = thread_current ();
-  int priority_temp;
   cur->priority = new_priority;
   if(new_priority > cur->actual_priority)
 	  thread_set_actual_priority(cur, new_priority);
-  else if(new_priority < cur->actual_priority){
-	  priority_temp=find_max_actual_priority(&cur->waited_by_other_lock_list);
-	  if(new_priority < priority_temp)
-		  /*handle possible donation*/
-		  thread_set_actual_priority(cur, priority_temp);
-	  else
-		  thread_set_actual_priority(cur, new_priority);
-  }
 }
 
 /* when new actual priority if different from the current
    one, set it to the new actual priority and update the
    ready_list as well. */
-void thread_set_actual_priority (struct thread *t,
+static void thread_set_actual_priority (struct thread *t,
 		int act_priority) {
-	struct thread *wanted_lock_holder=NULL;
-
 	if (t->actual_priority == act_priority) return;
 	enum intr_level old_level;
 	old_level = intr_disable ();
 
 	t->actual_priority = act_priority;
 	if(t->status==THREAD_READY){
-		printf ("*******************inside thread_set_actual_priority before*******************\n");
 		list_remove (&t->elem);
-		printf ("*******************inside thread_set_actual_priority after*******************\n");
 		list_push_back (&ready_list[t->actual_priority],
 		&t->elem);
 	}
@@ -381,14 +370,6 @@ void thread_set_actual_priority (struct thread *t,
 		thread_yield();
 	}
 
-	//TODO: recursive call for actual_priority set by donation
-	wanted_lock_holder=t->wanted_lock->holder;
-	if(wanted_lock_holder!=NULL){
-		if(wanted_lock_holder->actual_priority < act_priority){
-			thread_set_actual_priority (wanted_lock_holder,
-					act_priority);
-		}
-	}
 	intr_set_level (old_level);
 }
 
@@ -396,8 +377,7 @@ void thread_set_actual_priority (struct thread *t,
 int
 thread_get_priority (void) 
 {
-  /*return thread_current ()->priority;*/
-  return thread_current ()->actual_priority;
+  return thread_current ()->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -518,7 +498,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->actual_priority = priority;
-  list_init(&t->waited_by_other_lock_list);
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
@@ -650,7 +629,7 @@ static void ready_list_init() {
 }
 
 /* decide if ready_list is completely empty */
-static bool is_ready_list_empty(void) {
+static bool is_ready_list_empty() {
 	int i;
 	for (i = 0; i <= PRI_MAX; i++) {
 		if (!list_empty(&ready_list[i])) return false;
@@ -659,7 +638,7 @@ static bool is_ready_list_empty(void) {
 }
 
 /* pick up the thread with max priority from ready_list */
-static struct thread *pick_max_priority_thread(void) {
+static struct thread *pick_max_priority_thread() {
 	int i;
 	for (i = PRI_MAX; i >=0; i--) {
 		if (!list_empty(&ready_list[i])) break;
