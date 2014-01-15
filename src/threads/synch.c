@@ -287,8 +287,6 @@ lock_release (struct lock *lock)
 		  }
 		  /*unblock new_holder*/
 		  thread_unblock (new_holder);
-	  } else {
-		  lock->holder = NULL;
 	  }
   }
   //TODO: thread's wanted_lock->NULL, update waited_by_other's list
