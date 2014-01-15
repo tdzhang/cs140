@@ -394,7 +394,8 @@ void thread_set_actual_priority (struct thread *t,
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  /*return thread_current ()->priority;*/
+  return thread_current ()->actual_priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
