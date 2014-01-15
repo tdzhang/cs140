@@ -344,9 +344,18 @@ thread_set_priority (int new_priority)
 {
 	// TODO: modify actual_priority
   struct thread *cur = thread_current ();
+  int priority_temp;
   cur->priority = new_priority;
   if(new_priority > cur->actual_priority)
 	  thread_set_actual_priority(cur, new_priority);
+  else if(new_priority < cur->actual_priority){
+	  priority_temp=find_max_actual_priority(&cur->waited_by_other_lock_list);
+	  if(new_priority < priority_temp)
+		  /*handle possible donation*/
+		  thread_set_actual_priority(cur, priority_temp);
+	  else
+		  thread_set_actual_priority(cur, new_priority);
+  }
 }
 
 /* when new actual priority if different from the current
