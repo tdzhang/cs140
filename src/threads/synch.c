@@ -253,7 +253,9 @@ lock_release (struct lock *lock)
 
   /*remove lock from old_holder's waited_by_others_lock_list*/
   old_level = intr_disable ();
+  printf ("*******************inside lock_release before*******************\n");
   list_remove(&lock->lock_elem);
+  printf ("*******************inside list_remove after*******************\n");
   max_priority = find_max_actual_priority(&old_holder->waited_by_other_lock_list);
   intr_set_level (old_level);
   /*update old_holder's actual priority*/

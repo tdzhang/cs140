@@ -371,7 +371,9 @@ void thread_set_actual_priority (struct thread *t,
 
 	t->actual_priority = act_priority;
 	if(t->status==THREAD_READY){
+		printf ("*******************inside thread_set_actual_priority before*******************\n");
 		list_remove (&t->elem);
+		printf ("*******************inside thread_set_actual_priority after*******************\n");
 		list_push_back (&ready_list[t->actual_priority],
 		&t->elem);
 	}

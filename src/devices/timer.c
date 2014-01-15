@@ -46,7 +46,9 @@ void sleep_list_update(void) {
 			 e = list_next (e)) {
 		  struct thread *cur = list_entry (e, struct thread, sleep_elem);
 		  if (cur->wakeup_ticks > current_ticks) break;
+		  printf ("*******************inside sleep_list_update before*******************\n");
 		  list_remove (&cur->sleep_elem);
+		  printf ("*******************inside sleep_list_update after*******************\n");
 		  thread_unblock(cur);
 	  }
 }
