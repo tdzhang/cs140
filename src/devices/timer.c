@@ -125,17 +125,15 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-/*//////////////////////////////////////////////
-//  while (timer_elapsed (start) < ticks)
-//    thread_yield ();
-///////////////////////////////////////////////*/
 
-  struct thread *t = thread_current();
-  enum intr_level old_level = intr_disable ();
-  t->wakeup_ticks = start + ticks;
-  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
-  thread_block();
-  intr_set_level (old_level);
+  if (timer_elapsed (start) < ticks) {
+	  struct thread *t = thread_current();
+	  enum intr_level old_level = intr_disable ();
+	  t->wakeup_ticks = start + ticks;
+	  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
+	  thread_block();
+	  intr_set_level (old_level);
+  }
 }
 
 /*compare func for thread's wakeup_ticks, used for list_insert_ordered*/
