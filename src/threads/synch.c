@@ -243,7 +243,7 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
-  struct semaphore *sema=lock->semaphore;
+  struct semaphore *sema=&lock->semaphore;
   enum intr_level old_level;
 
   //TODO:handle original holder: actual_priority, waited_by_others_lock_list
@@ -254,7 +254,7 @@ lock_release (struct lock *lock)
   /*remove lock from old_holder's waited_by_others_lock_list*/
   old_level = intr_disable ();
   list_remove(&lock->lock_elem);
-  max_priority=find_max_actual_priority(old_holder->waited_by_other_lock_list);
+  max_priority = find_max_actual_priority(&old_holder->waited_by_other_lock_list);
   intr_set_level (old_level);
   /*update old_holder's actual priority*/
   if(max_priority > old_holder->priority){
