@@ -366,8 +366,8 @@ static void donate_handler(struct lock *lock){
 	old_level = intr_disable ();
 
 	 /*check if current lock is in the list*/
-	 if(!list_exist(wl,lock->lock_elem)){
-		 list_push_back(wl,lock->lock_elem);
+	 if(!list_exist(wl,&lock->lock_elem)){
+		 list_push_back(wl,&lock->lock_elem);
 	 }
 
 	intr_set_level (old_level);

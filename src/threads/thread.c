@@ -73,10 +73,9 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static void ready_list_init(void);
-static void thread_set_actual_priority (struct thread *t,
-		int act_priority);
-static bool is_ready_list_empty();
-static struct thread *pick_max_priority_thread();
+static void thread_set_actual_priority (struct thread *t, int act_priority);
+static bool is_ready_list_empty(void);
+static struct thread *pick_max_priority_thread(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -639,7 +638,7 @@ static void ready_list_init() {
 }
 
 /* decide if ready_list is completely empty */
-static bool is_ready_list_empty() {
+static bool is_ready_list_empty(void) {
 	int i;
 	for (i = 0; i <= PRI_MAX; i++) {
 		if (!list_empty(&ready_list[i])) return false;
@@ -648,7 +647,7 @@ static bool is_ready_list_empty() {
 }
 
 /* pick up the thread with max priority from ready_list */
-static struct thread *pick_max_priority_thread() {
+static struct thread *pick_max_priority_thread(void) {
 	int i;
 	for (i = PRI_MAX; i >=0; i--) {
 		if (!list_empty(&ready_list[i])) break;
