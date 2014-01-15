@@ -356,6 +356,8 @@ thread_set_priority (int new_priority)
    ready_list as well. */
 static void thread_set_actual_priority (struct thread *t,
 		int act_priority) {
+	struct thread *wanted_lock_holder=NULL;
+
 	if (t->actual_priority == act_priority) return;
 	enum intr_level old_level;
 	old_level = intr_disable ();
@@ -370,6 +372,14 @@ static void thread_set_actual_priority (struct thread *t,
 		thread_yield();
 	}
 
+	//TODO: recursive call for actual_priority set by donation
+	wanted_lock_holder=t->wanted_lock->holder;
+	if(wanted_lock_holder!=NULL){
+		if(wanted_lock_holder->actual_priority < act_priority){
+			thread_set_actual_priority (wanted_lock_holder,
+					act_priority);
+		}
+	}
 	intr_set_level (old_level);
 }
 

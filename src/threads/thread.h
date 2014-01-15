@@ -97,7 +97,8 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     struct list_elem sleep_elem;         /* List element for thread sleep list */
-
+    struct lock *wanted_lock;  /*the lock that this thread is waiting for*/
+    struct list waited_by_other_lock_list; /*the locks waited by others*/
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

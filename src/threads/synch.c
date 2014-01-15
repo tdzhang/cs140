@@ -32,6 +32,9 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+/*doing donation related tasks*/
+static void donate_handler(struct lock *lock);
+
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
    manipulating it:
@@ -61,7 +64,6 @@ void
 sema_down (struct semaphore *sema) 
 {
   enum intr_level old_level;
-
   ASSERT (sema != NULL);
   ASSERT (!intr_context ());
 
@@ -196,8 +198,16 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  sema_down (&lock->semaphore);
-  lock->holder = thread_current ();
+  if(sema_try_down(&lock->semaphore)){
+	  lock->holder = thread_current ();
+  }
+  else{
+	  //TODO: donate
+	  donate_handler(lock);
+	  thread_current()->wanted_lock=lock;
+	  sema_down (&lock->semaphore);
+	  lock->holder = thread_current ();
+  }
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -335,4 +345,33 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
+}
+
+/*self defined funcs*/
+
+/*doing donation related tasks*/
+static void donate_handler(struct lock *lock){
+	 struct thread *holder=lock->holder;
+	 struct thread *cur=thread_current();
+	 /*update holder's actual_priority*/
+	 if(cur->actual_priority > holder->actual_priority){
+		 thread_set_actual_priority (holder,
+				 cur->actual_priority);
+	 }
+	 /*update holder's waited_by_other_lock_list*/
+	 struct list *wl=&holder->waited_by_other_lock_list;
+
+
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	 /*check if current lock is in the list*/
+	 if(!list_exist(wl,lock->lock_elem)){
+		 list_push_back(wl,lock->lock_elem);
+	 }
+
+	intr_set_level (old_level);
+
+
+
 }
