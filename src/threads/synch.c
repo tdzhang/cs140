@@ -201,7 +201,9 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
 
   if(sema_try_down(&lock->semaphore)){
+	  printf(">>>>**>>1 lock_acqure: before set lock->holder = thread_current ()");
 	  lock->holder = thread_current ();
+	  printf(">>>>**>>1 lock_acqure: after set lock->holder = thread_current () %d",lock->holder->tid);
   }
   else{
 	  /*handle donate related*/
@@ -209,7 +211,9 @@ lock_acquire (struct lock *lock)
 
 	  thread_current()->wanted_lock=lock;
 	  sema_down (&lock->semaphore);
+	  printf(">>>>**>>2 lock_acqure: before set lock->holder = thread_current ()");
 	  lock->holder = thread_current ();
+	  printf(">>>>**>>2 lock_acqure: after set lock->holder = thread_current () %d",lock->holder->tid);
   }
 }
 
