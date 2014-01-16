@@ -280,8 +280,17 @@ lock_release (struct lock *lock)
 
   old_level = intr_disable ();
 
-  if (list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
+  struct thread *cur_lock_holder = &lock->holder;
+  if (list_exist(cur_lock_holder->waited_by_other_lock_list, &lock->lock_elem)) {
       list_remove(&lock->lock_elem);
+  }
+
+  int max_act_prior =
+		  find_max_actual_priority(cur_lock_holder->waited_by_other_lock_list);
+  if (max_act_prior > cur_lock_holder->priority) {
+	  thread_set_actual_priority(cur_lock_holder, max_act_prior);
+  } else {
+	  thread_set_actual_priority(cur_lock_holder, cur_lock_holder->priority);
   }
 
   lock->holder = NULL;
