@@ -99,6 +99,9 @@ struct thread
     struct list_elem sleep_elem;        /* List element for thread sleep list */
 
     struct lock *wanted_lock;           /* the lock this thread is waiting for */
+    /* the lock list this thread is holding and waited by others */
+    struct list waited_by_other_lock_list;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

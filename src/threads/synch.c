@@ -196,15 +196,30 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  struct thread *t = thread_current();
-  if (lock->holder != NULL) {
-	  t->wanted_lock = lock;
-  }
 
-  sema_down (&lock->semaphore);
-  lock->holder = thread_current ();
+  enum intr_level old_level;
 
-  t->wanted_lock = NULL;
+    old_level = intr_disable ();
+
+    	  struct thread *t = thread_current();
+      if (lock->holder != NULL) {
+    	  t->wanted_lock = lock;
+
+    	  /* if lock's holder's waited_by_other_lock_list does not have this lock,
+    	   * add the lock into its lock list
+    	   */
+    	  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
+    		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+      }
+
+      sema_down (&lock->semaphore);
+      lock->holder = thread_current ();
+
+      t->wanted_lock = NULL;
+
+
+    intr_set_level (old_level);
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -237,6 +252,10 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
+
+  if (list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
+      list_remove(&lock->lock_elem);
+  }
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
