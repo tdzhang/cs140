@@ -286,7 +286,7 @@ lock_release (struct lock *lock)
   }
 
   int max_act_prior =
-		  find_max_actual_priority(cur_lock_holder->waited_by_other_lock_list);
+		  find_max_actual_priority(&cur_lock_holder->waited_by_other_lock_list);
   if (max_act_prior > cur_lock_holder->priority) {
 	  thread_set_actual_priority(cur_lock_holder, max_act_prior);
   } else {
