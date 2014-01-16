@@ -203,13 +203,14 @@ lock_acquire (struct lock *lock)
 
     	  struct thread *t = thread_current();
       if (lock->holder != NULL) {
-    	  t->wanted_lock = lock;
+		  t->wanted_lock = lock;
 
-    	  /* if lock's holder's waited_by_other_lock_list does not have this lock,
-    	   * add the lock into its lock list
-    	   */
-    	  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
-    		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+		  /* if lock's holder's waited_by_other_lock_list does not have this lock,
+		   * add the lock into its lock list
+		   */
+		  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
+			  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+		  }
       }
 
       sema_down (&lock->semaphore);
