@@ -397,8 +397,7 @@ void thread_set_actual_priority (struct thread *t,
 int
 thread_get_priority (void) 
 {
-	//TODO: actual_priority?
-  return thread_current ()->priority;
+  return thread_current ()->actual_priority;
 }
 
 static int thread_get_actual_priority(void) {
