@@ -74,7 +74,8 @@ void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static void ready_list_init(void);
 static bool is_ready_list_empty(void);
-static struct thread *pick_max_priority_thread(void);
+static struct thread *pop_max_priority_thread(void);
+static struct thread *find_max_priority_thread(void);
 static int thread_get_actual_priority(void);
 
 /* Initializes the threading system by transforming the code
@@ -350,8 +351,9 @@ thread_set_priority (int new_priority)
   old_level = intr_disable ();
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
+  // TODO: new_priority < cur->actual_priority, find support from donation
   thread_set_actual_priority(cur, new_priority);
-  if (new_priority > cur->actual_priority) {
+  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
 	  thread_yield();
   }
   intr_set_level (old_level);
@@ -547,7 +549,7 @@ next_thread_to_run (void)
   if (is_ready_list_empty())
     return idle_thread;
   else
-    return pick_max_priority_thread();
+    return pop_max_priority_thread();
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -654,8 +656,8 @@ static bool is_ready_list_empty(void) {
 	return true;
 }
 
-/* pick up the thread with max priority from ready_list */
-static struct thread *pick_max_priority_thread(void) {
+/* find and pop the thread with max priority from ready_list */
+static struct thread *pop_max_priority_thread(void) {
 	int i;
 	for (i = PRI_MAX; i >=0; i--) {
 		if (!list_empty(&ready_list[i])) break;
@@ -664,5 +666,18 @@ static struct thread *pick_max_priority_thread(void) {
 	ASSERT(i >= 0);
 
 	return list_entry (list_pop_front (&ready_list[i]), struct thread, elem);
+}
+
+
+/* find the thread with max priority from ready_list */
+static struct thread *find_max_priority_thread(void) {
+	int i;
+	for (i = PRI_MAX; i >=0; i--) {
+		if (!list_empty(&ready_list[i])) break;
+	}
+
+	ASSERT(i >= 0);
+
+	return list_entry (list_front (&ready_list[i]), struct thread, elem);
 }
 
