@@ -423,7 +423,7 @@ static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list){
 
 	for (e = list_begin (list); e != list_end (list);
 		  e = list_next (e)) {
-	  sema = list_entry (e, struct semaphore_elem, elem)->semaphore;
+	  sema = &list_entry (e, struct semaphore_elem, elem)->semaphore;
 	  t = list_entry (list_front(&sema->waiters), struct thread, elem);
 	  if(t->actual_priority > max_priority){
 		max_priority = t->actual_priority;
