@@ -367,8 +367,12 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (!intr_context ());
   ASSERT (lock_held_by_current_thread (lock));
 
+  enum intr_level old_level;
+
+  old_level = intr_disable ();
   if (!list_empty (&cond->waiters)) 
-    sema_up (pop_sema_for_max_act_prior_t(&cond->waiters));
+      sema_up (pop_sema_for_max_act_prior_t(&cond->waiters));
+  intr_set_level (old_level);
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
