@@ -215,7 +215,9 @@ lock_acquire (struct lock *lock)
 
       sema_down (&lock->semaphore);
       lock->holder = thread_current ();
-
+      if (!list_empty(&lock->semaphore.waiters)) {
+    	  	  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+      }
       t->wanted_lock = NULL;
 
 
@@ -258,12 +260,18 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  enum intr_level old_level;
+
+  old_level = intr_disable ();
+
   if (list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
       list_remove(&lock->lock_elem);
   }
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
+
+  intr_set_level (old_level);
 }
 
 /* Returns true if the current thread holds LOCK, false
