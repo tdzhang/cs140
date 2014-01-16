@@ -213,7 +213,7 @@ lock_acquire (struct lock *lock)
 
 	old_level = intr_disable ();
 
-	  struct thread *t = thread_current();
+	struct thread *t = thread_current();
 	if (lock->holder != NULL) {
 	  t->wanted_lock = lock;
 
@@ -224,7 +224,9 @@ lock_acquire (struct lock *lock)
 		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
 	  }
 
-
+	  if (t->actual_priority > lock->holder->actual_priority) {
+		  thread_set_actual_priority(lock->holder, t->actual_priority);
+	  }
 	}
 
 	sema_down (&lock->semaphore);
