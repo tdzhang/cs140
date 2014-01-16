@@ -73,8 +73,6 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 static void ready_list_init(void);
-static void thread_set_actual_priority (struct thread *t,
-		int act_priority);
 static bool is_ready_list_empty(void);
 static struct thread *pick_max_priority_thread(void);
 
