@@ -353,8 +353,10 @@ thread_set_priority (int new_priority)
   cur->priority = new_priority;
   // TODO: new_priority < cur->actual_priority, find support from donation
   thread_set_actual_priority(cur, new_priority);
-  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
-	  thread_yield();
+  if (!is_ready_list_empty()) {
+	  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
+		  thread_yield();
+	  }
   }
   intr_set_level (old_level);
 }
