@@ -75,6 +75,7 @@ static tid_t allocate_tid (void);
 static void ready_list_init(void);
 static bool is_ready_list_empty(void);
 static struct thread *pick_max_priority_thread(void);
+static int thread_get_actual_priority(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -208,6 +209,9 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  if (priority > thread_get_actual_priority()) {
+	  thread_yield();
+  }
   return tid;
 }
 
@@ -359,13 +363,12 @@ void thread_set_actual_priority (struct thread *t,
 	old_level = intr_disable ();
 
 	t->actual_priority = act_priority;
-	if(t->status==THREAD_READY){
+	if (t->status==THREAD_READY) {
 		list_remove (&t->elem);
 		list_push_back (&ready_list[t->actual_priority],
 		&t->elem);
 		schedule();
-	}
-	else if(t->status==THREAD_RUNNING){
+	} else if (t->status==THREAD_RUNNING) {
 		thread_yield();
 	}
 
@@ -378,6 +381,10 @@ thread_get_priority (void)
 {
 	//TODO: actual_priority?
   return thread_current ()->priority;
+}
+
+static int thread_get_actual_priority(void) {
+	return thread_current ()->actual_priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
