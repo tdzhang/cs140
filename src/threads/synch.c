@@ -121,6 +121,9 @@ sema_up (struct semaphore *sema)
 	  t = find_max_actual_priority_thread (&sema->waiters);
   	  list_remove(&t->elem);
   	  thread_unblock (t);
+  	  if (t->actual_priority > thread_current()->actual_priority) {
+  		  thread_yield();
+  	  }
   }
   sema->value++;
   intr_set_level (old_level);
