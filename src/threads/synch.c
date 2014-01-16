@@ -34,6 +34,7 @@
 
 
 static struct thread *find_max_actual_priority_thread(struct list *list);
+static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list);
 
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
@@ -367,8 +368,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
-    sema_up (&list_entry (list_pop_front (&cond->waiters),
-                          struct semaphore_elem, elem)->semaphore);
+    sema_up (pop_sema_for_max_act_prior_t(&cond->waiters));
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -408,4 +408,31 @@ static struct thread *find_max_actual_priority_thread(struct list *list){
 	}
 	return max_t;
 }
+
+
+/* find and pop the semaphore waited by max actual priority thread */
+static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list){
+	struct list_elem *e;
+	struct list_elem *e_need2remove;
+	struct semaphore *sema;
+	struct semaphore *max_sema;
+	struct thread *t;
+	int max_priority = -1;
+
+	ASSERT (intr_get_level () == INTR_OFF);
+
+	for (e = list_begin (list); e != list_end (list);
+		  e = list_next (e)) {
+	  sema = list_entry (e, struct semaphore_elem, elem)->semaphore;
+	  t = list_entry (list_front(&sema->waiters), struct thread, elem);
+	  if(t->actual_priority > max_priority){
+		max_priority = t->actual_priority;
+		max_sema = sema;
+		e_need2remove=e;
+	  }
+	}
+	list_remove(e_need2remove);
+	return max_sema;
+}
+
 
