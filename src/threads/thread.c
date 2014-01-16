@@ -346,11 +346,15 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-	// TODO: modify actual_priority
+  enum intr_level old_level;
+  old_level = intr_disable ();
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  // TODO: donate
   thread_set_actual_priority(cur, new_priority);
+  if (new_priority > cur->actual_priority) {
+	  thread_yield();
+  }
+  intr_set_level (old_level);
 }
 
 /* when new actual priority if different from the current
@@ -363,15 +367,20 @@ void thread_set_actual_priority (struct thread *t,
 	old_level = intr_disable ();
 
 	t->actual_priority = act_priority;
+
+	struct thread *dependent;
+	if (t->wanted_lock != NULL) {
+		dependent = t->wanted_lock->holder;
+		if (dependent->actual_priority < act_priority) {
+			thread_set_actual_priority(dependent, act_priority);
+		}
+	}
+
 	if (t->status==THREAD_READY) {
 		list_remove (&t->elem);
 		list_push_back (&ready_list[t->actual_priority],
 		&t->elem);
-		schedule();
-	} else if (t->status==THREAD_RUNNING) {
-		thread_yield();
 	}
-
 	intr_set_level (old_level);
 }
 

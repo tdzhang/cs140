@@ -223,6 +223,8 @@ lock_acquire (struct lock *lock)
 	  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
 		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
 	  }
+
+
 	}
 
 	sema_down (&lock->semaphore);
