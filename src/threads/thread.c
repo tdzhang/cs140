@@ -363,7 +363,7 @@ void thread_set_actual_priority (struct thread *t,
 		list_remove (&t->elem);
 		list_push_back (&ready_list[t->actual_priority],
 		&t->elem);
-		thread_yield();
+		schedule();
 	}
 	else if(t->status==THREAD_RUNNING){
 		thread_yield();
