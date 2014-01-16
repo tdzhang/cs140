@@ -280,7 +280,7 @@ lock_release (struct lock *lock)
 
   old_level = intr_disable ();
 
-  struct thread *cur_lock_holder = &lock->holder;
+  struct thread *cur_lock_holder = lock->holder;
   if (list_exist(cur_lock_holder->waited_by_other_lock_list, &lock->lock_elem)) {
       list_remove(&lock->lock_elem);
   }

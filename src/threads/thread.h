@@ -151,5 +151,6 @@ int thread_get_load_avg (void);
 
 void thread_set_actual_priority (struct thread *t,
 		int act_priority);
+int find_max_actual_priority(struct list* lock_list);
 
 #endif /* threads/thread.h */
