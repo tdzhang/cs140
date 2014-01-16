@@ -352,7 +352,12 @@ thread_set_priority (int new_priority)
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
   // TODO: new_priority < cur->actual_priority, find support from donation
-  thread_set_actual_priority(cur, new_priority);
+  int max_act_priority = find_max_actual_priority(&cur->waited_by_other_lock_list);
+  /* if setting to higher new_priority, set new actual priority */
+  if (max_act_priority < new_priority) {
+	  thread_set_actual_priority(cur, new_priority);
+  }
+  /* if current thread is not with the highest priority, yield immediately */
   if (!is_ready_list_empty()) {
 	  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
 		  thread_yield();
@@ -682,5 +687,37 @@ static struct thread *find_max_priority_thread(void) {
 
 	return list_entry (list_front (&ready_list[i]), struct thread, elem);
 }
+
+
+/*go through the whole lock_list, find the highest
+  actual_priority among all the waiting_thread and return*/
+int find_max_actual_priority(struct list* lock_list){
+	struct list_elem *lock_elem;
+	struct list_elem *inner_e;
+	struct list *waiters;
+	struct lock *l;
+	struct thread *waiting_thread;
+	int max_priority=-1;
+
+	ASSERT (intr_get_level () == INTR_OFF);
+
+	for (lock_elem = list_begin (lock_list); lock_elem != list_end (lock_list);
+			lock_elem = list_next (lock_elem))
+	{
+	  l = list_entry (lock_elem, struct lock, lock_elem);
+	  waiters=&l->semaphore.waiters;
+	  ASSERT (!list_empty(waiters));
+	  for (inner_e = list_begin (waiters); inner_e != list_end (waiters);
+			  inner_e = list_next (inner_e))
+	  	{
+		  waiting_thread = list_entry (inner_e, struct thread, elem);
+	  	  if(waiting_thread->actual_priority > max_priority){
+	  		max_priority=waiting_thread->actual_priority;
+	  	  }
+	  	}
+	}
+	return max_priority;
+}
+
 
 
