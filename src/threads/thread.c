@@ -443,10 +443,12 @@ static int thread_get_actual_priority(void) {
 void
 thread_set_nice (int nice)
 {
+	/*
 	ASSERT (!intr_context () && 1==1);
 	struct thread *t=thread_current();
 	t->nice=nice;
 	mlfqs_update_priority(t);
+	*/
 }
 
 
@@ -769,7 +771,7 @@ static void mlfqs_update_priority(struct thread* t){
 	/* if current thread is not with the highest priority, yield immediately */
 	if (!is_ready_list_empty()) {
 	  if (t->actual_priority > cur->actual_priority) {
-		  /*thread_yield();*/
+		  thread_yield();
 	  }
 	}
 	intr_set_level (old_level);
