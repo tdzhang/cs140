@@ -557,8 +557,10 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->waited_by_other_lock_list);
   t->magic = THREAD_MAGIC;
   if (thread_mlfqs) {
+	  /*
 	  t->nice = thread_current()->nice;
 	  t->recent_cpu = thread_current()->recent_cpu;
+	  */
   }
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
