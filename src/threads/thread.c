@@ -52,7 +52,7 @@ static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 
-static uint32_t load_avg; /*fixed_point, load_avg for -mlfqs use*/
+static int32_t load_avg; /*fixed_point, load_avg for -mlfqs use*/
 
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
@@ -357,11 +357,17 @@ thread_set_priority (int new_priority)
   old_level = intr_disable ();
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  int max_act_priority = find_max_actual_priority(&cur->waited_by_other_lock_list);
-  /* if setting to higher new_priority, set new actual priority */
-  if (max_act_priority < new_priority) {
+  if(!thread_mlfqs){
+	   int max_act_priority = find_max_actual_priority(&cur->waited_by_other_lock_list);
+	  /* if setting to higher new_priority, set new actual priority */
+	  if (max_act_priority < new_priority) {
+		  thread_set_actual_priority(cur, new_priority);
+	  }
+  }
+  else{
 	  thread_set_actual_priority(cur, new_priority);
   }
+
   /* if current thread is not with the highest priority, yield immediately */
   if (!is_ready_list_empty()) {
 	  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
@@ -382,11 +388,15 @@ void thread_set_actual_priority (struct thread *t,
 
 	t->actual_priority = act_priority;
 
-	struct thread *dependent;
-	if (t->wanted_lock != NULL) {
-		dependent = t->wanted_lock->holder;
-		if (dependent->actual_priority < act_priority) {
-			thread_set_actual_priority(dependent, act_priority);
+
+	if(!thread_mlfqs){
+		/*handle recursive donation*/
+		struct thread *dependent;
+		if (t->wanted_lock != NULL) {
+			dependent = t->wanted_lock->holder;
+			if (dependent->actual_priority < act_priority) {
+				thread_set_actual_priority(dependent, act_priority);
+			}
 		}
 	}
 
