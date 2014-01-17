@@ -871,6 +871,7 @@ inline int clamp_priority(int prior) {
 	return prior;
 }
 
+
 /*clamp nice*/
 inline int clamp_nice(int nice) {
 	if (nice > NICE_MAX) return NICE_MAX;
