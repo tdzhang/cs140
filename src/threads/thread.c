@@ -770,12 +770,6 @@ static void mlfqs_update_priority(struct thread* t){
 	t->priority = new_priority;
 	thread_set_actual_priority(t, new_priority);
 
-	/* if current thread is not with the highest priority, yield immediately */
-	if (!is_ready_list_empty()) {
-	  if (t->actual_priority > cur->actual_priority) {
-		  thread_yield();
-	  }
-	}
 	intr_set_level (old_level);
 }
 
@@ -838,6 +832,9 @@ static void mlfqs_update_vars(void) {
 			t = list_entry (e, struct thread, allelem);
 			mlfqs_update_priority(t);
 		}
+
+		/* yield */
+		struct thread *max_t = find_max_priority_thread();
 	}
 }
 
