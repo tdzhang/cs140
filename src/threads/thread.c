@@ -824,7 +824,7 @@ static void mlfqs_update_vars(void) {
 	struct list_elem *e;
 	struct thread *t;
 	if (cur != idle_thread) {
-		cur->recent_cpu++;
+		cur->recent_cpu=f_add_int(cur->recent_cpu,1);
 	}
 
 	int64_t ticks = timer_ticks();
