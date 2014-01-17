@@ -83,6 +83,7 @@ static void mlfqs_update_priority(struct thread* t);
 static int mlfqs_num_ready_threads(void);
 static void mlfqs_update_load_avg(void);
 inline int mlfqs_calculate_priority(int recent_cpu, int nice);
+static void mlfqs_update_vars(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -152,8 +153,11 @@ thread_tick (void)
     kernel_ticks++;
 
 
-
-   /* wake up thread in sleep_list and update sleep_list */
+  /*update mlfqs related variables*/
+  if (thread_mlfqs) {
+ 	 mlfqs_update_vars();
+  }
+  /* wake up thread in sleep_list and update sleep_list */
   sleep_list_update();
 
   /* Enforce preemption. */
