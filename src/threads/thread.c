@@ -447,12 +447,21 @@ thread_set_nice (int nice)
 {
 	struct thread *cur=thread_current();
 	cur->nice=nice;
-	/*
-	ASSERT (!intr_context () && 1==1);
-	struct thread *cur=thread_current();
-	cur->nice=nice;
-	mlfqs_update_priority(t);
-	*/
+
+	int new_priority;
+	new_priority=mlfqs_calculate_priority(cur->recent_cpu, cur->nice);
+	/*set t's priority and actual_priority*/
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	cur->priority = new_priority;
+	thread_set_actual_priority(cur, new_priority);
+	struct thread * t_max=find_max_priority_thread();
+	if(t_max->actual_priority>cur->actual_priority){
+		thread_yield();
+	}
+
+	intr_set_level (old_level);
 }
 
 
