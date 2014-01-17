@@ -83,6 +83,7 @@ static void mlfqs_update_priority(struct thread* t);
 static int mlfqs_num_ready_threads(void);
 static void mlfqs_update_load_avg(void);
 static int mlfqs_calculate_priority(int recent_cpu, int nice);
+static void mlfqs_update_vars(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -829,7 +830,7 @@ static void mlfqs_update_vars(void) {
 
 	if (ticks % TIME_SLICE == 0) {
 		/* update priority of all threads except idle_thread */
-		for (e = list_begin (all_list); e != list_end (all_list);
+		for (e = list_begin (&all_list); e != list_end (&all_list);
 							  e = list_next (e)) {
 			t = list_entry (e, struct thread, allelem);
 			mlfqs_update_priority(t);
