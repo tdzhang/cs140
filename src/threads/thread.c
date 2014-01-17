@@ -80,6 +80,8 @@ static struct thread *pop_max_priority_thread(void);
 static struct thread *find_max_priority_thread(void);
 static int thread_get_actual_priority(void);
 static void mlfqs_update_priority(struct thread* t);
+static int mlfqs_num_ready_threads(void);
+static void mlfqs_update_load_avg(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -753,4 +755,34 @@ static void mlfqs_update_priority(struct thread* t){
 	  }
 	}
 	intr_set_level (old_level);
+}
+
+/*set recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.*/
+static void mlfqs_update_recent_cpu(struct thread* t){
+	int rc=t->recent_cpu;
+	int32_t temp=f_multiply_int(load_avg,2);
+	t->recent_cpu=f_add_int(f_multiply_f(f_divide_f(temp,f_add_int(temp,1)),rc),t->nice);
+}
+
+/*return the value of ready_threads used for load_avg calculation*/
+static int mlfqs_num_ready_threads(void){
+	int i;
+	int num=0;
+	/*sum up the number of threads in the multilevel queue*/
+	for (i = 0; i <= PRI_MAX; i++) {
+		num=num+list_size(&ready_list[i]);
+	}
+	/*add 1 if the current thread is not idle*/
+	struct thread * cur= thread_current();
+	if(cur!=idle_thread){
+		num++;
+	}
+	return num;
+}
+
+/*load_avg = (59/60)*load_avg + (1/60)*ready_threads.*/
+static void mlfqs_update_load_avg(void){
+	int32_t a=f_divide_int(f_multiply_int(load_avg,59),60);
+	int32_t b=f_divide_int(int2f(mlfqs_num_ready_threads()),60);
+	load_avg =f_add_f(a,b);
 }
