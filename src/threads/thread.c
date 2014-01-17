@@ -438,9 +438,12 @@ static int thread_get_actual_priority(void) {
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int nice)
 {
   // TODO: trigger recalculation
+	struct thread *t=thread_current();
+	t->nice=nice;
+	mlfqs_update_priority(t);
 }
 
 /* Returns the current thread's nice value. */
