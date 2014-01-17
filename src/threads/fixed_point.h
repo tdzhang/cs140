@@ -1,5 +1,5 @@
-#ifndef FIXED_POINT_H
-#define FIXED_POINT_H
+#ifndef THREADS_FIXED_POINT_H
+#define THREADS_FIXED_POINT_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,4 +28,4 @@ inline int32_t f_divide_f (int32_t x, int32_t y);
 inline int32_t f_divide_int (int32_t x, int32_t n);
 
 
-#endif /* threads/synch.h */
+#endif /* threads/fixed_point.h */
