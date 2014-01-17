@@ -154,7 +154,7 @@ thread_tick (void)
 
   /*update mlfqs related variables*/
   if (thread_mlfqs) {
-	  mlfqs_update_vars();
+	  /*mlfqs_update_vars();*/
   }
 
   /* wake up thread in sleep_list and update sleep_list */
