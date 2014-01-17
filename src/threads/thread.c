@@ -201,13 +201,17 @@ thread_create (const char *name, int priority,
   if (t == NULL)
     return TID_ERROR;
 
+  struct thread *cur = thread_current();
   /* Initialize thread. */
   if (thread_mlfqs) {
-  	  struct thread *cur = thread_current();
   	  priority = mlfqs_calculate_priority(cur->recent_cpu,cur->nice);
   }
 
   init_thread (t, name, priority);
+  if (thread_mlfqs) {
+	  t->nice = cur->nice;
+	  t->recent_cpu = cur->recent_cpu;
+  }
   tid = t->tid = allocate_tid ();
 
   /* Stack frame for kernel_thread(). */
@@ -550,10 +554,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->actual_priority = priority;
   list_init(&t->waited_by_other_lock_list);
   t->magic = THREAD_MAGIC;
-  if (thread_mlfqs) {
-  	  t->nice = thread_current()->nice;
-  	  t->recent_cpu = thread_current()->recent_cpu;
-  }
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
