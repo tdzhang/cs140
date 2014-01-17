@@ -768,7 +768,7 @@ static void mlfqs_update_priority(struct thread* t){
 	/* if current thread is not with the highest priority, yield immediately */
 	if (!is_ready_list_empty()) {
 	  if (t->actual_priority > cur->actual_priority) {
-		  thread_yield();
+		  /*thread_yield();*/
 	  }
 	}
 	intr_set_level (old_level);
