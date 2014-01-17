@@ -834,7 +834,10 @@ static void mlfqs_update_vars(void) {
 		}
 
 		/* yield */
-		struct thread *max_t = find_max_priority_thread();
+		if (!is_ready_list_empty()) {
+			struct thread *max_t = find_max_priority_thread();
+
+		}
 	}
 }
 
