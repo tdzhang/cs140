@@ -838,7 +838,9 @@ static void mlfqs_update_vars(void) {
 		/* yield */
 		if (!is_ready_list_empty()) {
 			struct thread *max_t = find_max_priority_thread();
-
+			if (max_t->actual_priority > thread_current()->actual_priority) {
+				thread_yield();
+			}
 		}
 	}
 }
