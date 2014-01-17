@@ -82,8 +82,6 @@ static int thread_get_actual_priority(void);
 static void mlfqs_update_priority(struct thread* t);
 static int mlfqs_num_ready_threads(void);
 static void mlfqs_update_load_avg(void);
-static int mlfqs_calculate_priority(int recent_cpu, int nice);
-static void mlfqs_update_vars(void);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -152,12 +150,6 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  /*update mlfqs related variables*/
-  if (thread_mlfqs) {
-	  /*mlfqs_update_vars();*/
-  }
-
-  /* wake up thread in sleep_list and update sleep_list */
   sleep_list_update();
 
   /* Enforce preemption. */
@@ -205,14 +197,8 @@ thread_create (const char *name, int priority,
   if (t == NULL)
     return TID_ERROR;
 
-
   /* Initialize thread. */
-  if (thread_mlfqs) {
-	  struct thread *cur = thread_current();
-	  priority = mlfqs_calculate_priority(cur->recent_cpu,cur->nice);
-  }
   init_thread (t, name, priority);
-
   tid = t->tid = allocate_tid ();
 
   /* Stack frame for kernel_thread(). */
@@ -438,12 +424,9 @@ static int thread_get_actual_priority(void) {
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice)
+thread_set_nice (int nice UNUSED) 
 {
-  // TODO: trigger recalculation
-	struct thread *t=thread_current();
-	t->nice=nice;
-	mlfqs_update_priority(t);
+  /* Not yet implemented. */
 }
 
 /* Returns the current thread's nice value. */
@@ -457,14 +440,16 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  return f2int_r2near(f_multiply_int(load_avg,100));
+  /* Not yet implemented. */
+  return 0;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-	return f2int_r2near(f_multiply_int(thread_current()->recent_cpu,100));
+  /* Not yet implemented. */
+  return 0;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -556,12 +541,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->actual_priority = priority;
   list_init(&t->waited_by_other_lock_list);
   t->magic = THREAD_MAGIC;
-  if (thread_mlfqs) {
-	  /*
-	  t->nice = thread_current()->nice;
-	  t->recent_cpu = thread_current()->recent_cpu;
-	  */
-  }
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -759,7 +739,8 @@ int find_max_actual_priority(struct list* lock_list){
  * called after thread t been updated(recent_cpu, nice) */
 static void mlfqs_update_priority(struct thread* t){
 	int new_priority;
-	new_priority=mlfqs_calculate_priority (t->recent_cpu, t->nice*2);
+	new_priority=PRI_MAX-f2int_r2near(f_divide_int (t->recent_cpu, 4))-
+				t->nice*2;
 	/*set t's priority and actual_priority*/
 	enum intr_level old_level;
 	old_level = intr_disable ();
@@ -774,12 +755,6 @@ static void mlfqs_update_priority(struct thread* t){
 	  }
 	}
 	intr_set_level (old_level);
-}
-
-
-/* return priority = PRI_MAX - (recent_cpu / 4) - (nice * 2). */
-inline int mlfqs_calculate_priority(int recent_cpu, int nice){
-	return PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))-nice*2;
 }
 
 /*set recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.*/
@@ -811,35 +786,3 @@ static void mlfqs_update_load_avg(void){
 	int32_t b=f_divide_int(int2f(mlfqs_num_ready_threads()),60);
 	load_avg =f_add_f(a,b);
 }
-
-/* update mlfqs related variables: */
-static void mlfqs_update_vars(void) {
-	struct thread *cur = thread_current();
-	struct list_elem *e;
-	struct thread *t;
-	if (cur != idle_thread) {
-		cur->recent_cpu++;
-	}
-
-	int64_t ticks = timer_ticks();
-	if (ticks % TIMER_FREQ == 0) {
-		/* update load_avg and recent_cpu of all threads except idle_thread*/
-		mlfqs_update_load_avg();
-
-		for (e = list_begin (&all_list); e != list_end (&all_list);
-					  e = list_next (e)) {
-			t = list_entry (e, struct thread, allelem);
-			mlfqs_update_recent_cpu(t);
-		}
-	}
-
-	if (ticks % TIME_SLICE == 0) {
-		/* update priority of all threads except idle_thread */
-		for (e = list_begin (&all_list); e != list_end (&all_list);
-							  e = list_next (e)) {
-			t = list_entry (e, struct thread, allelem);
-			mlfqs_update_priority(t);
-		}
-	}
-}
-
