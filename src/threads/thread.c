@@ -150,6 +150,9 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+
+
+   /* wake up thread in sleep_list and update sleep_list */
   sleep_list_update();
 
   /* Enforce preemption. */
@@ -198,6 +201,11 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
+  if (thread_mlfqs) {
+  	  struct thread *cur = thread_current();
+  	  priority = mlfqs_calculate_priority(cur->recent_cpu,cur->nice);
+  }
+
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
@@ -786,3 +794,38 @@ static void mlfqs_update_load_avg(void){
 	int32_t b=f_divide_int(int2f(mlfqs_num_ready_threads()),60);
 	load_avg =f_add_f(a,b);
 }
+
+
+/* update mlfqs related variables: */
+static void mlfqs_update_vars(void) {
+	struct thread *cur = thread_current();
+	struct list_elem *e;
+	struct thread *t;
+	if (cur != idle_thread) {
+		cur->recent_cpu++;
+	}
+
+	int64_t ticks = timer_ticks();
+	if (ticks % TIMER_FREQ == 0) {
+		/* update load_avg and recent_cpu of all threads except idle_thread*/
+		mlfqs_update_load_avg();
+
+		for (e = list_begin (&all_list); e != list_end (&all_list);
+					  e = list_next (e)) {
+			t = list_entry (e, struct thread, allelem);
+			mlfqs_update_recent_cpu(t);
+		}
+	}
+
+	if (ticks % TIME_SLICE == 0) {
+		/* update priority of all threads except idle_thread */
+		for (e = list_begin (&all_list); e != list_end (&all_list);
+							  e = list_next (e)) {
+			t = list_entry (e, struct thread, allelem);
+			mlfqs_update_priority(t);
+		}
+	}
+}
+
+
+
