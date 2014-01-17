@@ -82,6 +82,7 @@ static int thread_get_actual_priority(void);
 static void mlfqs_update_priority(struct thread* t);
 static int mlfqs_num_ready_threads(void);
 static void mlfqs_update_load_avg(void);
+inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -747,8 +748,7 @@ int find_max_actual_priority(struct list* lock_list){
  * called after thread t been updated(recent_cpu, nice) */
 static void mlfqs_update_priority(struct thread* t){
 	int new_priority;
-	new_priority=PRI_MAX-f2int_r2near(f_divide_int (t->recent_cpu, 4))-
-				t->nice*2;
+	new_priority=mlfqs_calculate_priority(t->recent_cpu, t->nice);
 	/*set t's priority and actual_priority*/
 	enum intr_level old_level;
 	old_level = intr_disable ();
@@ -825,6 +825,12 @@ static void mlfqs_update_vars(void) {
 			mlfqs_update_priority(t);
 		}
 	}
+}
+
+
+/* return priority = PRI_MAX - (recent_cpu / 4) - (nice * 2). */
+inline int mlfqs_calculate_priority(int recent_cpu, int nice){
+	return PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))-nice*2;
 }
 
 
