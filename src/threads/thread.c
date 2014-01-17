@@ -820,7 +820,7 @@ static void mlfqs_update_vars(void) {
 		/* update load_avg and recent_cpu of all threads except idle_thread*/
 		mlfqs_update_load_avg();
 
-		for (e = list_begin (all_list); e != list_end (all_list);
+		for (e = list_begin (&all_list); e != list_end (&all_list);
 					  e = list_next (e)) {
 			t = list_entry (e, struct thread, allelem);
 			mlfqs_update_recent_cpu(t);
