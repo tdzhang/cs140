@@ -357,7 +357,6 @@ thread_set_priority (int new_priority)
   old_level = intr_disable ();
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  // TODO: new_priority < cur->actual_priority, find support from donation
   int max_act_priority = find_max_actual_priority(&cur->waited_by_other_lock_list);
   /* if setting to higher new_priority, set new actual priority */
   if (max_act_priority < new_priority) {
@@ -421,8 +420,7 @@ thread_set_nice (int nice UNUSED)
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
@@ -557,7 +555,6 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
-	// TODO: modify ready_list
   if (is_ready_list_empty())
     return idle_thread;
   else
@@ -723,5 +720,6 @@ int find_max_actual_priority(struct list* lock_list){
 	}
 	return max_priority;
 }
+
 
 

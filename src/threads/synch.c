@@ -212,31 +212,34 @@ lock_acquire (struct lock *lock)
     enum intr_level old_level;
 
 	old_level = intr_disable ();
-
 	struct thread *t = thread_current();
-	if (lock->holder != NULL) {
-	  t->wanted_lock = lock;
 
-	  /* if lock's holder's waited_by_other_lock_list does not have this lock,
-	   * add the lock into its lock list
-	   */
-	  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
-		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
-	  }
+	if(!thread_mlfqs){
+		if (lock->holder != NULL) {
+			t->wanted_lock = lock;
 
-	  if (t->actual_priority > lock->holder->actual_priority) {
-		  thread_set_actual_priority(lock->holder, t->actual_priority);
-	  }
+			/* if lock's holder's waited_by_other_lock_list does not have this lock,
+			* add the lock into its lock list
+			*/
+			if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
+			  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+			}
+
+			if (t->actual_priority > lock->holder->actual_priority) {
+			  thread_set_actual_priority(lock->holder, t->actual_priority);
+			}
+		}
 	}
 
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
-	if (!list_empty(&lock->semaphore.waiters)) {
-		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+
+	if(!thread_mlfqs){
+		if (!list_empty(&lock->semaphore.waiters)) {
+				  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+		}
+		t->wanted_lock = NULL;
 	}
-	t->wanted_lock = NULL;
-
-
     intr_set_level (old_level);
 
 }
@@ -259,7 +262,9 @@ lock_try_acquire (struct lock *lock)
   struct thread *cur;
   if (success) {
 	cur = thread_current ();
-	cur->wanted_lock = NULL;
+	if(!thread_mlfqs){
+		cur->wanted_lock = NULL;
+	}
     lock->holder = cur;
   }
   return success;
@@ -281,17 +286,22 @@ lock_release (struct lock *lock)
   old_level = intr_disable ();
 
   struct thread *cur_lock_holder = lock->holder;
-  if (list_exist(&cur_lock_holder->waited_by_other_lock_list, &lock->lock_elem)) {
-      list_remove(&lock->lock_elem);
+  if(!thread_mlfqs){
+	  /*remove the lock from the old_holder's waited_by_other_lock_list*/
+	  if (list_exist(&cur_lock_holder->waited_by_other_lock_list, &lock->lock_elem)) {
+		  list_remove(&lock->lock_elem);
+	  }
+
+	  /*remove the donation effect of that lock for the old lock holder*/
+	  int max_act_prior =
+			  find_max_actual_priority(&cur_lock_holder->waited_by_other_lock_list);
+	  if (max_act_prior > cur_lock_holder->priority) {
+		  thread_set_actual_priority(cur_lock_holder, max_act_prior);
+	  } else {
+		  thread_set_actual_priority(cur_lock_holder, cur_lock_holder->priority);
+	  }
   }
 
-  int max_act_prior =
-		  find_max_actual_priority(&cur_lock_holder->waited_by_other_lock_list);
-  if (max_act_prior > cur_lock_holder->priority) {
-	  thread_set_actual_priority(cur_lock_holder, max_act_prior);
-  } else {
-	  thread_set_actual_priority(cur_lock_holder, cur_lock_holder->priority);
-  }
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
