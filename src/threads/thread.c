@@ -443,10 +443,12 @@ static int thread_get_actual_priority(void) {
 void
 thread_set_nice (int nice)
 {
+	struct thread *cur=thread_current();
+	cur->nice=nice;
 	/*
 	ASSERT (!intr_context () && 1==1);
-	struct thread *t=thread_current();
-	t->nice=nice;
+	struct thread *cur=thread_current();
+	cur->nice=nice;
 	mlfqs_update_priority(t);
 	*/
 }
