@@ -84,6 +84,8 @@ static int mlfqs_num_ready_threads(void);
 static void mlfqs_update_load_avg(void);
 inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 static void mlfqs_update_vars(void);
+inline int clamp_priority(int prior);
+inline int clamp_nice(int nice);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -844,8 +846,21 @@ static void mlfqs_update_vars(void) {
 
 /* return priority = PRI_MAX - (recent_cpu / 4) - (nice * 2). */
 inline int mlfqs_calculate_priority(int recent_cpu, int nice){
-	return PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))-nice*2;
+	return clamp_priority(PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))-nice*2);
 }
 
 
+/*clamp priority*/
+inline int clamp_priority(int prior) {
+	if (prior > PRI_MAX) return PRI_MAX;
+	if (prior < PRI_MIN) return PRI_MIN;
+	return prior;
+}
+
+/*clamp nice*/
+inline int clamp_nice(int nice) {
+	if (nice > NICE_MAX) return NICE_MAX;
+	if (nice < NICE_MIN) return NICE_MIN;
+	return nice;
+}
 
