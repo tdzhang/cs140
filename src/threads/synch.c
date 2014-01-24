@@ -120,11 +120,15 @@ sema_up (struct semaphore *sema)
 
   sema->value++;
   struct thread *t;
+  /*if the waiter list is not empty, find and unblock the waiter
+   * with the highest actual_priority, then remove it form the
+   * waiter list*/
   if (!list_empty (&sema->waiters)) {
 	  t = find_max_actual_priority_thread (&sema->waiters);
   	  list_remove(&t->elem);
   	  thread_unblock (t);
   	  if (t->actual_priority > thread_current()->actual_priority) {
+  		  /*yield if that thread has higher priority*/
   		  thread_yield();
   	  }
   }
@@ -225,7 +229,6 @@ lock_acquire (struct lock *lock)
 			    list_push_back(&lock->holder->waited_by_other_lock_list,
 					  &lock->lock_elem);
 			}
-
 			if (t->actual_priority > lock->holder->actual_priority) {
 			  thread_set_actual_priority(lock->holder, t->actual_priority);
 			}
@@ -236,6 +239,8 @@ lock_acquire (struct lock *lock)
 	lock->holder = thread_current ();
 
 	if(!thread_mlfqs){
+		/*if the lock's waiter list is not empty, the new holder need to
+		 * put the lock into its waited_by_other_lock_list*/
 		if (!list_empty(&lock->semaphore.waiters)) {
 				  list_push_back(&lock->holder->waited_by_other_lock_list,
 						  &lock->lock_elem);
