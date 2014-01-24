@@ -23,8 +23,9 @@
 #define THREAD_MAGIC 0xcd6abf4b
 
 
-/* List of processes in THREAD_READY state, that is, processes
-   that are ready to run but not actually running. */
+/* Array of readylist queue with different actual_priority, each
+ * readylist contains processes in THREAD_READY state, that is,
+ * processes that are ready to run but not actually running. */
 static struct list ready_list[PRI_MAX+1];
 
 /* List of all processes.  Processes are added to this list
@@ -116,7 +117,7 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
-  /*init recent_cpu and nice for the main thread*/
+  /*init recent_cpu and nice for the running thread*/
   initial_thread->recent_cpu=0;
   initial_thread->nice=0;
 }
@@ -154,7 +155,6 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
-
 
   /*update mlfqs related variables*/
   if (thread_mlfqs) {
@@ -209,11 +209,11 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   struct thread *cur = thread_current();
-  /* Initialize thread. */
+
   if (thread_mlfqs) {
   	  priority = mlfqs_calculate_priority(cur->recent_cpu,cur->nice);
   }
-
+  /* Initialize thread. */
   init_thread (t, name, priority);
   if (thread_mlfqs) {
 	  t->nice = cur->nice;
@@ -239,6 +239,9 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  /*yield current running thread if the
+   * thread been created has higher
+   * actual_priority */
   if (priority > thread_get_actual_priority()) {
 	  thread_yield();
   }
@@ -423,7 +426,7 @@ void thread_set_actual_priority (struct thread *t,
 			}
 		}
 	}
-
+	/*update read_list*/
 	if (t->status==THREAD_READY) {
 		list_remove (&t->elem);
 		list_push_back (&ready_list[t->actual_priority],
@@ -436,9 +439,11 @@ void thread_set_actual_priority (struct thread *t,
 int
 thread_get_priority (void) 
 {
+	/*return the actual_priority instead*/
   return thread_get_actual_priority();
 }
 
+/*return the actual_priority of current thread*/
 static int thread_get_actual_priority(void) {
 	return thread_current ()->actual_priority;
 }
@@ -452,13 +457,15 @@ thread_set_nice (int nice)
 
 	int new_priority;
 	new_priority=mlfqs_calculate_priority(cur->recent_cpu, cur->nice);
-	/*set t's priority and actual_priority*/
+	/*set current thread's priority and actual_priority*/
 	enum intr_level old_level;
 	old_level = intr_disable ();
 
 	cur->priority = new_priority;
 	thread_set_actual_priority(cur, new_priority);
 
+	/*yield if the updated priority is higher than the running
+	 * thread's actual priority */
 	if(!is_ready_list_empty()){
 		struct thread * t_max=find_max_priority_thread();
 		if(t_max->actual_priority>cur->actual_priority){
@@ -610,6 +617,7 @@ next_thread_to_run (void)
   if (is_ready_list_empty())
     return idle_thread;
   else
+	/*find the next ready thread with highest priority to run*/
     return pop_max_priority_thread();
 }
 
@@ -755,15 +763,19 @@ int find_max_actual_priority(struct list* lock_list){
 
 	ASSERT (intr_get_level () == INTR_OFF);
 
+	/*go through the lock_list*/
 	for (lock_elem = list_begin(lock_list); lock_elem != list_end (lock_list);
 			lock_elem = list_next (lock_elem))
 	{
 	  l = list_entry (lock_elem, struct lock, lock_elem);
+	  /*find the waiter list*/
 	  waiters=&l->semaphore.waiters;
 	  ASSERT (!list_empty(waiters));
+	  /*go through the waiter list*/
 	  for (inner_e = list_begin (waiters); inner_e != list_end (waiters);
 			  inner_e = list_next (inner_e))
 	  	{
+		  /*update the max_priority*/
 		  waiting_thread = list_entry (inner_e, struct thread, elem);
 	  	  if(waiting_thread->actual_priority > max_priority){
 	  		max_priority=waiting_thread->actual_priority;

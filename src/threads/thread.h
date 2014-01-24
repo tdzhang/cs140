@@ -107,8 +107,9 @@ struct thread
     struct lock *wanted_lock;           /* the lock this thread is waiting
                                            for */
 
-    struct list waited_by_other_lock_list;  /* the lock list this thread is
-                                               holding and waited by others */
+    struct list waited_by_other_lock_list;  /* the list of locks that this
+                                        thread is holding while waited by
+                                        others */
 
     int recent_cpu;                     /*fixed-point recent_cpu value used
                                           for -mlfqs*/
