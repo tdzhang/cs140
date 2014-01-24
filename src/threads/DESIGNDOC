@@ -36,7 +36,7 @@ Bing Han  <bhan11@stanford.edu>
 
 --changes in thread.h--
   ->add to struct thread
-  int64_t wakeup_ticks;     /* Time ticks’ number to wake up current thread */
+  int64_t wakeup_ticks;     /* Time tick's number to wake up current thread */
   struct list_elem sleep_elem;        /* List element for thread sleep_list */
 
 
@@ -47,7 +47,7 @@ Bing Han  <bhan11@stanford.edu>
 >> including the effects of the timer interrupt handler.
 
 Answer: In timer_sleep(), it first calculates the the wake up time point 
-(wakeup_ticks) for the current thread and insert the thread’s sleep_elem into
+(wakeup_ticks) for the current thread and insert the thread's sleep_elem into
 the sleep_list in order. The order is decided by wakeup time of each thread 
 from the earliest to the latest. Then it puts the current thread to sleep by 
 blocking it and the thread_block() will internally pick up the next ready 
@@ -66,7 +66,7 @@ to run.
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-Answer: The sleep_list is ordered by threads’ wakeup time from the earliest
+Answer: The sleep_list is ordered by threads' wakeup time from the earliest
 to the latest. The ordering is done during insertion by list_insert_ordered()
 with a comparing function time_compare_less() we defined. So when trying to 
 pick up the threads to wake up in the timer interrupt handler, instead of 
@@ -108,14 +108,14 @@ thought about is to add a boolean flag variable in the thread structure
 to indicate whether the thread is in sleep mode or not, and an integer 
 wakeup_ticks variable to indicate the time tick point that the thread 
 needs to wake up. Under this design, when a thread called thread_sleep(),
-the flag variable is set to 1 indicating its ‘sleep mode’, and the 
+the flag variable is set to 1 indicating its sleep mode, and the 
 wakeup_ticks is updated accordingly. Then in the timer interrupt handler,
 we need to go through the whole thread list (all_list) to find the threads
 with flag equals true and wakeup_ticks is less or equal to current time 
 ticks to wake them up.
 
 The above approach, compared to the design we used in the project, uses a 
-flag variable instead a global list ‘sleep_list’ to keep track of all the 
+flag variable instead a global list sleep_list to keep track of all the 
 sleep threads. It avoided additional global list which reduces the difficulty
 to maintain that additional global list. However, the complexity to 
 find/search and wake up the right sleeping threads in the timer interrupt 
@@ -158,10 +158,10 @@ k threads in the front need to be checked.
 >> .png file.)
 
 Answer: 
-The variable “actual_priority” is used to keep track of a thread’s actual 
+The variable actual_priority is used to keep track of a thread's actual 
 priority with all the donations. It separates the priority with donations 
 and the original/generic priority. So the donation will not override a 
-thread’s original/generic priority. Therefore, a thread can return to its 
+thread's original/generic priority. Therefore, a thread can return to its 
 generic priority once the lock is released and corresponding donation is 
 revoked. 
 
@@ -171,9 +171,9 @@ lock holder. The thread will be added to the waiters list (inside the
 semaphore structure which is inside the lock structure) of the lock, and
 it will get the lock holder (through wanted_lock and then the holder) and
 try to donate its actual priority if its actual_priority is higher than
-the holder’s. The donation will recursively happen if the holder is also
-waiting for a lock and its new actual_priority is higher than that lock’s
-holder. It will then donate its new actual_priority to that lock’s holder.
+the holder's. The donation will recursively happen if the holder is also
+waiting for a lock and its new actual_priority is higher than that lock's
+holder. It will then donate its new actual_priority to that lock's holder.
 
 The following diagram shows the nested priority donation situation. A 
 lock_acquire action from thread C to B triggered a priority donation 
@@ -225,7 +225,7 @@ holds only one lock, it will set its actual_priority back to its generic
 priority when the lock is released. If the thread holds more than one 
 locks, instead of setting the actual_priority back to its generic 
 priority, it needs to go through all the remaining locks, find the 
-highest donation priority from threads in those locks’ waiters list 
+highest donation priority from threads in those locks' waiters list 
 (inside the semaphore structure which is inside the lock structure). 
 It will set its actual priority to the highest donation priority if 
 its own generic priority is lower. 
@@ -241,15 +241,15 @@ its own generic priority is lower.
 Answer: 
 For a lock or semaphore, when releasing the lock or sema_up the semaphore,
 we will find the thread with maximum actual priority (using round-robin if
-multiple threads with the same actual priority) from the semaphore’s 
-waiters and unblock this thread. If this thread’s actual priority is 
+multiple threads with the same actual priority) from the semaphore's 
+waiters and unblock this thread. If this thread's actual priority is 
 larger than that of the current thread, we will call thread_yield() 
 which internally schedules to run the thread with the highest priority
 (using round-robin if multiple threads with the same actual priority).
 
 For condition variable, when cond_signal() is called, we will find the 
 semaphore waited by the maximum actual priority thread from the condition 
-variable’s waiter list. Then sema_up this semaphore. As described above,
+variable's waiter list. Then sema_up this semaphore. As described above,
 the call of sema_up() will find and unblock the maximum actual priority 
 thread and schedule the highest actual priority thread to run (using 
 round-robin if multiple threads with the same actual priority) if the 
@@ -262,30 +262,30 @@ actual priority is larger than that of the current thread.
 Answer:
 When lock_acquire() is called, it first disables interrupt to avoid race
 conditions. Then:
-1) if it’s not in mlfqs mode and the lock is currently hold by another 
+1) if it's not in mlfqs mode and the lock is currently hold by another 
 thread, following three events happen: (suppose thread A is the current 
 thread which is acquiring the lock and thread B is the current holder of
 the lock)
-  i) set A’s wanted_lock to the lock
- ii) add the lock to B’s waited_by_other_lock_list (since the lock is at 
+  i) set A's wanted_lock to the lock
+ ii) add the lock to B's waited_by_other_lock_list (since the lock is at 
  least waited by A) if the list does not have the lock
- iii) A sets B’s actual priority to A’s actual priority (donation) if A’s
- actual priority is larger than B’s.
-2) sema_down the lock’s semaphore, it will block A if the sema_down is 
+ iii) A sets B's actual priority to A's actual priority (donation) if A's
+ actual priority is larger than B's.
+2) sema_down the lock's semaphore, it will block A if the sema_down is 
 blocked (which means the lock is held by another thread)
 3) set lock holder to A (when the above sema_down returns, the current 
 thread is going to be the new holder)
 4) if not in mlfqs mode, then
-  i) set A’s wanted_lock to NULL, since A has already got the lock.
- ii) if the lock is still waited by others, add the lock into A’s 
+  i) set A's wanted_lock to NULL, since A has already got the lock.
+ ii) if the lock is still waited by others, add the lock into A's 
  waited_by_other_lock_list 
 
 We handle the nested donation in thread_set_actual_priority(). In 
-thread_set_actual_priority(), it set B’s actual priority to the new 
-priority. Then if it’s not in mlfqs mode and B’s wanted_lock is not NULL,
-the nested donation is triggered. B will find its wanted_lock’s holder, 
-thread C, and set C’s actual priority to the new priority passed to B if 
-C’s actual priority is smaller than this new priority by calling 
+thread_set_actual_priority(), it set B's actual priority to the new 
+priority. Then if it's not in mlfqs mode and B's wanted_lock is not NULL,
+the nested donation is triggered. B will find its wanted_lock's holder, 
+thread C, and set C's actual priority to the new priority passed to B if 
+C's actual priority is smaller than this new priority by calling 
 thread_set_actual_priority() recursively. Since the ready_list consists 
 of 64 ready thread queues (each queue stored the threads with the same 
 actual priority), we also need to move thread B from its previous queue 
@@ -302,16 +302,16 @@ When lock_release() is called, it first disable interrupt to avoid race
 conditions. (suppose thread A is the thread that is going to release the 
 lock)
 1) if not in mlfqs mode
-  i) remove the lock from A’s waited_by_other_lock_list if the lock is 
+  i) remove the lock from A's waited_by_other_lock_list if the lock is 
 within its waited_by_other_lock_list
- ii) find the maximum actual priority in A’s waited_by_other_lock_list.
- If this maximum actual priority is larger than A’s priority, then set 
- A’s actual priority to this maximum actual priority. Otherwise, set A’s
+ ii) find the maximum actual priority in A's waited_by_other_lock_list.
+ If this maximum actual priority is larger than A's priority, then set 
+ A's actual priority to this maximum actual priority. Otherwise, set A's
  actual priority to its own priority.
 2) set the lock holder to NULL
-3) sema_up the lock. In sema_up, if sema’s waiters list is not empty, we
+3) sema_up the lock. In sema_up, if sema's waiters list is not empty, we
 find the thread M with maximum actual priority, then remove M from the 
-waiters list and unblock M. If M’s actual priority is larger than that 
+waiters list and unblock M. If M's actual priority is larger than that 
 of the current thread, call thread yield().
 
 
@@ -326,13 +326,13 @@ Answer:
 The thread_set_priority(new_priority) sets the priority of a thread to 
 new_priority, and then tries to update its actual_priority. It will first 
 go through all the locks held by the thread and then find the highest 
-donation actual_priority from locks’ waiter threads. Then it compares that
-highest donation actual_priority with the thread’s own generic priority. 
+donation actual_priority from locks' waiter threads. Then it compares that
+highest donation actual_priority with the thread's own generic priority. 
 It will use thread_set_actual_priority to set its actual_priority to the 
 bigger value.
 
 A potential race will happen when the thread A is just about to update its
-actual_priority from others’ donation or its new_priority, a thread B with
+actual_priority from others' donation or its new_priority, a thread B with
 higher priority occupies the cpu and donates its higher priority to thread
 A. After B releases the cpu, thread A resumes running, it will execute the
 actual_priority update which will override the new higher value that B just
@@ -342,7 +342,7 @@ potential race situation.
 Using a lock to avoid such situation will not work. Using a lock will lead
 thread B to donate priority to A again, then just as described above, when 
 B releases the cpu, thread A resumes running, A will be set to the 
-previously calculated priority value instread of the new higher B’s actual 
+previously calculated priority value instread of the new higher B's actual 
 priority, which is incorrect.
 
 
@@ -358,7 +358,7 @@ struct. Under this design, it costs more space to store the global
 all_lock_list but saves space for the waited_by_other_lock_list of each 
 thread. The substantial disadvantage is that every time a thread reads 
 (for example, find the max actual priority thread blocked by itself) the 
-all_lock_list, it has to compare itself with all the locks’ holder to 
+all_lock_list, it has to compare itself with all the locks' holder to 
 collect all the locks it is holding, then execute the operations based 
 on this. This traverse is of complexity of O(n) where n is the number of
 locks globally, which is not good due to the large amount of time it costs.
@@ -370,10 +370,10 @@ advanced scheduler (mlfqs mode). Secondly, every time picking the highest
 priority thread to run, we just need to read from the highest non-empty 
 priority list and pick up the first one (round-robin fashion), and every 
 time inserting thread into ready_list we just need to push it back 
-(round-robin fashion) to its corresponding list, and every time a thread’s 
+(round-robin fashion) to its corresponding list, and every time a thread's 
 actual priority changes, we just need to remove the thread from its previous 
 list and push it back to its new corresponding list, so we avoid a whole list 
-sort due to thread’s actual priority change in the single list scenario.
+sort due to thread's actual priority change in the single list scenario.
 
 
 
@@ -449,7 +449,7 @@ Therefore, what we did is to put as less work as we can inside the
 interrupt context. Only statistics and priority updates will happen 
 inside the interrupt context, and the reschedule work is triggered if 
 and only if the new updated priority of some ready thread is higher 
-than the current thread’s.
+than the current thread's.
 
 ---- RATIONALE ----
 
@@ -465,10 +465,10 @@ with the same actual_priority. So when picking the highest priority
 thread to run, we just need to read from the highest non-empty priority 
 list and pick up the first one (FCFS, round-robin fashion), and when 
 inserting thread into the ready_list we just need to push it back (FCFS, 
-round-robin fashion) to its corresponding list, and when a thread’s 
+round-robin fashion) to its corresponding list, and when a thread's 
 priority changes, we only need to remove the thread from its previous 
 list and push it back to its new corresponding list, so we avoid a whole 
-list sort due to thread’s priority change in the single list scenario.
+list sort due to thread's priority change in the single list scenario.
 
 2) From the design point of view, we analyze the functionalities of original
 scheduler in previous part and this advanced one and find the the logics 
@@ -497,9 +497,9 @@ Given more time, we will work on the counter mentioned above.
 >> numbers, why did you do so?  If not, why not?
 
 Answer: During the implementation of the advanced scheduler, we find that
-the operation of updating threads’ recent_cpu, priority and load_avg 
+the operation of updating threads' recent_cpu, priority and load_avg 
 includes a lot of calculation between fixed-point and fixed-point and 
-between fixed-point and integer. So we created new files “fixed_point.c/h”
+between fixed-point and integer. So we created new files fixed_point.c/h
 which include all the math operations (addition, subtraction, multiply, 
 division, conversion) among fixed-point numbers themselves and 
 fixed-point integer mixed situation. We use inline modifier to implement
@@ -525,7 +525,7 @@ the quarter.
 Answer: It took a lot of time to finish it even when we had already 
 figured out all the concepts and procedures. Since it is the first 
 assignment, we struggled at the beginning on how to divide the tasks 
-and which is the best way to debug. After some back and forth, it’s 
+and which is the best way to debug. After some back and forth, it's 
 become manageable. In a nutshell, this assignment is challenging but 
 interesting.
 
