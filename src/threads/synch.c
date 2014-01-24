@@ -446,7 +446,7 @@ static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list){
 	struct list_elem *e;
 	struct list_elem *e_need2remove;
 	struct semaphore *sema;
-	struct semaphore *max_sema;
+	struct semaphore *max_sema=NULL;
 	struct thread *t;
 	int max_priority = -1;
 
