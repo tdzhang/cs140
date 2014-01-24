@@ -10,6 +10,7 @@
    <yph@cs.stanford.edu>.  Modified by arens. */
 
 #include <stdio.h>
+#include "threads/fixed_point.h"
 
 /*pow(2,14)*/
 #define FIXED_POINT_F 16384
