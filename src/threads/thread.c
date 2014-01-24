@@ -12,6 +12,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "devices/timer.h"
+#include "threads/fixed_point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -781,7 +782,6 @@ static void mlfqs_update_priority(struct thread* t){
 	/*set t's priority and actual_priority*/
 	enum intr_level old_level;
 	old_level = intr_disable ();
-	struct thread *cur = thread_current ();
 	t->priority = new_priority;
 	thread_set_actual_priority(t, new_priority);
 
