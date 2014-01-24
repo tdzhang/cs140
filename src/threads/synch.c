@@ -444,7 +444,7 @@ static struct thread *find_max_actual_priority_thread(struct list *list){
 /* find and pop the semaphore waited by max actual priority thread */
 static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list){
 	struct list_elem *e;
-	struct list_elem *e_need2remove;
+	struct list_elem *e_need2remove=NULL;
 	struct semaphore *sema;
 	struct semaphore *max_sema=NULL;
 	struct thread *t;
