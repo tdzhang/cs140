@@ -424,7 +424,7 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 static struct thread *find_max_actual_priority_thread(struct list *list){
 	struct list_elem *e;
 	struct thread *t;
-	struct thread *max_t;
+	struct thread *max_t=NULL;
 	int max_priority = -1;
 
 	ASSERT (intr_get_level () == INTR_OFF);
