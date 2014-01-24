@@ -31,11 +31,12 @@ Bing Han  <bhan11@stanford.edu>
 
 -- changes in timer.c--
   ->add a static variable
-  static struct list sleep_list;   /* List of all sleeping threads waiting for waking up */
+  static struct list sleep_list;   /* List of all sleeping threads waiting
+   for waking up */
 
 --changes in thread.h--
   ->add to struct thread
-  int64_t wakeup_ticks;         /* Time ticks’ number to wake up current thread */
+  int64_t wakeup_ticks;     /* Time ticks’ number to wake up current thread */
   struct list_elem sleep_elem;        /* List element for thread sleep_list */
 
 
@@ -45,27 +46,56 @@ Bing Han  <bhan11@stanford.edu>
 >> A2: Briefly describe what happens in a call to timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
-Answer: In timer_sleep(), it first calculates the the wake up time point (wakeup_ticks) for the current thread and insert the thread’s sleep_elem into the sleep_list in order. The order is decided by wakeup time of each thread from the earliest to the latest. Then it puts the current thread to sleep by blocking it and the thread_block() will internally pick up the next ready thread or idle thread to run. The blocking step can avoid the busy waiting problem which exist before. 
+Answer: In timer_sleep(), it first calculates the the wake up time point 
+(wakeup_ticks) for the current thread and insert the thread’s sleep_elem into
+the sleep_list in order. The order is decided by wakeup time of each thread 
+from the earliest to the latest. Then it puts the current thread to sleep by 
+blocking it and the thread_block() will internally pick up the next ready 
+thread or idle thread to run. The blocking step can avoid the busy waiting 
+problem which exist before. 
 
-In the timer interrupt handler, it selects from the front of the ordered sleep_list and then removes and unblocks the threads whose wakeup time point has already been or passed the current time point. Because the elements in the sleep_list are in order of wakeup_ticks(the time point to wake up), we only need to check the threads from the front of the list. In this way these threads are woke up and put back to ready_list by thread_unblock() and ready to run.
+In the timer interrupt handler, it selects from the front of the ordered 
+sleep_list and then removes and unblocks the threads whose wakeup time point
+has already been or passed the current time point. Because the elements in
+the sleep_list are in order of wakeup_ticks(the time point to wake up), we 
+only need to check the threads from the front of the list. In this way these 
+threads are woke up and put back to ready_list by thread_unblock() and ready 
+to run.
 
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-Answer: The sleep_list is ordered by threads’ wakeup time from the earliest to the latest. The ordering is done during insertion by list_insert_ordered() with a comparing function time_compare_less() we defined. So when trying to pick up the threads to wake up in the timer interrupt handler, instead of checking all the threads in the list, it only needs to pull from the front of the sleep_list to get one or several threads that are ready to wake up instead of traversing the whole list. In this way we minimize the amount of time spent in the timer interrupt handler.
+Answer: The sleep_list is ordered by threads’ wakeup time from the earliest
+to the latest. The ordering is done during insertion by list_insert_ordered()
+with a comparing function time_compare_less() we defined. So when trying to 
+pick up the threads to wake up in the timer interrupt handler, instead of 
+checking all the threads in the list, it only needs to pull from the front of
+the sleep_list to get one or several threads that are ready to wake up instead
+of traversing the whole list. In this way we minimize the amount of time spent
+in the timer interrupt handler.
 
 ---- SYNCHRONIZATION ----
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
-Answer: The race conditions are avoided by disabling interrupt in timer_sleep(). So even if multiple threads call timer_sleep() simultaneously, only one of them could get the position and complete the set of operation involving sleep_list and thread_block() atomically without interrupted by all other threads.
+Answer: The race conditions are avoided by disabling interrupt in 
+timer_sleep(). So even if multiple threads call timer_sleep() simultaneously,
+only one of them could get the position and complete the set of operation 
+involving sleep_list and thread_block() atomically without interrupted by 
+all other threads.
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
-Answer: The race conditions are avoided by disabling interrupt in timer_sleep(). In the timer interrupt handler, it will read from the front of the shared variable, sleep_list, and may remove elements from it as well. With interruption disabled in timer_sleep(), it will atomically complete the modification of the shared variable, sleep_list, and avoid race conditions due to timer interrupt.
+Answer: The race conditions are avoided by disabling interrupt in 
+timer_sleep(). In the timer interrupt handler, it will read from the 
+front of the shared 
+variable, sleep_list, and may remove elements from it as well. With 
+interruption disabled in timer_sleep(), it will atomically complete the
+modification of the shared variable, sleep_list, and avoid race conditions
+due to timer interrupt.
 
 ---- RATIONALE ----
 
@@ -73,9 +103,28 @@ Answer: The race conditions are avoided by disabling interrupt in timer_sleep().
 >> another design you considered?
 
 Answer:
-To achieve this functionality, there are many possible ways. One way we thought about is to add a boolean flag variable in the thread structure to indicate whether the thread is in sleep mode or not, and an integer wakeup_ticks variable to indicate the time tick point that the thread needs to wake up. Under this design, when a thread called thread_sleep(), the flag variable is set to 1 indicating its ‘sleep mode’, and the wakeup_ticks is updated accordingly. Then in the timer interrupt handler, we need to go through the whole thread list (all_list) to find the threads with flag equals true and wakeup_ticks is less or equal to current time ticks to wake them up.
+To achieve this functionality, there are many possible ways. One way we
+thought about is to add a boolean flag variable in the thread structure
+to indicate whether the thread is in sleep mode or not, and an integer 
+wakeup_ticks variable to indicate the time tick point that the thread 
+needs to wake up. Under this design, when a thread called thread_sleep(),
+the flag variable is set to 1 indicating its ‘sleep mode’, and the 
+wakeup_ticks is updated accordingly. Then in the timer interrupt handler,
+we need to go through the whole thread list (all_list) to find the threads
+with flag equals true and wakeup_ticks is less or equal to current time 
+ticks to wake them up.
 
-The above approach, compared to the design we used in the project, uses a flag variable instead a global list ‘sleep_list’ to keep track of all the sleep threads. It avoided additional global list which reduces the difficulty to maintain that additional global list. However, the complexity to find/search and wake up the right sleeping threads in the timer interrupt handler is much higher than the design we used. It needs to search all the threads to find the those that need to be waked up, which is with complexity of O(n) where n is the number of all the threads.  The design we used only is of O(k) (k is the number of threads that need to be wake up) to find and wake up corresponding threads since the sleep_list is in order and only the k threads in the front need to be checked.
+The above approach, compared to the design we used in the project, uses a 
+flag variable instead a global list ‘sleep_list’ to keep track of all the 
+sleep threads. It avoided additional global list which reduces the difficulty
+to maintain that additional global list. However, the complexity to 
+find/search and wake up the right sleeping threads in the timer interrupt 
+handler is much higher than the design we used. It needs to search all the 
+threads to find the those that need to be waked up, which is with complexity 
+of O(n) where n is the number of all the threads.  The design we used only 
+is of O(k) (k is the number of threads that need to be wake up) to find and 
+wake up corresponding threads since the sleep_list is in order and only the 
+k threads in the front need to be checked.
 
 			 PRIORITY SCHEDULING
 			 ===================
@@ -256,13 +305,13 @@ ticks   A   B   C   A   B   C   to run
  0      0  0  0  63 61 59    A    (Highest Priority)
  4      4  0  0  62 61 59    A    (Highest Priority)
  8      8  0  0  61 61 59    B    (Round-Robin)
-12     8  4  0  61 60 59    A    (Highest Priority)
-16    12 4  0  60 60 59    B    (Round-Robin)
-20    12 8  0  60 59 59    A    (Highest Priority)
-24    16 8  0  59 59 59    C    (Round-Robin)
-28    16 8  4  59 59 58    B    (Round-Robin)
-32   16 12 4  59 58 58    A    (Highest Priority)
-36   20 12 4  58 58 58    C    (Round-Robin)
+12      8  4  0  61 60 59    A    (Highest Priority)
+16     12  4  0  60 60 59    B    (Round-Robin)
+20     12  8  0  60 59 59    A    (Highest Priority)
+24     16  8  0  59 59 59    C    (Round-Robin)
+28     16  8  4  59 59 58    B    (Round-Robin)
+32     16  12 4  59 58 58    A    (Highest Priority)
+36     20  12 4  58 58 58    C    (Round-Robin)
 
 >> C3: Did any ambiguities in the scheduler specification make values
 >> in the table uncertain?  If so, what rule did you use to resolve
