@@ -380,7 +380,8 @@ thread_set_priority (int new_priority)
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
   if(!thread_mlfqs){
-	   int max_act_priority = find_max_actual_priority(&cur->waited_by_other_lock_list);
+	   int max_act_priority =
+			   find_max_actual_priority(&cur->waited_by_other_lock_list);
 	  /* if setting to higher new_priority, set new actual priority */
 	  if (max_act_priority < new_priority) {
 		  thread_set_actual_priority(cur, new_priority);
@@ -392,7 +393,7 @@ thread_set_priority (int new_priority)
 
   /* if current thread is not with the highest priority, yield immediately */
   if (!is_ready_list_empty()) {
-	  if (find_max_priority_thread()->actual_priority > cur->actual_priority) {
+	  if (find_max_priority_thread()->actual_priority > cur->actual_priority){
 		  thread_yield();
 	  }
   }
@@ -753,7 +754,7 @@ int find_max_actual_priority(struct list* lock_list){
 
 	ASSERT (intr_get_level () == INTR_OFF);
 
-	for (lock_elem = list_begin (lock_list); lock_elem != list_end (lock_list);
+	for (lock_elem = list_begin(lock_list); lock_elem != list_end (lock_list);
 			lock_elem = list_next (lock_elem))
 	{
 	  l = list_entry (lock_elem, struct lock, lock_elem);
@@ -791,7 +792,8 @@ static void mlfqs_update_priority(struct thread* t){
 static void mlfqs_update_recent_cpu(struct thread* t){
 	int rc=t->recent_cpu;
 	int32_t temp=f_multiply_int(load_avg,2);
-	t->recent_cpu=f_add_int(f_multiply_f(f_divide_f(temp,f_add_int(temp,1)),rc),t->nice);
+	t->recent_cpu = f_add_int(f_multiply_f(
+			f_divide_f(temp,f_add_int(temp,1)),rc),t->nice);
 }
 
 /*return the value of ready_threads used for load_avg calculation*/
@@ -860,7 +862,8 @@ static void mlfqs_update_vars(void) {
 
 /* return priority = PRI_MAX - (recent_cpu / 4) - (nice * 2). */
 inline int mlfqs_calculate_priority(int recent_cpu, int nice){
-	return clamp_priority(PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))-nice*2);
+	return clamp_priority(PRI_MAX-f2int_r2near(f_divide_int (recent_cpu, 4))
+			-nice*2);
 }
 
 

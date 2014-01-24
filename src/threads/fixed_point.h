@@ -8,7 +8,8 @@
 inline int32_t int2f(int32_t n);
 /* Convert x to integer (rounding toward zero) x / f*/
 inline int32_t f2int_r20(int32_t x);
-/* Convert x to integer (rounding to nearest)  (x + f / 2) / f if x >= 0, (x - f / 2) / f if x <= 0.*/
+/* Convert x to integer (rounding to nearest)
+   (x + f / 2) / f if x >= 0, (x - f / 2) / f if x <= 0.*/
 inline int32_t f2int_r2near(int32_t x);
 /* Add x and y: x + y*/
 inline int32_t f_add_f(int32_t x, int32_t y);

@@ -92,21 +92,27 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int actual_priority;                /* actual_priority after donation. */
-    int64_t wakeup_ticks;               /* Absolute ticks to wake up current thread */
+    int64_t wakeup_ticks;               /* Absolute ticks to wake up current
+                                           thread */
 
-    struct list_elem allelem;           /* List element for all threads list. */
+    struct list_elem allelem;           /* List element for all threads
+                                           list. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-    struct list_elem sleep_elem;        /* List element for thread sleep list */
+    struct list_elem sleep_elem;        /* List element for thread sleep
+                                           list */
 
-    struct lock *wanted_lock;           /* the lock this thread is waiting for */
-    /* the lock list this thread is holding and waited by others */
-    struct list waited_by_other_lock_list;
+    struct lock *wanted_lock;           /* the lock this thread is waiting
+                                           for */
 
-    int recent_cpu; /*fixed-point recent_cpu value used for -mlfqs*/
-    int nice;   /*nice value used for -mlfqs*/
+    struct list waited_by_other_lock_list;  /* the lock list this thread is
+                                               holding and waited by others */
+
+    int recent_cpu;                     /*fixed-point recent_cpu value used
+                                          for -mlfqs*/
+    int nice;                           /*nice value used for -mlfqs*/
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

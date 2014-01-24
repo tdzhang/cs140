@@ -218,11 +218,12 @@ lock_acquire (struct lock *lock)
 		if (lock->holder != NULL) {
 			t->wanted_lock = lock;
 
-			/* if lock's holder's waited_by_other_lock_list does not have this lock,
-			* add the lock into its lock list
-			*/
-			if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
-			  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+			/* if lock's holder's waited_by_other_lock_list does not have
+			   this lock, add the lock into its lock list */
+			if (!list_exist(&lock->holder->waited_by_other_lock_list,
+					&lock->lock_elem)) {
+			    list_push_back(&lock->holder->waited_by_other_lock_list,
+					  &lock->lock_elem);
 			}
 
 			if (t->actual_priority > lock->holder->actual_priority) {
@@ -236,7 +237,8 @@ lock_acquire (struct lock *lock)
 
 	if(!thread_mlfqs){
 		if (!list_empty(&lock->semaphore.waiters)) {
-				  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+				  list_push_back(&lock->holder->waited_by_other_lock_list,
+						  &lock->lock_elem);
 		}
 		t->wanted_lock = NULL;
 	}
@@ -288,17 +290,19 @@ lock_release (struct lock *lock)
   struct thread *cur_lock_holder = lock->holder;
   if(!thread_mlfqs){
 	  /*remove the lock from the old_holder's waited_by_other_lock_list*/
-	  if (list_exist(&cur_lock_holder->waited_by_other_lock_list, &lock->lock_elem)) {
+	  if (list_exist(&cur_lock_holder->waited_by_other_lock_list,
+			  &lock->lock_elem)) {
 		  list_remove(&lock->lock_elem);
 	  }
 
 	  /*remove the donation effect of that lock for the old lock holder*/
-	  int max_act_prior =
-			  find_max_actual_priority(&cur_lock_holder->waited_by_other_lock_list);
+	  int max_act_prior = find_max_actual_priority(
+			  &cur_lock_holder->waited_by_other_lock_list);
 	  if (max_act_prior > cur_lock_holder->priority) {
 		  thread_set_actual_priority(cur_lock_holder, max_act_prior);
 	  } else {
-		  thread_set_actual_priority(cur_lock_holder, cur_lock_holder->priority);
+		  thread_set_actual_priority(cur_lock_holder,
+				  cur_lock_holder->priority);
 	  }
   }
 

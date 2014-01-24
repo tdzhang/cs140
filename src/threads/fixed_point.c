@@ -25,7 +25,8 @@ inline int32_t f2int_r20(int32_t x){
 }
 
 
-/* Convert x to integer (rounding to nearest)  (x + f / 2) / f if x >= 0, (x - f / 2) / f if x <= 0.*/
+/* Convert x to integer (rounding to nearest)
+   (x + f / 2) / f if x >= 0, (x - f / 2) / f if x <= 0.*/
 inline int32_t f2int_r2near(int32_t x){
 	if(x>0){
 		return (x+FIXED_POINT_F/2)/FIXED_POINT_F;
