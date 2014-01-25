@@ -893,4 +893,3 @@ inline int clamp_nice(int nice) {
 	if (nice < NICE_MIN) return NICE_MIN;
 	return nice;
 }
-
