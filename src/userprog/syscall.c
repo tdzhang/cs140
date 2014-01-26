@@ -28,10 +28,10 @@ syscall_handler (struct intr_frame *f UNUSED)
  }
 
  /*get system call number*/
- int sys_call_num = (int)*esp;
+ int *sys_call_num = (int*)esp;
 
  /*switch to specfic system call handler*/
- switch(sys_call_num){
+ switch(*sys_call_num){
 	case SYS_HALT:break;
 	case SYS_EXIT:break;
 	case SYS_EXEC:break;
