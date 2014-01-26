@@ -40,6 +40,8 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
+  //TODO: add lock or something
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);

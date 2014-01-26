@@ -12,7 +12,9 @@ static void syscall_handler (struct intr_frame *);
 /*self defined */
 static bool is_user_address(const void *pointer, int size);
 void user_exit(int exit_code);
-void sys_exit_handler(void* esp);
+void sys_exit_handler(struct intr_frame *f);
+void sys_halt_handler(struct intr_frame *f);
+void sys_exec_handler(struct intr_frame *f);
 
 void
 syscall_init (void) 
@@ -34,11 +36,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 
  /*switch to specfic system call handler*/
  switch(*sys_call_num){
-	case SYS_HALT:break;
-	case SYS_EXIT:
-		sys_exit_handler(esp);
+	case SYS_HALT:
+		sys_halt_handler(f);
 		break;
-	case SYS_EXEC:break;
+	case SYS_EXIT:
+		sys_exit_handler(f);
+		break;
+	case SYS_EXEC:
+		sys_exec_handler(f);
+		break;
 	case SYS_WAIT:break;
 	case SYS_CREATE:break;
 	case SYS_REMOVE:break;
@@ -58,8 +64,38 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 /*self defined*/
 
+/*handle sys_exec*/
+void sys_exec_handler(struct intr_frame *f){
+	void* esp=f->esp;
+	/*validat the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void *))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	/*get the full_line command*/
+	char *full_line=(char *)esp+1;
+	/*execute*/
+	tid_t tid=process_execute(full_line);
+	/*handle return value*/
+	if(tid==TID_ERROR){
+		f->eax=-1;
+	}
+	else{
+		f->eax=tid;
+	}
+}
+
+/*handle sys_halt*/
+void sys_halt_handler(struct intr_frame *f){
+	/*shutdown pintos*/
+	shutdown_power_off();
+}
+
 /*handle sys_exit*/
-void sys_exit_handler(void* esp){
+void sys_exit_handler(struct intr_frame *f){
+	void* esp=f->esp;
 	/*validat the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(void *))){
 		 /* exit with -1*/
