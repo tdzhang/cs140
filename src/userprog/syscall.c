@@ -48,7 +48,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_CLOSE:break;
 	default:break;
  }
-  user_exit(-1);
+
   printf ("system call!\n");
   thread_exit ();
 }
