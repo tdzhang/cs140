@@ -23,7 +23,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
 /*self defined*/
 #define MAXIMUN_FILENAME 14
-static void get_cmd(char *full_line, char* cmd);
+static void get_cmd(const char *full_line, char* cmd);
 void push_args2stack(void **esp, char *full_line);
 void push_stack(void **esp, void *arg, int size);
 
@@ -492,7 +492,7 @@ install_page (void *upage, void *kpage, bool writable)
 /*self defined function*/
 
 /*parse string full_line to get the first word to string cmd*/
-static void get_cmd(char *full_line, char* cmd){
+static void get_cmd(const char *full_line, char* cmd){
 	int i;
 	for(i=0;i<MAXIMUN_FILENAME+1;i++){
 		if(full_line[i]=='\0'||full_line[i]==' '){
