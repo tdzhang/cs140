@@ -12,6 +12,7 @@ static void syscall_handler (struct intr_frame *);
 /*self defined */
 static bool is_user_address(const void *pointer, int size);
 void user_exit(int exit_code);
+void sys_exit_handler(void* esp);
 
 void
 syscall_init (void) 
@@ -34,7 +35,9 @@ syscall_handler (struct intr_frame *f UNUSED)
  /*switch to specfic system call handler*/
  switch(*sys_call_num){
 	case SYS_HALT:break;
-	case SYS_EXIT:break;
+	case SYS_EXIT:
+		sys_exit_handler(esp);
+		break;
 	case SYS_EXEC:break;
 	case SYS_WAIT:break;
 	case SYS_CREATE:break;
@@ -54,6 +57,20 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 /*self defined*/
+
+/*handle sys_exit*/
+void sys_exit_handler(void* esp){
+	/*validat the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void *))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *exit_code=((int *)esp)+1;
+	/*exit with exit code*/
+	user_exit(*exit_code);
+}
 
 /*user process exit with exit_code*/
 void user_exit(int exit_code){
