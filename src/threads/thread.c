@@ -210,6 +210,7 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   if (priority > thread_get_actual_priority()) {
+	  ASSERT (!intr_context () && 2==2);
 	  thread_yield();
   }
   return tid;
@@ -369,6 +370,7 @@ void thread_set_actual_priority (struct thread *t,
 		&t->elem);
 		schedule();
 	} else if (t->status==THREAD_RUNNING) {
+		ASSERT (!intr_context () && 1==1);
 		thread_yield();
 	}
 

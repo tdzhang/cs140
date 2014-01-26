@@ -125,6 +125,7 @@ sema_up (struct semaphore *sema)
   	  list_remove(&t->elem);
   	  thread_unblock (t);
   	  if (t->actual_priority > thread_current()->actual_priority) {
+  		  ASSERT (!intr_context () && 3==3);
   		  thread_yield();
   	  }
   }
