@@ -19,7 +19,18 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
+static bool load (const void *cmdline, void (**eip) (void), void **esp);
+
+/*self defined*/
+#define MAXIMUN_FILENAME 14
+static void get_cmd(const char *full_line, char* cmd);
+void push_args2stack(void **esp, char *full_line);
+void push_stack(void **esp, void *arg, int size);
+
+struct cmd_line {
+	char *file_name;
+	char *full_line;
+};
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -29,6 +40,8 @@ tid_t
 process_execute (const char *file_name) 
 {
   char *fn_copy;
+  char cmd[MAXIMUN_FILENAME+1]; /*var for command name*/
+  struct cmd_line cl;
   tid_t tid;
 
   /* Make a copy of FILE_NAME.
@@ -38,8 +51,13 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  /*parse the file/command name in file_name to cmd*/
+  get_cmd(file_name, cmd);
+  cl.file_name=cmd;
+  cl.full_line=fn_copy;
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (cmd, PRI_DEFAULT, start_process, &cl);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -48,9 +66,10 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (void *cl_)
 {
-  char *file_name = file_name_;
+  struct cmd_line *cl=cl_;
+  char *file_name = cl->file_name;
   struct intr_frame if_;
   bool success;
 
@@ -59,7 +78,7 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (cl, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -206,8 +225,10 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const char *file_name, void (**eip) (void), void **esp) 
+load (const void *cl_, void (**eip) (void), void **esp)
 {
+  struct cmd_line *cl=cl_;
+  const char *file_name=cl->file_name;
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -304,6 +325,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
+
+  /*copy args into stack*/
+  push_args2stack(esp,cl->full_line);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -462,4 +486,80 @@ install_page (void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+}
+
+
+/*self defined function*/
+
+/*parse string full_line to get the first word to string cmd*/
+static void get_cmd(const char *full_line, char* cmd){
+	int i;
+	for(i=0;i<MAXIMUN_FILENAME+1;i++){
+		if(full_line[i]=='\0'||full_line[i]==' '){
+			cmd[i]='\0';
+			break;
+		}
+		cmd[i]=full_line[i];
+	}
+	ASSERT(i<=MAXIMUN_FILENAME);
+}
+
+
+/*push args into stack*/
+void push_args2stack(void **esp, char *full_line){
+	char *token, *save_ptr;
+	int argc=0;
+	int i=0;
+	int j=0;
+	uint8_t zero=0;
+	int zero_int=0;
+	/*find out how many args are there*/
+	for (token = strtok_r (full_line, " ", &save_ptr); token != NULL;
+		token = strtok_r (NULL, " ", &save_ptr)){
+		argc++;
+	}
+
+	/*updates argv according to argc*/
+	char* argv[argc];
+	for(i=0;i<argc;i++){
+		while(full_line[j]=='\0'){j++;}
+		argv[i]=&full_line[j];
+		while(full_line[j]!='\0'){j++;}
+	}
+
+	/*push back the argv[i] content into stack*/
+	for(i=argc-1;i>=0;i--){
+		push_stack(esp, argv[i], strlen(argv[i])+1);
+		/*update argv[i]*/
+		argv[i]=*esp;
+	}
+
+	/*if the esp is not multiple of 4, push 0 into the stack*/
+	while((int)(*esp) % 4 !=0){
+		push_stack(esp, &zero, sizeof(uint8_t));
+	}
+
+	/*add a marker 0*/
+	push_stack(esp, &zero_int, sizeof(int));
+
+	/*push back the addresses of argv[i] into stack*/
+	for(i=argc-1;i>=0;i--){
+		push_stack(esp, &argv[i], sizeof(char*));
+	}
+
+	/*push argv*/
+	void *cur_esp=*esp;
+	push_stack(esp, &cur_esp, sizeof(void*));
+
+	/*push argc*/
+	push_stack(esp, &argc, sizeof(int));
+
+	/*push return address*/
+	push_stack(esp, &zero_int, sizeof(int));
+}
+
+/*push data into esp*/
+void push_stack(void **esp, void *arg, int size){
+	*esp=(*esp)-size;
+	memcpy(*esp,arg,size);
 }
