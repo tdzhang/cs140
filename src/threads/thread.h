@@ -115,9 +115,16 @@ struct thread
                                           for -mlfqs*/
     int nice;                           /*nice value used for -mlfqs*/
 
+    /*project2 used*/
+
+
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+
+    int exit_code;              /*the status code when exit*/
+    bool is_user;      /*indicator for user thread*/
 #endif
 
     /* Owned by thread.c. */

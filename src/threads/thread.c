@@ -236,6 +236,13 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+
+  /* user process initialization. */
+#ifdef USERPROG
+    t->exit_code=0;              /*the status code when exit*/
+    t->is_user=false;      /*indicator for user thread*/
+#endif
+
   /* Add to run queue. */
   thread_unblock (t);
 

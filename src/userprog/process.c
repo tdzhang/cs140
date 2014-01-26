@@ -22,8 +22,6 @@ static thread_func start_process NO_RETURN;
 static bool load (const void *cmdline, void (**eip) (void), void **esp);
 
 /*self defined*/
-#define MAX_FILE_NAME 14
-static void get_cmd(const char *full_line, char* cmd);
 static void push_args2stack(void **esp, const char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
@@ -68,7 +66,11 @@ start_process (void *fn_copy)
 {
   char *file_name = fn_copy;
   struct intr_frame if_;
+  struct thread *cur=thread_current();
   bool success;
+
+  /*update is_user flag to true: it is a user process*/
+  cur->is_user=true;
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -495,7 +497,7 @@ install_page (void *upage, void *kpage, bool writable)
 /*self defined function*/
 
 /*parse string full_line to get the first word to string cmd*/
-static void get_cmd(const char *full_line, char* cmd){
+void get_cmd(const char *full_line, char* cmd){
 	int i;
 	for(i=0;i<MAX_FILE_NAME+1;i++){
 		if(full_line[i]=='\0'||full_line[i]==' '){

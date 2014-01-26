@@ -8,4 +8,9 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 
+/*self defined*/
+#define MAX_FILE_NAME 14
+void get_cmd(const char *full_line, char* cmd);
+
+
 #endif /* userprog/process.h */
