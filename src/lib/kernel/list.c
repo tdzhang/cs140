@@ -522,15 +522,3 @@ list_min (struct list *list, list_less_func *less, void *aux)
     }
   return min;
 }
-
-
-/*self defined funcs*/
-
-/*Judge if a list contain an element*/
-bool list_exist(struct list *list,struct list_elem *elem){
- struct list_elem *e;
- for (e = list_begin (list); e != list_end (list); e = list_next (e)){
- 	 if(e==elem) return true;
- }
- return false;
-}

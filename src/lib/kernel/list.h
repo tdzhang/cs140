@@ -174,9 +174,8 @@ void list_insert_ordered (struct list *, struct list_elem *,
 void list_unique (struct list *, struct list *duplicates,
                   list_less_func *, void *aux);
 
-/* max and min. */
+/* Max and min. */
 struct list_elem *list_max (struct list *, list_less_func *, void *aux);
 struct list_elem *list_min (struct list *, list_less_func *, void *aux);
 
-bool list_exist(struct list *list,struct list_elem *elem);
 #endif /* lib/kernel/list.h */

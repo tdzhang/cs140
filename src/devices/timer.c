@@ -32,10 +32,7 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
-/*compare func for thread's wakeup_ticks, used for list_insert_ordered*/
-static bool
-time_compare_less (const struct list_elem *a_, const struct list_elem *b_,
-            void *aux UNUSED);
+
 
 
 
@@ -44,16 +41,23 @@ time_compare_less (const struct list_elem *a_, const struct list_elem *b_,
 /* wake up thread in sleep_list and update sleep_list */
 void sleep_list_update(void) {
 	int64_t current_ticks = timer_ticks ();
-	struct list_elem *e;
-	/*go through the sleep list, wake up right ones*/
-	for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
-		 e = list_next (e)) {
-	  struct thread *cur = list_entry (e, struct thread, sleep_elem);
-	  if (cur->wakeup_ticks > current_ticks) break;
-	  list_remove (&cur->sleep_elem);
-	  thread_unblock(cur);
-	}
+	  struct list_elem *e;
+	  for (e = list_begin (&sleep_list); e != list_end (&sleep_list);
+			 e = list_next (e)) {
+		  struct thread *cur = list_entry (e, struct thread, sleep_elem);
+		  if (cur->wakeup_ticks > current_ticks) break;
+		  list_remove (&cur->sleep_elem);
+		  thread_unblock(cur);
+	  }
 }
+
+/*compare func for thread's wakeup_ticks, used for list_insert_ordered*/
+static bool
+time_compare_less (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED);
+
+
+
 
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
@@ -121,15 +125,17 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
+/*//////////////////////////////////////////////
+//  while (timer_elapsed (start) < ticks)
+//    thread_yield ();
+///////////////////////////////////////////////*/
 
-  if(timer_elapsed (start) < ticks){
-	  struct thread *t = thread_current();
-	  enum intr_level old_level = intr_disable ();
-	  t->wakeup_ticks = start + ticks;
-	  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
-	  thread_block();
-	  intr_set_level (old_level);
-  }
+  struct thread *t = thread_current();
+  enum intr_level old_level = intr_disable ();
+  t->wakeup_ticks = start + ticks;
+  list_insert_ordered(&sleep_list, &t->sleep_elem, time_compare_less, NULL);
+  thread_block();
+  intr_set_level (old_level);
 }
 
 /*compare func for thread's wakeup_ticks, used for list_insert_ordered*/
