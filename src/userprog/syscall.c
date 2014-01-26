@@ -8,7 +8,7 @@
 static void syscall_handler (struct intr_frame *);
 
 /*self defined */
-static bool check_if_user_address(const void *pointer, int size);
+static bool is_user_address(const void *pointer, int size);
 void user_exit(int exit_code);
 
 void
@@ -21,7 +21,7 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
  void* esp=f->esp;
- if(!check_if_user_address(esp)){
+ if(!is_user_address(esp, sizeof(void *))){
 	 //TODO: exit with -1, may call process_exit and thread_exit with printf
 	 user_exit(-1);
  }
@@ -71,7 +71,7 @@ void user_exit(int exit_code){
 }
 
 /*judge if the pointer point to a valid space*/
-static bool check_if_user_address(const void *pointer, int size){
+static bool is_user_address(const void *pointer, int size){
 	struct thread cur=thread_current();
 	const void *end_pointer=pointer+size-1;
 	bool result=false;
