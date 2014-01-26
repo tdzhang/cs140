@@ -547,7 +547,7 @@ static void push_args2stack(void **esp,const char *full_line){
 	}
 
 	/*add a marker 0*/
-	push_stack(esp, &zero_int, sizeof(int));
+	push_stack(esp, &zero_int, sizeof(int),esp_limit);
 
 	/*push back the addresses of argv[i] into stack*/
 	for(i=argc-1;i>=0;i--){
