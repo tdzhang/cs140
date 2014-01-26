@@ -53,11 +53,11 @@ process_execute (const char *file_name)
 
   /*parse the file/command name in file_name to cmd*/
   get_cmd(file_name, cmd);
-  cl.file_name=cmd;
-  cl.full_line=fn_copy;
+  cl->file_name=cmd;
+  cl->full_line=fn_copy;
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (cmd, PRI_DEFAULT, start_process, &cl);
+  tid = thread_create (cmd, PRI_DEFAULT, start_process, cl);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
 
