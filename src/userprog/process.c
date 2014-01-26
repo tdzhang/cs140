@@ -40,8 +40,8 @@ tid_t
 process_execute (const char *file_name) 
 {
   char *fn_copy;
-  char cmd[MAXIMUN_FILENAME+1]; /*var for command name*/
-  struct cmd_line cl;
+  char *cmd=malloc((MAXIMUN_FILENAME+1)*sizeof(char)); /*var for command name*/
+  struct cmd_line *cl = malloc(sizeof(struct cmd_line));
   tid_t tid;
 
   /* Make a copy of FILE_NAME.
@@ -60,6 +60,11 @@ process_execute (const char *file_name)
   tid = thread_create (cmd, PRI_DEFAULT, start_process, &cl);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
+
+  /*clean up*/
+  free(cmd);
+  free(cl);
+
   return tid;
 }
 
