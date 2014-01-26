@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/process.h"
+#include "userprog/pagedir.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -27,7 +28,7 @@ syscall_handler (struct intr_frame *f UNUSED)
  }
 
  /*get system call number*/
- int sys_call_num = *esp;
+ int sys_call_num = (int)*esp;
 
  /*switch to specfic system call handler*/
  switch(sys_call_num){
@@ -72,7 +73,7 @@ void user_exit(int exit_code){
 
 /*judge if the pointer point to a valid space*/
 static bool is_user_address(const void *pointer, int size){
-	struct thread cur=thread_current();
+	struct thread *cur=thread_current();
 	const void *end_pointer=pointer+size-1;
 	bool result=false;
 	/*check if pointer is null*/
