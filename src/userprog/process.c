@@ -24,7 +24,7 @@ static bool load (const void *cmdline, void (**eip) (void), void **esp);
 /*self defined*/
 #define MAX_FILE_NAME 14
 static void get_cmd(const char *full_line, char* cmd);
-void push_args2stack(void **esp, char *full_line);
+void push_args2stack(void **esp, const char *full_line);
 void push_stack(void **esp, void *arg, int size);
 
 struct cmd_line {
@@ -498,19 +498,19 @@ install_page (void *upage, void *kpage, bool writable)
 /*parse string full_line to get the first word to string cmd*/
 static void get_cmd(const char *full_line, char* cmd){
 	int i;
-	for(i=0;i<MAXIMUN_FILENAME+1;i++){
+	for(i=0;i<MAX_FILE_NAME+1;i++){
 		if(full_line[i]=='\0'||full_line[i]==' '){
 			cmd[i]='\0';
 			break;
 		}
 		cmd[i]=full_line[i];
 	}
-	ASSERT(i<=MAXIMUN_FILENAME);
+	ASSERT(i<=MAX_FILE_NAME);
 }
 
 
 /*push args into stack*/
-void push_args2stack(void **esp, char *full_line){
+void push_args2stack(void **esp,const char *full_line){
 	char *token, *save_ptr;
 	int argc=0;
 	int i=0;
