@@ -24,8 +24,8 @@ static bool load (const void *cmdline, void (**eip) (void), void **esp);
 /*self defined*/
 #define MAX_FILE_NAME 14
 static void get_cmd(const char *full_line, char* cmd);
-void push_args2stack(void **esp, const char *full_line);
-void push_stack(void **esp, void *arg, int size);
+static void push_args2stack(void **esp, const char *full_line);
+static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
 struct cmd_line {
 	char *file_name;
@@ -509,15 +509,16 @@ static void get_cmd(const char *full_line, char* cmd){
 
 
 /*push args into stack*/
-void push_args2stack(void **esp,const char *full_line){
+static void push_args2stack(void **esp,const char *full_line){
 	char *token, *save_ptr;
 	int argc=0;
 	int i=0;
 	int j=0;
 	uint8_t zero=0;
 	int zero_int=0;
-	ASSERT(1==0);
+
 	//TODO: Need to check overflow: if over 4Kb
+	int esp_limit=(int)(*esp)-PGSIZE;
 
 	/*find out how many args are there*/
 	for (token = strtok_r (full_line, " ", &save_ptr); token != NULL;
@@ -535,14 +536,14 @@ void push_args2stack(void **esp,const char *full_line){
 
 	/*push back the argv[i] content into stack*/
 	for(i=argc-1;i>=0;i--){
-		push_stack(esp, argv[i], strlen(argv[i])+1);
+		push_stack(esp, argv[i], strlen(argv[i])+1,esp_limit);
 		/*update argv[i]*/
 		argv[i]=*esp;
 	}
 
 	/*if the esp is not multiple of 4, push 0 into the stack*/
 	while((int)(*esp) % 4 !=0){
-		push_stack(esp, &zero, sizeof(uint8_t));
+		push_stack(esp, &zero, sizeof(uint8_t),esp_limit);
 	}
 
 	/*add a marker 0*/
@@ -550,22 +551,23 @@ void push_args2stack(void **esp,const char *full_line){
 
 	/*push back the addresses of argv[i] into stack*/
 	for(i=argc-1;i>=0;i--){
-		push_stack(esp, &argv[i], sizeof(char*));
+		push_stack(esp, &argv[i], sizeof(char*),esp_limit);
 	}
 
 	/*push argv*/
 	void *cur_esp=*esp;
-	push_stack(esp, &cur_esp, sizeof(void*));
+	push_stack(esp, &cur_esp, sizeof(void*),esp_limit);
 
 	/*push argc*/
-	push_stack(esp, &argc, sizeof(int));
+	push_stack(esp, &argc, sizeof(int),esp_limit);
 
 	/*push return address*/
-	push_stack(esp, &zero_int, sizeof(int));
+	push_stack(esp, &zero_int, sizeof(int),esp_limit);
 }
 
 /*push data into esp*/
-void push_stack(void **esp, void *arg, int size){
+static void push_stack(void **esp, void *arg, int size, int esp_limit_){
 	*esp=(*esp)-size;
+	ASSERT((int)*(esp)>esp_limit_);
 	memcpy(*esp,arg,size);
 }
