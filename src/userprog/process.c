@@ -49,8 +49,6 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-
-
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (fn_copy, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
@@ -108,6 +106,7 @@ process_wait (tid_t child_tid UNUSED)
 {
 	//TODO: add real implementation
 	while(true);
+
   return -1;
 }
 
@@ -517,6 +516,9 @@ void push_args2stack(void **esp,const char *full_line){
 	int j=0;
 	uint8_t zero=0;
 	int zero_int=0;
+	ASSERT(1==0);
+	//TODO: Need to check overflow: if over 4Kb
+
 	/*find out how many args are there*/
 	for (token = strtok_r (full_line, " ", &save_ptr); token != NULL;
 		token = strtok_r (NULL, " ", &save_ptr)){
