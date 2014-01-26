@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
+static bool load (const void *cmdline, void (**eip) (void), void **esp);
 
 /*self defined*/
 #define MAXIMUN_FILENAME 14
