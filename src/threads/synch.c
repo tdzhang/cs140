@@ -120,13 +120,21 @@ sema_up (struct semaphore *sema)
 
   sema->value++;
   struct thread *t;
+  /*if the waiter list is not empty, find and unblock the waiter
+   * with the highest actual_priority, then remove it form the
+   * waiter list*/
   if (!list_empty (&sema->waiters)) {
 	  t = find_max_actual_priority_thread (&sema->waiters);
   	  list_remove(&t->elem);
   	  thread_unblock (t);
   	  if (t->actual_priority > thread_current()->actual_priority) {
-  		  ASSERT (!intr_context () && 3==3);
-  		  thread_yield();
+  		  /*yield if that thread has higher priority and not
+  		   * in interrupt*/
+  		  if (!intr_context()) {
+  			  thread_yield();
+  		  } else {
+  			intr_yield_on_return();
+  		  }
   	  }
   }
 
@@ -213,27 +221,37 @@ lock_acquire (struct lock *lock)
     enum intr_level old_level;
 
 	old_level = intr_disable ();
+	struct thread *t = thread_current();
 
-	  struct thread *t = thread_current();
-	if (lock->holder != NULL) {
-	  t->wanted_lock = lock;
+	if(!thread_mlfqs){
+		if (lock->holder != NULL) {
+			t->wanted_lock = lock;
 
-	  /* if lock's holder's waited_by_other_lock_list does not have this lock,
-	   * add the lock into its lock list
-	   */
-	  if (!list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
-		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
-	  }
+			/* if lock's holder's waited_by_other_lock_list does not have
+			   this lock, add the lock into its lock list */
+			if (!list_exist(&lock->holder->waited_by_other_lock_list,
+					&lock->lock_elem)) {
+			    list_push_back(&lock->holder->waited_by_other_lock_list,
+					  &lock->lock_elem);
+			}
+			if (t->actual_priority > lock->holder->actual_priority) {
+			  thread_set_actual_priority(lock->holder, t->actual_priority);
+			}
+		}
 	}
 
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
-	if (!list_empty(&lock->semaphore.waiters)) {
-		  list_push_back(&lock->holder->waited_by_other_lock_list, &lock->lock_elem);
+
+	if(!thread_mlfqs){
+		/*if the lock's waiter list is not empty, the new holder need to
+		 * put the lock into its waited_by_other_lock_list*/
+		if (!list_empty(&lock->semaphore.waiters)) {
+				  list_push_back(&lock->holder->waited_by_other_lock_list,
+						  &lock->lock_elem);
+		}
+		t->wanted_lock = NULL;
 	}
-	t->wanted_lock = NULL;
-
-
     intr_set_level (old_level);
 
 }
@@ -256,7 +274,9 @@ lock_try_acquire (struct lock *lock)
   struct thread *cur;
   if (success) {
 	cur = thread_current ();
-	cur->wanted_lock = NULL;
+	if(!thread_mlfqs){
+		cur->wanted_lock = NULL;
+	}
     lock->holder = cur;
   }
   return success;
@@ -277,9 +297,25 @@ lock_release (struct lock *lock)
 
   old_level = intr_disable ();
 
-  if (list_exist(&lock->holder->waited_by_other_lock_list, &lock->lock_elem)) {
-      list_remove(&lock->lock_elem);
+  struct thread *cur_lock_holder = lock->holder;
+  if(!thread_mlfqs){
+	  /*remove the lock from the old_holder's waited_by_other_lock_list*/
+	  if (list_exist(&cur_lock_holder->waited_by_other_lock_list,
+			  &lock->lock_elem)) {
+		  list_remove(&lock->lock_elem);
+	  }
+
+	  /*remove the donation effect of that lock for the old lock holder*/
+	  int max_act_prior = find_max_actual_priority(
+			  &cur_lock_holder->waited_by_other_lock_list);
+	  if (max_act_prior > cur_lock_holder->priority) {
+		  thread_set_actual_priority(cur_lock_holder, max_act_prior);
+	  } else {
+		  thread_set_actual_priority(cur_lock_holder,
+				  cur_lock_holder->priority);
+	  }
   }
+
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
@@ -398,7 +434,7 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 static struct thread *find_max_actual_priority_thread(struct list *list){
 	struct list_elem *e;
 	struct thread *t;
-	struct thread *max_t;
+	struct thread *max_t=NULL;
 	int max_priority = -1;
 
 	ASSERT (intr_get_level () == INTR_OFF);
@@ -418,9 +454,9 @@ static struct thread *find_max_actual_priority_thread(struct list *list){
 /* find and pop the semaphore waited by max actual priority thread */
 static struct semaphore *pop_sema_for_max_act_prior_t(struct list *list){
 	struct list_elem *e;
-	struct list_elem *e_need2remove;
+	struct list_elem *e_need2remove=NULL;
 	struct semaphore *sema;
-	struct semaphore *max_sema;
+	struct semaphore *max_sema=NULL;
 	struct thread *t;
 	int max_priority = -1;
 

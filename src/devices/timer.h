@@ -26,8 +26,6 @@ void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
 
-/*self defined func*/
-
 /* wake up thread in sleep_list and update sleep_list */
 void sleep_list_update (void);
 
