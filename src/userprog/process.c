@@ -108,7 +108,7 @@ start_process (void *fn_copy)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-	//TODO: add real implementation
+	int exit_code = 0;
 	struct thread * cur=thread_current();
 	struct list_elem *e=NULL;
 	struct wait_info_block *wib=NULL;
@@ -117,33 +117,42 @@ process_wait (tid_t child_tid UNUSED)
 
 	/*check if it is the child of current process*/
 	for (e = list_begin (&cur->child_wait_block_list); e != list_end
-		 (&cur->child_wait_block_list); e = list_next (e))
-	  {
+		 (&cur->child_wait_block_list); e = list_next (e)) {
 	    wib = list_entry (e, struct wait_info_block, elem);
 	    if (wib->tid == child_tid){
 	    		element_found=true;
 	    		break;
 	    }
-	  }
+	}
 
 	/*return -1 if the tid is not a child of cur*/
 	if(!element_found){
 		return -1;
 	}
 
-	if(!wib->called_before){
-		/*if not */
-		wib->called_before=true;
+	/*return -1 if terminated by kernel*/
+	if (wib->exit_code == -1) {
+		return -1;
 	}
-	else{
 
+	lock_acquire(&wib->l);
+	/*wait for child process to die*/
+	while(wib->t != NULL) {
+		cond_wait(&wib->c, &wib->l);
 	}
+
+	exit_code = wib->exit_code;
+
+	/*free wait_info_block*/
+	list_remove(&wib->elem);
+	ASSERT(wib->t == NULL);
+	lock_release(&wib->l);
+
+	free(wib);
+
 	intr_set_level (old_level);
 
-
-	//TODO: see if the tid is current process's child, if not return -1
-
-	return -1;
+	return exit_code;
 }
 
 /* Free the current process's resources. */
@@ -153,20 +162,31 @@ process_exit (void)
   struct thread *cur = thread_current ();
   struct wait_info_block *wib = cur->wait_info;
   uint32_t *pd;
+  struct list_elem *e;
 
   //TODO: close files
 
   /*update wait_info_block*/
   ASSERT(wib != NULL);
-  lock_acquire(wib->l);
+  lock_acquire(&wib->l);
   wib->exit_code = cur->exit_code;
   wib->t = NULL;
-  cond_signal(wib->c, wib->l);
-  lock_release(wib->l);
+  cond_signal(&wib->c, &wib->l);
+  lock_release(&wib->l);
 
   /*terminate children process*/
-  //TODO:
+  struct list *child_list = &cur->child_wait_block_list;
+  while(!list_empty(child_list)) {
+	  wib = list_entry (list_pop_front(child_list), struct wait_info_block, elem);
 
+	  lock_acquire(&wib->l);
+	  list_remove(&wib->elem);
+	  if (wib->t != NULL) {
+		  wib->t->wait_info_block = NULL;
+	  }
+	  lock_release(&wib->l);
+	  free(wib);
+  }
 
   //TODO: allow write to cmd_file again
 
@@ -636,7 +656,6 @@ bool init_wait_info_block(struct thread *t) {
 	lock_init(&wib->l);
 	cond_init(&wib->c);
 	wib->exit_code = 0;
-	wib->called_before=false;
 	/*add wib in current thread's child_wait_block_list*/
 	list_push_back(&thread_current()->child_wait_block_list, &wib->elem);
 	return true;
