@@ -111,7 +111,7 @@ process_wait (tid_t child_tid UNUSED)
 	//TODO: add real implementation
 	while(true);
 
-  return -1;
+	return -1;
 }
 
 /* Free the current process's resources. */
@@ -119,7 +119,24 @@ void
 process_exit (void)
 {
   struct thread *cur = thread_current ();
+  struct wait_info_block *wib = cur->wait_info;
   uint32_t *pd;
+
+  //TODO: close files
+
+  /*update wait_info_block*/
+  ASSERT(wib != NULL);
+  lock_acquire(wib->l);
+  wib->exit_code = cur->exit_code;
+  wib->t = NULL;
+  cond_signal(wib->c, wib->l);
+  lock_release(wib->l);
+
+  /*terminate children process*/
+  //TODO:
+
+
+  //TODO: allow write to cmd_file again
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -574,4 +591,20 @@ static void push_stack(void **esp, void *arg, int size, int esp_limit_){
 	*esp=(*esp)-size;
 	ASSERT((int)*(esp)>esp_limit_);
 	memcpy(*esp,arg,size);
+}
+
+/*malloc init wait_info_block*/
+bool init_wait_info_block(struct thread *t) {
+	struct wait_info_block *wib = malloc(sizeof(struct wait_info_block));
+	/*if malloc failed, return false*/
+	if (wib == NULL) return false;
+	t->wait_info = wib;
+	wib->t = t;
+	wib->tid = t->tid;
+	lock_init(&wib->l);
+	cond_init(&wib->c);
+	wib->exit_code = 0;
+	/*add wib in current thread's child_wait_block_list*/
+	list_push_back(&thread_current()->child_wait_block_list, &wib->elem);
+	return true;
 }

@@ -3,6 +3,15 @@
 
 #include "threads/thread.h"
 
+struct wait_info_block {
+	tid_t tid;               /*thread's tid*/
+	struct thread *t;        /*pointer to thread*/
+	int exit_code;           /*code for exit status*/
+	struct list_elem elem;   /*list elem for children list of its parent*/
+	struct lock l;           /*lock for this struct itself*/
+	struct cond c;           /*cond for wait from the parent*/
+};
+
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
 void process_exit (void);

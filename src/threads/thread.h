@@ -125,6 +125,8 @@ struct thread
 
     int exit_code;              /*the status code when exit*/
     bool is_user;      /*indicator for user thread*/
+    struct wait_info_block *wait_info; /*wait_info_block for this thread*/
+    struct list child_wait_block_list;  /*list of wait_info_block of its children*/
 #endif
 
     /* Owned by thread.c. */
