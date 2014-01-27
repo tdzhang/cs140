@@ -10,7 +10,7 @@ struct wait_info_block {
 	int exit_code;           /*code for exit status*/
 	struct list_elem elem;   /*list elem for children list of its parent*/
 	struct lock l;           /*lock for this struct itself*/
-	struct cond c;           /*cond for wait from the parent*/
+	struct condition c;      /*cond for wait from the parent*/
 };
 
 tid_t process_execute (const char *file_name);
