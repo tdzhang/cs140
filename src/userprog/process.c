@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const void *cmdline, void (**eip) (void), void **esp);
@@ -162,7 +163,6 @@ process_exit (void)
   struct thread *cur = thread_current ();
   struct wait_info_block *wib = cur->wait_info;
   uint32_t *pd;
-  struct list_elem *e;
 
   //TODO: close files
 
@@ -182,7 +182,7 @@ process_exit (void)
 	  lock_acquire(&wib->l);
 	  list_remove(&wib->elem);
 	  if (wib->t != NULL) {
-		  wib->t->wait_info_block = NULL;
+		  wib->t->wait_info = NULL;
 	  }
 	  lock_release(&wib->l);
 	  free(wib);
