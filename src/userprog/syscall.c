@@ -45,7 +45,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_EXEC:
 		sys_exec_handler(f);
 		break;
-	case SYS_WAIT:break;
+	case SYS_WAIT:
+		//TODO: handler
+		break;
 	case SYS_CREATE:break;
 	case SYS_REMOVE:break;
 	case SYS_OPEN:break;
