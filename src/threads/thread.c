@@ -603,6 +603,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->actual_priority = priority;
   list_init(&t->waited_by_other_lock_list);
+#ifdef USERPROG
+  list_init(&t->child_wait_block_list);
+#endif
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();

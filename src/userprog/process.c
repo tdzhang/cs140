@@ -657,6 +657,9 @@ bool init_wait_info_block(struct thread *t) {
 	cond_init(&wib->c);
 	wib->exit_code = 0;
 	/*add wib in current thread's child_wait_block_list*/
-	list_push_back(&thread_current()->child_wait_block_list, &wib->elem);
+	struct thread *cur = thread_current();
+	if (cur != t) {
+		list_push_back(&cur->child_wait_block_list, &wib->elem);
+	}
 	return true;
 }
