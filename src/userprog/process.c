@@ -109,7 +109,39 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
 	//TODO: add real implementation
-	while(true);
+	struct thread * cur=thread_current();
+	struct list_elem *e=NULL;
+	struct wait_info_block *wib=NULL;
+	bool element_found=false;
+	enum intr_level old_level = intr_disable ();
+
+	/*check if it is the child of current process*/
+	for (e = list_begin (&cur->child_wait_block_list); e != list_end
+		 (&cur->child_wait_block_list); e = list_next (e))
+	  {
+	    wib = list_entry (e, struct wait_info_block, elem);
+	    if (wib->tid == child_tid){
+	    		element_found=true;
+	    		break;
+	    }
+	  }
+
+	/*return -1 if the tid is not a child of cur*/
+	if(!element_found){
+		return -1;
+	}
+
+	if(!wib->called_before){
+		/*if not */
+		wib->called_before=true;
+	}
+	else{
+
+	}
+	intr_set_level (old_level);
+
+
+	//TODO: see if the tid is current process's child, if not return -1
 
 	return -1;
 }
@@ -604,6 +636,7 @@ bool init_wait_info_block(struct thread *t) {
 	lock_init(&wib->l);
 	cond_init(&wib->c);
 	wib->exit_code = 0;
+	wib->called_before=false;
 	/*add wib in current thread's child_wait_block_list*/
 	list_push_back(&thread_current()->child_wait_block_list, &wib->elem);
 	return true;

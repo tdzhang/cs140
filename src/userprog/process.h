@@ -10,6 +10,7 @@ struct wait_info_block {
 	struct list_elem elem;   /*list elem for children list of its parent*/
 	struct lock l;           /*lock for this struct itself*/
 	struct cond c;           /*cond for wait from the parent*/
+	bool called_before;      /*true if already been waited*/
 };
 
 tid_t process_execute (const char *file_name);
