@@ -2,6 +2,7 @@
 #define USERPROG_PROCESS_H
 
 #include "threads/thread.h"
+#include "threads/synch.h"
 
 struct wait_info_block {
 	tid_t tid;               /*thread's tid*/
