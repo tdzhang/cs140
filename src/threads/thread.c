@@ -243,13 +243,13 @@ thread_create (const char *name, int priority,
     t->is_user=false;      /*indicator for user thread*/
 
     /*init t's child_wait_block_list*/
-    list_init(t.child_wait_block_list);
+    list_init(&t->child_wait_block_list);
     /*alloc wait_info_block*/
     bool success = init_wait_info_block(t);
     /*if failed to init, free the page of t and return error*/
     if (!success) {
     		palloc_free_page (t);
-    		return TID_ERROR
+    		return TID_ERROR;
     }
 #endif
 
