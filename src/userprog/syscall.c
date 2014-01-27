@@ -111,16 +111,10 @@ void sys_exit_handler(struct intr_frame *f){
 /*user process exit with exit_code*/
 void user_exit(int exit_code){
 	struct thread* cur=thread_current();
-	char cmd[MAX_FILE_NAME+2];
+
 	cur->exit_code = exit_code;
-	get_cmd(cur->name, cmd);
 
 	//TODO: handling user process's file handler
-
-	/*print out termination msg for grading use*/
-	if (cur->is_user){
-		printf ("%s: exit(%d)\n", cmd, cur->exit_code);
-	}
 
 	thread_exit();
 }

@@ -163,6 +163,14 @@ process_exit (void)
   struct thread *cur = thread_current ();
   struct wait_info_block *wib = cur->wait_info;
   uint32_t *pd;
+  char cmd[MAX_FILE_NAME+2];
+
+  /*print out the exit info*/
+	/*print out termination msg for grading use*/
+	if (cur->is_user){
+		get_cmd(cur->name, cmd);
+		printf ("%s: exit(%d)\n", cmd, cur->exit_code);
+	}
 
   //TODO: close files
 
