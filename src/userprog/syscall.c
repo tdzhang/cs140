@@ -15,6 +15,7 @@ void user_exit(int exit_code);
 void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
 void sys_exec_handler(struct intr_frame *f);
+void sys_wait_handler(struct intr_frame *f)
 
 void
 syscall_init (void) 
@@ -47,6 +48,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		break;
 	case SYS_WAIT:
 		//TODO: handler
+		sys_wait_handler(f);
 		break;
 	case SYS_CREATE:break;
 	case SYS_REMOVE:break;
@@ -108,6 +110,21 @@ void sys_exit_handler(struct intr_frame *f){
 	int *exit_code=((int *)esp)+1;
 	/*exit with exit code*/
 	user_exit(*exit_code);
+}
+
+/*handle sys_wait*/
+void sys_wait_handler(struct intr_frame *f){
+	void* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void *))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *arg=((int *)esp)+1;
+	/*call process wait and update return value*/
+	f->eax=process_wait(*arg);
 }
 
 /*user process exit with exit_code*/
