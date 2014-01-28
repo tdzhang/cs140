@@ -26,9 +26,9 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+//TODO:may need to check string address
  void* esp=f->esp;
- if(!is_user_address(esp, sizeof(void *))){
-	 //TODO: exit with -1, may call process_exit and thread_exit with printf
+ if(!is_user_address(esp, 1)){
 	 user_exit(-1);
  }
 
@@ -55,7 +55,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_OPEN:break;
 	case SYS_FILESIZE:break;
 	case SYS_READ:break;
-	case SYS_WRITE:break;
+	case SYS_WRITE:
+		sys_write_handler(f);
+		break;
 	case SYS_SEEK:break;
 	case SYS_TELL:break;
 	case SYS_CLOSE:break;
@@ -72,7 +74,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 void sys_exec_handler(struct intr_frame *f){
 	void* esp=f->esp;
 	/*validat the 1st argument*/
-	if(!is_user_address(esp+1, sizeof(void *))){
+	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
@@ -101,7 +103,7 @@ void sys_halt_handler(struct intr_frame *f){
 void sys_exit_handler(struct intr_frame *f){
 	void* esp=f->esp;
 	/*validat the 1st argument*/
-	if(!is_user_address(esp+1, sizeof(void *))){
+	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
@@ -116,7 +118,7 @@ void sys_exit_handler(struct intr_frame *f){
 void sys_wait_handler(struct intr_frame *f){
 	void* esp=f->esp;
 	/*validate the 1st argument*/
-	if(!is_user_address(esp+1, sizeof(void *))){
+	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
@@ -125,6 +127,50 @@ void sys_wait_handler(struct intr_frame *f){
 	int *arg=((int *)esp)+1;
 	/*call process wait and update return value*/
 	f->eax=process_wait(*arg);
+}
+
+/*handle sys_write*/
+void sys_write_handler(struct intr_frame *f){
+	void* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, 1)){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+2, 1)){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*validate the 3rd argument*/
+	if(!is_user_address(esp+3, 1)){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *fd_ptr=(int *)(esp+1);
+	char *buffer=*(char **)(esp+2);
+	int *size_ptr=(int *)(esp+3);
+
+	/*verify whole buffer*/
+	if(!is_user_address(buffer, *size_ptr)){
+			 /* exit with -1*/
+			 user_exit(-1);
+			 return;
+	}
+
+	/*handle if fd==1, which is write to console*/
+	if(*fd_ptr==1){
+		putbuf(buffer,*size_ptr);
+		/*handle return value*/
+		f->eax= *size_ptr;
+	}
+
+	//TODO: other normal file write
+
 }
 
 /*user process exit with exit_code*/
@@ -141,7 +187,10 @@ void user_exit(int exit_code){
 /*judge if the pointer point to a valid space*/
 static bool is_user_address(const void *pointer, int size){
 	struct thread *cur=thread_current();
+	uint32_t address=pointer;
 	const void *end_pointer=pointer+size-1;
+	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
+	int i;
 	bool result=false;
 	/*check if pointer is null*/
 	if(pointer==NULL){
@@ -154,7 +203,14 @@ static bool is_user_address(const void *pointer, int size){
 	}
 
 	/*check if the address is mapped*/
-	result=pagedir_get_page (cur->pagedir, pointer)!=NULL;
+	for(i=0;i<page_range;i++){
+		result=pagedir_get_page (cur->pagedir, pointer+i*PGSIZE)!=NULL;
+		if(!result){
+			/*if unmapped, return false*/
+			return false;
+		}
+	}
+	result=pagedir_get_page (cur->pagedir, end_pointer)!=NULL;
 
     return result;
 }
