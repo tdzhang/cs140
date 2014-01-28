@@ -30,7 +30,7 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
 //TODO:may need to check string address
- void* esp=f->esp;
+ uint32_t* esp=f->esp;
  if(!is_user_address(esp, 1)){
 	 user_exit(-1);
  }
@@ -75,8 +75,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 /*handle sys_exec*/
 void sys_exec_handler(struct intr_frame *f){
-	void* esp=f->esp;
-	/*validat the 1st argument*/
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
 		 user_exit(-1);
@@ -104,7 +104,7 @@ void sys_halt_handler(struct intr_frame *f){
 
 /*handle sys_exit*/
 void sys_exit_handler(struct intr_frame *f){
-	void* esp=f->esp;
+	uint32_t* esp=f->esp;
 	/*validat the 1st argument*/
 	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
@@ -119,7 +119,7 @@ void sys_exit_handler(struct intr_frame *f){
 
 /*handle sys_wait*/
 void sys_wait_handler(struct intr_frame *f){
-	void* esp=f->esp;
+	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
@@ -134,7 +134,7 @@ void sys_wait_handler(struct intr_frame *f){
 
 /*handle sys_write*/
 void sys_write_handler(struct intr_frame *f){
-	void* esp=f->esp;
+	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, 1)){
 		 /* exit with -1*/
