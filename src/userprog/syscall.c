@@ -159,12 +159,13 @@ void sys_write_handler(struct intr_frame *f){
 	int *size_ptr=(int *)(esp+3);
 
 	/*verify whole buffer*/
+	/*
 	if(!is_user_address(buffer, *size_ptr)){
-			 /* exit with -1*/
+
 			 user_exit(-1);
 			 return;
 	}
-
+*/
 	/*handle if fd==1, which is write to console*/
 	if(*fd_ptr==1){
 		putbuf(buffer,*size_ptr);
