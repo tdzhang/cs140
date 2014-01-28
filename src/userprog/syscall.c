@@ -221,8 +221,8 @@ static bool is_user_address(const void *pointer, int size){
 /*check if page mapped*/
 bool is_page_mapped (void *uaddr_){
 	uint8_t *uaddr = (uint8_t *)uaddr_;
-
-	return get_user(uaddr) != -1;
+	int byte_value= get_user(uaddr);
+	return  byte_value!= -1;
 }
 
 
