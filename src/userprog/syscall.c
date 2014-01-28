@@ -8,9 +8,12 @@
 #include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
+static int get_user (const uint8_t *uaddr);
+static bool put_user (uint8_t *udst, uint8_t byte);
 
 /*self defined */
 static bool is_user_address(const void *pointer, int size);
+bool is_page_mapped (void *uaddr_);
 void user_exit(int exit_code);
 void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
@@ -191,7 +194,7 @@ static bool is_user_address(const void *pointer, int size){
 	const void *end_pointer=pointer+size-1;
 	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
 	int i;
-	bool result=false;
+	bool mapped=false;
 	/*check if pointer is null*/
 	if(pointer==NULL){
 		return false;
@@ -204,13 +207,46 @@ static bool is_user_address(const void *pointer, int size){
 
 	/*check if the address is mapped*/
 	for(i=0;i<page_range;i++){
-		result=pagedir_get_page (cur->pagedir, pointer+i*PGSIZE)!=NULL;
-		if(!result){
+		mapped = is_page_mapped(pointer+i*PGSIZE);
+		if(!mapped){
 			/*if unmapped, return false*/
 			return false;
 		}
 	}
-	result=pagedir_get_page (cur->pagedir, end_pointer)!=NULL;
 
-    return result;
+	return is_page_mapped(end_pointer);
+}
+
+
+/*check if page mapped*/
+bool is_page_mapped (void *uaddr_){
+	uint8_t *uaddr = (uint8_t *)uaddr_;
+
+	return get_user(uaddr) != -1;
+}
+
+
+/* Reads a byte at user virtual address UADDR.
+   UADDR must be below PHYS_BASE.
+   Returns the byte value if successful, -1 if a segfault
+   occurred. */
+static int
+get_user (const uint8_t *uaddr)
+{
+  int result;
+  asm ("movl $1f, %0; movzbl %1, %0; 1:"
+       : "=&a" (result) : "m" (*uaddr));
+  return result;
+}
+
+/* Writes BYTE to user address UDST.
+   UDST must be below PHYS_BASE.
+   Returns true if successful, false if a segfault occurred. */
+static bool
+put_user (uint8_t *udst, uint8_t byte)
+{
+  int error_code;
+  asm ("movl $1f, %0; movb %b2, %1; 1:"
+       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
+  return error_code != -1;
 }
