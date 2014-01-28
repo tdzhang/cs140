@@ -67,7 +67,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 	default:break;
  }
 
-  printf ("system call!\n");
 }
 
 /*self defined*/
