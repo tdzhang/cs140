@@ -31,7 +31,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 //TODO:may need to check string address
  uint32_t* esp=f->esp;
- if(!is_user_address(esp, 1)){
+ if(!is_user_address((void*)esp, sizeof(void *))){
 	 user_exit(-1);
  }
 
@@ -77,14 +77,16 @@ syscall_handler (struct intr_frame *f UNUSED)
 void sys_exec_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
-	if(!is_user_address(esp+1, 1)){
+	if(!is_user_address(esp+1, sizeof(void **))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	 }
 
+	//TODO: verify string
+
 	/*get the full_line command*/
-	char *full_line=(char *)esp+1;
+	char *full_line=(char *)(esp+1);
 	/*execute*/
 	tid_t tid=process_execute(full_line);
 	/*handle return value*/
@@ -106,13 +108,13 @@ void sys_halt_handler(struct intr_frame *f){
 void sys_exit_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validat the 1st argument*/
-	if(!is_user_address(esp+1, 1)){
+	if(!is_user_address(esp+1, sizeof(int))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	 }
 
-	int *exit_code=((int *)esp)+1;
+	int *exit_code=(int *)(esp+1);
 	/*exit with exit code*/
 	user_exit(*exit_code);
 }
@@ -121,13 +123,13 @@ void sys_exit_handler(struct intr_frame *f){
 void sys_wait_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
-	if(!is_user_address(esp+1, 1)){
+	if(!is_user_address(esp+1, sizeof(int))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	 }
 
-	int *arg=((int *)esp)+1;
+	int *arg=(int *)(esp+1);
 	/*call process wait and update return value*/
 	f->eax=process_wait(*arg);
 }
@@ -136,19 +138,19 @@ void sys_wait_handler(struct intr_frame *f){
 void sys_write_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
-	if(!is_user_address(esp+1, 1)){
+	if(!is_user_address(esp+1, sizeof(int))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	 }
 	/*validate the 2nd argument*/
-	if(!is_user_address(esp+2, 1)){
+	if(!is_user_address(esp+2, sizeof(void **))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	 }
 	/*validate the 3rd argument*/
-	if(!is_user_address(esp+3, 1)){
+	if(!is_user_address(esp+3, sizeof(int))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
@@ -159,13 +161,12 @@ void sys_write_handler(struct intr_frame *f){
 	int *size_ptr=(int *)(esp+3);
 
 	/*verify whole buffer*/
-	/*
-	if(!is_user_address(buffer, *size_ptr)){
 
+	if(!is_user_address((void *)buffer, *size_ptr)){
 			 user_exit(-1);
 			 return;
 	}
-*/
+
 	/*handle if fd==1, which is write to console*/
 	if(*fd_ptr==1){
 		putbuf(buffer,*size_ptr);
