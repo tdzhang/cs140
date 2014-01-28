@@ -15,7 +15,7 @@ void user_exit(int exit_code);
 void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
 void sys_exec_handler(struct intr_frame *f);
-void sys_wait_handler(struct intr_frame *f)
+void sys_wait_handler(struct intr_frame *f);
 
 void
 syscall_init (void) 
