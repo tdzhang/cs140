@@ -93,8 +93,8 @@ start_process (void *lib_)
   sema_up(&lib->sema_loaded);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
-  if (!success) 
+  if (!success)
+	cur->exit_code = -1;
     thread_exit ();
 
   /* Start the user process by simulating a return from an
