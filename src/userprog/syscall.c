@@ -198,7 +198,6 @@ void user_exit(int exit_code){
 static bool is_user_address(const void *pointer, int size){
 	uint32_t address=pointer;
 	const void *end_pointer=pointer+size-1;
-	int start_page=address/PGSIZE;
 	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
 	int i;
 	bool mapped=false;
@@ -213,15 +212,15 @@ static bool is_user_address(const void *pointer, int size){
 	}
 
 	/*check if the address is mapped*/
-	for(i=start_page;i<=start_page+page_range;i++){
-		mapped = is_page_mapped(i*PGSIZE);
+	for(i=0;i<page_range;i++){
+		mapped = is_page_mapped(pointer+i*PGSIZE);
 		if(!mapped){
 			/*if unmapped, return false*/
 			return false;
 		}
 	}
 
-	return true;
+	return is_page_mapped(end_pointer);
 }
 
 
