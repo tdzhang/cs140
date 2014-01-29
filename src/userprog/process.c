@@ -20,7 +20,7 @@
 #include "threads/malloc.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (const void *cmdline, void (**eip) (void), void **esp);
+static bool load (void *lib_, void (**eip) (void), void **esp);
 
 /*self defined*/
 static void push_args2stack(void **esp, const char *full_line);
@@ -69,6 +69,7 @@ static void
 start_process (void *lib_)
 {
   struct load_info_block *lib = (struct load_info_block *) lib_;
+  char *file_name = lib->full_line;
   struct intr_frame if_;
   struct thread *cur=thread_current();
   bool success;
@@ -81,7 +82,7 @@ start_process (void *lib_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (lib->full_line, &if_.eip, &if_.esp);
+  success = load (lib, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -307,7 +308,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const void *lib_, void (**eip) (void), void **esp)
+load (void *lib_, void (**eip) (void), void **esp)
 {
   const struct load_info_block *lib = lib_;
   const char *fn_copy=lib->full_line;
@@ -422,7 +423,6 @@ load (const void *lib_, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  lib->success = success;
   file_close (file);
   return success;
 }
