@@ -53,13 +53,19 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (fn_copy, PRI_DEFAULT, start_process, lib);
+
+  sema_down(&lib->sema_loaded);
+
+  if (!lib->success) {
+	  tid = TID_ERROR;
+  }
+
   if (tid == TID_ERROR) {
 	  palloc_free_page (fn_copy);
   }
 
   /*clean up*/
-  /*free(lib);*/
-
+  free(lib);
   return tid;
 }
 
@@ -83,6 +89,8 @@ start_process (void *lib_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (lib, &if_.eip, &if_.esp);
+  lib->success = success;
+  sema_up(&lib->sema_loaded);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
