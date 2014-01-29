@@ -13,14 +13,6 @@ struct wait_info_block {
 	struct condition c;      /*cond for wait from the parent*/
 };
 
-/*load info struct used for process_execute*/
-struct load_info_block{
-	char * full_line;   /*full command line string*/
-	struct semaphore sema_loaded; /*semaphore used to load thread*/
-	bool success; /*whether the thread is loaded successfully*/
-
-};
-
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
 void process_exit (void);

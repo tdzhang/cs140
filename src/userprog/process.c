@@ -20,11 +20,16 @@
 #include "threads/malloc.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (void *lib_, void (**eip) (void), void **esp);
+static bool load (const void *cmdline, void (**eip) (void), void **esp);
 
 /*self defined*/
 static void push_args2stack(void **esp, const char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
+
+struct cmd_line {
+	char *file_name;
+	char *full_line;
+};
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -45,20 +50,14 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  struct load_info_block *lib = malloc(sizeof(struct load_info_block));
-  /*initialize load_info_block*/
-  lib->full_line = fn_copy;
-  sema_init(&lib->sema_loaded, 0);
-  lib->success = false;
-
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (fn_copy, PRI_DEFAULT, start_process, lib);
-  if (tid == TID_ERROR) {
-	  palloc_free_page (fn_copy);
-  }
+  tid = thread_create (fn_copy, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR)
+    palloc_free_page (fn_copy); 
 
   /*clean up*/
-  free(lib);
+  /*free(cmd);*/
+  /*free(cl);*/
 
   return tid;
 }
@@ -66,10 +65,9 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *lib_)
+start_process (void *fn_copy)
 {
-  struct load_info_block *lib = (struct load_info_block *) lib_;
-  char *file_name = lib->full_line;
+  char *file_name = fn_copy;
   struct intr_frame if_;
   struct thread *cur=thread_current();
   bool success;
@@ -82,7 +80,7 @@ start_process (void *lib_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (lib, &if_.eip, &if_.esp);
+  success = load (fn_copy, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -308,10 +306,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (void *lib_, void (**eip) (void), void **esp)
+load (const void *fn_copy_, void (**eip) (void), void **esp)
 {
-  const struct load_info_block *lib = lib_;
-  const char *fn_copy=lib->full_line;
+  const char *fn_copy=fn_copy_;
   char file_name[MAX_FILE_NAME+1];
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
