@@ -610,7 +610,9 @@ static void push_args2stack(void **esp,const char *full_line){
 	/*updates argv according to argc*/
 	char* argv[argc];
 	for(i=0;i<argc;i++){
-		while(full_line[j]=='\0'){j++;}
+		while(full_line[j]=='\0'||full_line[j]==' '){
+			j++;
+		}
 		argv[i]=&full_line[j];
 		while(full_line[j]!='\0'){j++;}
 	}
