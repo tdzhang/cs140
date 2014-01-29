@@ -15,7 +15,6 @@ static bool put_user (uint8_t *udst, uint8_t byte);
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 bool is_page_mapped (void *uaddr_);
-void user_exit(int exit_code);
 void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
 void sys_exec_handler(struct intr_frame *f);
