@@ -48,7 +48,7 @@ process_execute (const char *file_name)
   struct load_info_block *lib = malloc(sizeof(struct load_info_block));
   /*initialize load_info_block*/
   lib->full_line = fn_copy;
-  sema_init(&lib->sema_loaded);
+  sema_init(&lib->sema_loaded, 0);
   lib->success = false;
 
   /* Create a new thread to execute FILE_NAME. */
