@@ -13,12 +13,14 @@ static bool put_user (uint8_t *udst, uint8_t byte);
 
 /*self defined */
 static bool is_user_address(const void *pointer, int size);
+static bool is_string_address_valid(const void *pointer);
 bool is_page_mapped (void *uaddr_);
 void user_exit(int exit_code);
 void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
 void sys_exec_handler(struct intr_frame *f);
 void sys_wait_handler(struct intr_frame *f);
+
 
 void
 syscall_init (void) 
@@ -81,10 +83,15 @@ void sys_exec_handler(struct intr_frame *f){
 		 return;
 	 }
 
-	//TODO: verify string
-
 	/*get the full_line command*/
-	char *full_line=(char *)(esp+1);
+	char *full_line=*(char **)(esp+1);
+
+	/*verify string address*/
+	if(!is_string_address_valid(full_line)){
+		user_exit(-1);
+		return;
+	}
+
 	/*execute*/
 	tid_t tid=process_execute(full_line);
 	/*handle return value*/
@@ -189,7 +196,6 @@ void user_exit(int exit_code){
 
 /*judge if the pointer point to a valid space*/
 static bool is_user_address(const void *pointer, int size){
-	struct thread *cur=thread_current();
 	uint32_t address=pointer;
 	const void *end_pointer=pointer+size-1;
 	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
@@ -217,6 +223,41 @@ static bool is_user_address(const void *pointer, int size){
 	return is_page_mapped(end_pointer);
 }
 
+
+/*judge if the a string's address is valid*/
+static bool is_string_address_valid(const void *pointer){
+	char *str=(char *)pointer;
+	int byte_value;
+	int i;
+	bool mapped=false;
+	/*check if pointer is null*/
+	if(str==NULL){
+		return false;
+	}
+
+	/*1 by 1 check each char's address*/
+	while(true){
+		/*if over the user's space return*/
+		if(!is_user_vaddr(str)){
+			return false;
+		}
+
+		/*if unmmaped return*/
+		byte_value= get_user(str);
+		if(byte_value==-1){
+			return false;
+		}
+
+		/*if reached the end of the string, return true*/
+		if(byte_value==0){
+			return true;
+		}
+		str++;
+	}
+
+	/*dummy return, never called*/
+	return true;
+}
 
 /*check if page mapped*/
 bool is_page_mapped (void *uaddr_){
