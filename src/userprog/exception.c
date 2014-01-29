@@ -153,6 +153,9 @@ page_fault (struct intr_frame *f)
 
 
   printf("user=%d",user);
+  struct thread *cur=thread_current();
+  printf("is_user=%d",cur->is_user);
+
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
