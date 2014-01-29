@@ -93,10 +93,10 @@ start_process (void *lib_)
   sema_up(&lib->sema_loaded);
 
   /* If load failed, quit. */
-  if (!success)
+  if (!success) {
 	cur->exit_code = -1;
     thread_exit ();
-
+  }
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
