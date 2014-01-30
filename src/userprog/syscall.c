@@ -31,7 +31,7 @@ struct global_file_block {
 	block_sector_t inode_block_num; /*identification for file*/
 	int ref_num;                   /*the number of threads holding this file*/
 	bool is_deleted;               /*indicates the file is to be removed*/
-	struct list_elem elem;         /*list elem for file_list*/
+	struct list_elem elem;         /*list elem for global_file_list*/
 };
 
 struct list global_file_list;             /*List of all opened files*/
@@ -40,7 +40,7 @@ struct list global_file_list;             /*List of all opened files*/
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (void *uaddr_);
-static struct global_file_block *find_opened_file(struct list* l, block_sector_t s);
+static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
