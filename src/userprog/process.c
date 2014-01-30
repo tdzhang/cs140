@@ -175,6 +175,10 @@ process_exit (void)
   uint32_t *pd;
   char cmd[MAX_FILE_NAME+2];
 
+  /*close exec_file and allow to write it again*/
+  file_allow_write(cur->exec_file_ptr);
+  file_close (cur->exec_file_ptr);
+
   /*print out the exit info*/
 	/*print out termination msg for grading use*/
 	if (cur->is_user){
@@ -344,7 +348,11 @@ load (void *lib_, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+
+  /*add exec_file_ptr and deny write operation to it*/
+  t->exec_file_ptr=file;
   file_deny_write (file);
+
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -431,7 +439,7 @@ load (void *lib_, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  /*file_close (file);*/
   return success;
 }
 

@@ -129,6 +129,7 @@ struct thread
     struct list child_wait_block_list;  /*list of wait_info_block of its children*/
     struct list opened_file_list;       /*list of files this thread opened*/
     int next_fd_num;                    /*next fd number for this thread locally*/
+    struct file* exec_file_ptr;  /*the file which is the excutable file for this thread*/
 #endif
 
     /* Owned by thread.c. */
