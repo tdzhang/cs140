@@ -42,7 +42,7 @@ struct list global_file_list;             /*List of all opened files*/
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (void *uaddr_);
-static struct file_info_block* find_fib(struct list* l, block_sector_t s);
+static struct file_info_block* find_fib(struct list* l, int fd);
 static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
@@ -52,6 +52,7 @@ static void sys_create_handler(struct intr_frame *f);
 static void sys_open_handler(struct intr_frame *f);
 static void sys_write_handler(struct intr_frame *f);
 static void sys_remove_handler(struct intr_frame *f);
+static void sys_close_handler(struct intr_frame *f);
 
 
 void
@@ -107,6 +108,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_SEEK:break;
 	case SYS_TELL:break;
 	case SYS_CLOSE:break;
+		sys_close_handler(f);
 	default:break;
  }
 
@@ -170,13 +172,6 @@ static void sys_remove_handler(struct intr_frame *f){
 		return;
 	}
 
-	struct thread * cur=thread_current();
-	struct file_info_block*fib = find_fib(&cur->opened_file_list, file->inode->sector);
-	if(fib==NULL){
-		/*if cur didnot hold this file, return with false*/
-		f->eax = false;
-		return;
-	}
 	/*update the global_file_block*/
 
 	lock_acquire(&filesys_lock);
@@ -184,7 +179,42 @@ static void sys_remove_handler(struct intr_frame *f){
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
-		f->eax = false;
+		filesys_remove(file_name);
+
+	} else {
+		/*mark as deleted*/
+		gfb->is_deleted=true;
+	}
+	f->eax = true;
+	lock_release(&filesys_lock);
+}
+
+/*handle sys_close*/
+static void sys_close_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the full_line command*/
+	int *fd_ptr=(int *)(esp+1);
+
+	struct thread * cur=thread_current();
+	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	if(fib==NULL){
+		/*if cur didnot hold this file, return with false*/
+		return;
+	}
+	/*update the global_file_block*/
+
+	lock_acquire(&filesys_lock);
+	struct global_file_block *gfb = find_opened_file(&global_file_list, fib->f->inode->sector);
+
+	/*if not find, return, since this file is not opened*/
+	if (gfb == NULL) {
 		lock_release(&filesys_lock);
 		return;
 	} else {
@@ -192,12 +222,14 @@ static void sys_remove_handler(struct intr_frame *f){
 		if (gfb->ref_num>1) {
 			/*if reference number>1, other thread also holding the file
 			 * keep the file, but marked it as is_delete*/
-			gfb->is_deleted=true;
 			gfb->ref_num--;
 		}
 		else{
-			/*only this thread holding the file, close the file*/
-			file_close(file);
+			file_close(fib->f);
+			if(gfb->is_deleted){
+				filesys_remove(fib->file_name);
+			}
+
 			/*remove it from the global_file_list*/
 			list_remove(&gfb->elem);
 			/*free the memory*/
@@ -210,7 +242,6 @@ static void sys_remove_handler(struct intr_frame *f){
 		list_remove(&fib->elem);
 		free(fib->file_name);
 		free(fib);
-		f->eax = true;
 	}
 
 }
@@ -518,14 +549,14 @@ static struct global_file_block *find_opened_file(struct list* l, block_sector_t
 	return NULL;
 }
 
-/*in  opened_file_list for the search for file_info_block and remove it*/
-static struct file_info_block* find_fib(struct list* l, block_sector_t s) {
+/*in opened_file_list, search for file_info_block using fd*/
+static struct file_info_block* find_fib(struct list* l, int fd) {
 	struct file_info_block *fib = NULL;
 	struct list_elem *e = NULL;
 	//TODO: if need to handle one file opened multiply time by one thread, using file_name to match
 	for (e = list_begin (l); e != list_end (l); e = list_next (e)) {
 		fib = list_entry (e, struct file_info_block, elem);
-		if (fib->f->inode->sector == s) {
+		if (fib->fd == fd) {
 			return fib;
 		}
 	}
