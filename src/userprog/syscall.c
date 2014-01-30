@@ -19,6 +19,7 @@ void sys_exit_handler(struct intr_frame *f);
 void sys_halt_handler(struct intr_frame *f);
 void sys_exec_handler(struct intr_frame *f);
 void sys_wait_handler(struct intr_frame *f);
+void sys_create_handler(struct intr_frame *f);
 
 
 void
@@ -54,7 +55,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//TODO: handler
 		sys_wait_handler(f);
 		break;
-	case SYS_CREATE:break;
+	case SYS_CREATE:
+		sys_create_handler(f);
+		break;
 	case SYS_REMOVE:break;
 	case SYS_OPEN:break;
 	case SYS_FILESIZE:break;
@@ -136,6 +139,38 @@ void sys_wait_handler(struct intr_frame *f){
 	int *arg=(int *)(esp+1);
 	/*call process wait and update return value*/
 	f->eax=process_wait(*arg);
+}
+
+
+/*handle sys_create*/
+void sys_create_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+2, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	char *file_name=*(char **)(esp+1);
+	int *file_size=(int *)(esp+2);
+
+	/* verify file_name string */
+	if(!is_string_address_valid(file_name)){
+		user_exit(-1);
+		return;
+	}
+
+	bool success = filesys_create(file_name, *file_size);
+	/*return the value returned by filesys_create*/
+	f->eax=success;
 }
 
 /*handle sys_write*/
