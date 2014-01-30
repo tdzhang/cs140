@@ -57,6 +57,7 @@ static void sys_remove_handler(struct intr_frame *f);
 static void sys_close_handler(struct intr_frame *f);
 static void sys_read_handler(struct intr_frame *f);
 static void sys_filesize_handler(struct intr_frame *f);
+static void sys_tell_handler(struct intr_frame *f);
 
 
 void
@@ -112,7 +113,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 		sys_write_handler(f);
 		break;
 	case SYS_SEEK:break;
-	case SYS_TELL:break;
+	case SYS_TELL:
+		sys_tell_handler(f);
+		break;
 	case SYS_CLOSE:
 		sys_close_handler(f);
 		break;
@@ -657,6 +660,30 @@ static void sys_filesize_handler(struct intr_frame *f){
 }
 
 
+/*handle sys_tell*/
+static void sys_tell_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the full_line command*/
+	int *fd_ptr=(int *)(esp+1);
+
+	struct thread * cur=thread_current();
+	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	if(fib==NULL){
+		/*if cur did not hold this file, return with -1*/
+		f->eax=-1;
+		return;
+	}
+
+	f->eax= file_tell (fib->f);
+
+}
 
 
 /*read from file with buffer of size*/
