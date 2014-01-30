@@ -728,3 +728,5 @@ static int read_from_file(struct file* f, void *buffer, int size) {
 static int write_to_file(struct file *file, char *buffer, size_t size){
 	return file_write (file, buffer, size);
 }
+
+
