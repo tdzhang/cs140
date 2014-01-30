@@ -57,6 +57,7 @@ static void sys_remove_handler(struct intr_frame *f);
 static void sys_close_handler(struct intr_frame *f);
 static void sys_read_handler(struct intr_frame *f);
 static void sys_filesize_handler(struct intr_frame *f);
+static void sys_seek_handler(struct intr_frame *f);
 
 
 void
@@ -111,7 +112,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_WRITE:
 		sys_write_handler(f);
 		break;
-	case SYS_SEEK:break;
+	case SYS_SEEK:
+		sys_seek_handler(f);
+		break;
 	case SYS_TELL:break;
 	case SYS_CLOSE:
 		sys_close_handler(f);
@@ -386,6 +389,36 @@ static void sys_create_handler(struct intr_frame *f){
 	bool success = filesys_create(file_name, *file_size);
 	/*return the value returned by filesys_create*/
 	f->eax=success;
+}
+
+
+/*handle sys_seek*/
+static void sys_seek_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+2, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	int *fd_ptr=(int *)(esp+1);
+	int *pos_ptr=(int *)(esp+2);
+
+	struct thread *cur=thread_current();
+	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	if(fib==NULL){
+		return;
+	}
+
+	file_seek(fib->f, *pos_ptr);
 }
 
 /*handle sys_write*/
