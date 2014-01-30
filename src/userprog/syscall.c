@@ -45,6 +45,7 @@ static bool is_page_mapped (void *uaddr_);
 static struct file_info_block* find_fib(struct list* l, int fd);
 static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
 static int write_to_file(struct file *file, char *buffer, size_t size);
+static int read_from_file(struct file* f, void *buffer, int size);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
