@@ -239,11 +239,16 @@ thread_create (const char *name, int priority,
 
   /* user process initialization. */
 #ifdef USERPROG
-    t->exit_code=0;              /*the status code when exit*/
+    t->exit_code=0;        /*the status code when exit*/
     t->is_user=false;      /*indicator for user thread*/
+    t->next_fd_num = 2     /*fd 0 and 1 is for stdin and stdout*/
 
     /*init t's child_wait_block_list*/
     list_init(&t->child_wait_block_list);
+
+    /*init t's opened_file_list*/
+    list_init(&opened_file_list);
+
     /*alloc wait_info_block*/
     bool success = init_wait_info_block(t);
     /*if failed to init, free the page of t and return error*/

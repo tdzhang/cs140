@@ -7,24 +7,48 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
+
 static void syscall_handler (struct intr_frame *);
 static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
 
 /*self defined */
+struct lock filesys_lock;          /*global lock for the file system*/
+
+/*store opened files info*/
+struct file_info_block {
+	struct file *f;                /*file structure for the opened file*/
+	char *file_name;               /*file_name for the opened file*/
+	int fd;                        /*file descriptor for the opened file*/
+	struct list_elem elem;         /*list elem for thread's opened_file_list*/
+};
+
+struct global_file_block {
+	block_sector_t inode_block_num; /*identification for file*/
+	int ref_num;                   /*the number of threads holding this file*/
+	bool is_deleted;               /*indicates the file is to be removed*/
+	struct list_elem elem;         /*list elem for file_list*/
+};
+
+struct list global_file_list;             /*List of all opened files*/
+
+
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
-bool is_page_mapped (void *uaddr_);
-void sys_exit_handler(struct intr_frame *f);
-void sys_halt_handler(struct intr_frame *f);
-void sys_exec_handler(struct intr_frame *f);
-void sys_wait_handler(struct intr_frame *f);
-void sys_create_handler(struct intr_frame *f);
+static bool is_page_mapped (void *uaddr_);
+static struct global_file_block find_opened_file(struct list* l, block_sector_t s);
+static void sys_exit_handler(struct intr_frame *f);
+static void sys_halt_handler(struct intr_frame *f);
+static void sys_exec_handler(struct intr_frame *f);
+static void sys_wait_handler(struct intr_frame *f);
+static void sys_create_handler(struct intr_frame *f);
 
 
 void
 syscall_init (void) 
 {
+  lock_init(&filesys_lock);
+  list_init(&global_file_list);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -59,8 +83,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 		sys_create_handler(f);
 		break;
 	case SYS_REMOVE:break;
-	case SYS_OPEN:break;
-	case SYS_FILESIZE:break;
+	case SYS_OPEN:
+		sys_open_handler(f);
+		break;
+	case SYS_FILESIZE:
+		sys_filesize_handler(f);
+		break;
 	case SYS_READ:break;
 	case SYS_WRITE:
 		sys_write_handler(f);
@@ -76,7 +104,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 /*self defined*/
 
 /*handle sys_exec*/
-void sys_exec_handler(struct intr_frame *f){
+static void sys_exec_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(void **))){
@@ -105,14 +133,81 @@ void sys_exec_handler(struct intr_frame *f){
 	}
 }
 
+/*handle sys_open*/
+static void sys_open_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the full_line command*/
+	char *file_name=*(char **)(esp+1);
+
+	/*verify string address*/
+	if(!is_string_address_valid(file_name)){
+		user_exit(-1);
+		return;
+	}
+
+	struct file *file = filesys_open(file_name);
+	/*return -1 if failed to open the file*/
+	if (file == NULL) {
+		f->eax = -1;
+		return;
+	}
+
+	lock_acquire(&filesys_lock);
+	struct global_file_block *gfb = find_opened_file(&global_file_list, file->inode->sector);
+
+	if (gfb == NULL) {
+		/*open a new file*/
+		gfb = malloc(sizeof(struct global_file_block));
+		gfb->inode_block_num = file->inode->sector;
+		gfb->is_deleted = false;
+		gfb->ref_num = 1;
+		list_push_back(&global_file_list, &gfb->elem);
+	} else {
+		/*the file is opened already*/
+		if (gfb->is_deleted) {
+			f->eax = -1;
+			lock_release(&filesys_lock);
+			return;
+		}
+
+		gfb->ref_num++;
+	}
+	lock_release(&filesys_lock);
+
+	/*update current thread's opened_file_list*/
+	struct thread *cur = thread_current();
+	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
+	fib->f = file;
+	fib->fd = cur->next_fd_num++;
+	char *file_name_copy = malloc(strlen(file_name)+1);
+	if (file_name_copy == NULL) {
+		f->eax = -1;
+		free(fib);
+		return;
+	}
+	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
+	fib->file_name = file_name_copy;
+	/*add file_info_block of the opened file into current thread's opened_file_list*/
+	list_push_back(&cur->opened_file_list, &fib->elem);
+
+	f->eax=fib->fd;
+}
+
 /*handle sys_halt*/
-void sys_halt_handler(struct intr_frame *f){
+static void sys_halt_handler(struct intr_frame *f){
 	/*shutdown pintos*/
 	shutdown_power_off();
 }
 
 /*handle sys_exit*/
-void sys_exit_handler(struct intr_frame *f){
+static void sys_exit_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validat the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(int))){
@@ -127,7 +222,7 @@ void sys_exit_handler(struct intr_frame *f){
 }
 
 /*handle sys_wait*/
-void sys_wait_handler(struct intr_frame *f){
+static void sys_wait_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(int))){
@@ -143,7 +238,7 @@ void sys_wait_handler(struct intr_frame *f){
 
 
 /*handle sys_create*/
-void sys_create_handler(struct intr_frame *f){
+static void sys_create_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(void **))){
@@ -174,7 +269,7 @@ void sys_create_handler(struct intr_frame *f){
 }
 
 /*handle sys_write*/
-void sys_write_handler(struct intr_frame *f){
+static void sys_write_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(int))){
@@ -294,7 +389,7 @@ static bool is_string_address_valid(const void *pointer){
 }
 
 /*check if page mapped*/
-bool is_page_mapped (void *uaddr_){
+static bool is_page_mapped (void *uaddr_){
 	uint8_t *uaddr = (uint8_t *)uaddr_;
 	int byte_value= get_user(uaddr);
 	return  byte_value!= -1;
@@ -324,4 +419,19 @@ put_user (uint8_t *udst, uint8_t byte)
   asm ("movl $1f, %0; movb %b2, %1; 1:"
        : "=&a" (error_code), "=m" (*udst) : "q" (byte));
   return error_code != -1;
+}
+
+/*search global file list for the given block_sector_t*/
+static struct global_file_block find_opened_file(struct list* l, block_sector_t s) {
+	struct global_file_block *gf = NULL;
+	struct list_elem *e = NULL;
+
+	for (e = list_begin (l); e != list_end (); e = list_next (e)) {
+		gf = list_entry (e, struct global_file_block, elem);
+		if (gf->inode_block_num == s) {
+			return gf;
+		}
+	}
+
+	return NULL;
 }
