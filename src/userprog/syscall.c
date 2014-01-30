@@ -45,6 +45,8 @@ static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
 static void sys_wait_handler(struct intr_frame *f);
 static void sys_create_handler(struct intr_frame *f);
+static void sys_open_handler(struct intr_frame *f);
+static void sys_write_handler(struct intr_frame *f);
 
 
 void
@@ -90,7 +92,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		sys_open_handler(f);
 		break;
 	case SYS_FILESIZE:
-		sys_filesize_handler(f);
+		/*sys_filesize_handler(f);*/
 		break;
 	case SYS_READ:break;
 	case SYS_WRITE:
