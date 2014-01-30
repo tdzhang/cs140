@@ -176,8 +176,11 @@ process_exit (void)
   char cmd[MAX_FILE_NAME+2];
 
   /*close exec_file and allow to write it again*/
-  file_allow_write(cur->exec_file_ptr);
-  file_close (cur->exec_file_ptr);
+  if(cur->exec_file_ptr!=NULL){
+	  file_allow_write(cur->exec_file_ptr);
+	  file_close (cur->exec_file_ptr);
+  }
+
 
   /*print out the exit info*/
 	/*print out termination msg for grading use*/
@@ -186,7 +189,6 @@ process_exit (void)
 		printf ("%s: exit(%d)\n", cmd, cur->exit_code);
 	}
 
-  //TODO: close files
 
   /*update wait_info_block*/
   ASSERT(wib != NULL);
