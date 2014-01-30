@@ -53,6 +53,7 @@ static void sys_open_handler(struct intr_frame *f);
 static void sys_write_handler(struct intr_frame *f);
 static void sys_remove_handler(struct intr_frame *f);
 static void sys_close_handler(struct intr_frame *f);
+static void sys_read_handler(struct intr_frame *f);
 
 
 void
@@ -101,7 +102,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_FILESIZE:
 		/*sys_filesize_handler(f);*/
 		break;
-	case SYS_READ:break;
+	case SYS_READ:
+		sys_read_handler(f);
+		break;
 	case SYS_WRITE:
 		sys_write_handler(f);
 		break;
@@ -426,6 +429,56 @@ static void sys_write_handler(struct intr_frame *f){
 
 }
 
+/*handle sys_read*/
+static void sys_read_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+2, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*validate the 3rd argument*/
+	if(!is_user_address(esp+3, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *fd_ptr=(int *)(esp+1);
+	char *buffer=*(char **)(esp+2);
+	int *size_ptr=(int *)(esp+3);
+
+	/*verify whole buffer*/
+	if(!is_user_address((void *)buffer, *size_ptr)){
+		 user_exit(-1);
+		 return;
+	}
+
+	/*handle if fd==0, which is read from console*/
+	if(*fd_ptr==0){
+		int already_read = 0;
+		while(already_read < *size_ptr) {
+			buffer[already_read++] = input_getc();
+		}
+		/*handle return value*/
+		f->eax = *size_ptr;
+	} else {
+		struct file_info_block *fib = find_fib(&thread_current()->opened_file_list, *fd_ptr);
+		if (fib == NULL) {
+			f->eax = -1;
+		} else {
+			f->eax = read_from_file(fib->f, buffer, *size_ptr);
+		}
+	}
+}
+
 /*user process exit with exit_code*/
 void user_exit(int exit_code){
 	struct thread* cur=thread_current();
@@ -563,4 +616,11 @@ static struct file_info_block* find_fib(struct list* l, int fd) {
 	}
 
 	return NULL;
+}
+
+
+
+
+static int read_from_file(struct file* f, void *buffer, int size) {
+	return file_read(f, buffer, size);
 }
