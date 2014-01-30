@@ -6,6 +6,9 @@
 #include "userprog/process.h"
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "devices/block.h"
 
 
 static void syscall_handler (struct intr_frame *);
@@ -36,7 +39,7 @@ struct list global_file_list;             /*List of all opened files*/
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (void *uaddr_);
-static struct global_file_block find_opened_file(struct list* l, block_sector_t s);
+static struct global_file_block *find_opened_file(struct list* l, block_sector_t s);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
@@ -422,7 +425,7 @@ put_user (uint8_t *udst, uint8_t byte)
 }
 
 /*search global file list for the given block_sector_t*/
-static struct global_file_block find_opened_file(struct list* l, block_sector_t s) {
+static struct global_file_block *find_opened_file(struct list* l, block_sector_t s) {
 	struct global_file_block *gf = NULL;
 	struct list_elem *e = NULL;
 
