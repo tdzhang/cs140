@@ -579,6 +579,6 @@ static struct file_info_block* find_fib(struct list* l, int fd) {
 
 /*write to file with buffer of size*/
 static int write_to_file(struct file *file, char *buffer, size_t size){
-	int write_result = file_read (file, buffer, size);
+	int write_result = file_write (file, buffer, size);
 	return write_result;
 }
