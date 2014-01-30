@@ -10,6 +10,7 @@
 #include "filesys/filesys.h"
 #include "devices/block.h"
 #include "threads/malloc.h"
+#include "filesys/inode.h"
 
 
 static void syscall_handler (struct intr_frame *);
