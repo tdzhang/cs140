@@ -9,6 +9,7 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "devices/block.h"
+#include "threads/malloc.h"
 
 
 static void syscall_handler (struct intr_frame *);
@@ -431,7 +432,7 @@ static struct global_file_block *find_opened_file(struct list* l, block_sector_t
 	struct global_file_block *gf = NULL;
 	struct list_elem *e = NULL;
 
-	for (e = list_begin (l); e != list_end (); e = list_next (e)) {
+	for (e = list_begin (l); e != list_end (l); e = list_next (e)) {
 		gf = list_entry (e, struct global_file_block, elem);
 		if (gf->inode_block_num == s) {
 			return gf;
