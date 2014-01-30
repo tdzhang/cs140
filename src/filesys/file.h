@@ -2,7 +2,7 @@
 #define FILESYS_FILE_H
 
 #include "filesys/off_t.h"
-
+#include "lib/stdbool.h"
 
 struct inode;
 
