@@ -7,12 +7,11 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
-#include "filesys/file.c"
 #include "filesys/filesys.h"
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "filesys/inode.h"
-#include "filesys/inode.c"
+
 
 
 static void syscall_handler (struct intr_frame *);
