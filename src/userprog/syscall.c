@@ -44,6 +44,7 @@ static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (void *uaddr_);
 static struct file_info_block* find_fib(struct list* l, int fd);
 static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
+static int write_to_file(struct file *file, char *buffer, size_t size);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
@@ -420,10 +421,20 @@ static void sys_write_handler(struct intr_frame *f){
 		putbuf(buffer,*size_ptr);
 		/*handle return value*/
 		f->eax= *size_ptr;
+		return;
 	}
 
 	//TODO: other normal file write
-
+	struct thread * cur=thread_current();
+	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	if(fib==NULL){
+		/*if cur didnot hold this file, exit*/
+		user_exit(-1);
+		return;
+	}
+	/*write to file*/
+	int result = write_to_file(fib->f, buffer, *size_ptr);
+	f->eax= result;
 }
 
 /*user process exit with exit_code*/
@@ -563,4 +574,11 @@ static struct file_info_block* find_fib(struct list* l, int fd) {
 	}
 
 	return NULL;
+}
+
+
+/*write to file with buffer of size*/
+static int write_to_file(struct file *file, char *buffer, size_t size){
+	int write_result = file_read (file, buffer, size);
+	return write_result;
 }
