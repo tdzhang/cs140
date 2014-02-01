@@ -1,6 +1,9 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
+#include <list.h>
+#include "filesys/file.h"
+
 /*store opened files info*/
 struct file_info_block {
 	struct file *f;                /*file structure for the opened file*/
