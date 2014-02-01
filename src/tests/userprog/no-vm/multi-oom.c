@@ -39,6 +39,7 @@ spawn_child (int c, enum child_termination_mode mode)
   char child_cmd[128];
   snprintf (child_cmd, sizeof child_cmd,
             "%s %d %s", test_name, c, mode == CRASH ? "-k" : "");
+  printf(">>>===>>>create %s",child_cmd);
   return exec (child_cmd);
 }
 
