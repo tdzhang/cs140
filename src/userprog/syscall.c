@@ -21,14 +21,6 @@ static bool put_user (uint8_t *udst, uint8_t byte);
 /*self defined */
 struct lock filesys_lock;          /*global lock for the file system*/
 
-/*store opened files info*/
-struct file_info_block {
-	struct file *f;                /*file structure for the opened file*/
-	char *file_name;               /*file_name for the opened file*/
-	int fd;                        /*file descriptor for the opened file*/
-	struct list_elem elem;         /*list elem for thread's opened_file_list*/
-};
-
 struct global_file_block {
 	block_sector_t inode_block_num; /*identification for file*/
 	int ref_num;                   /*the number of threads holding this file*/
@@ -218,11 +210,20 @@ static void sys_close_handler(struct intr_frame *f){
 	struct thread * cur=thread_current();
 	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
 	if(fib==NULL){
-		/*if cur didnot hold this file, return with false*/
+		/*if cur did not hold this file, return with false*/
 		return;
 	}
 	/*update the global_file_block*/
 
+	/*try to close file corresponding to *fd_ptr*/
+	close_file_by_fib(fib);
+
+}
+
+
+/*close the file given by file_info_block*/
+void close_file_by_fib(struct file_info_block *fib) {
+	ASSERT(fib != NULL);
 	lock_acquire(&filesys_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list, fib->f->inode->sector);
 
@@ -256,7 +257,6 @@ static void sys_close_handler(struct intr_frame *f){
 		free(fib->file_name);
 		free(fib);
 	}
-
 }
 
 /*handle sys_open*/

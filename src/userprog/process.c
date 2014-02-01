@@ -186,6 +186,18 @@ process_exit (void)
 	  file_close (cur->exec_file_ptr);
   }
 
+  /*close all opened files of this thread*/
+  struct list *opened_files = &cur->opened_file_list;
+  struct list_elem *e = list_begin (opened_files);
+  struct list_elem *temp = NULL;
+  struct file_info_block *fib;
+
+  while (e != list_end (opened_files)){
+	  temp = list_next (e);
+	  fib = list_entry (e, struct file_info_block, elem);
+	  close_file_by_fib(fib);
+	  e = temp;
+  }
 
   /*print out the exit info*/
 	/*print out termination msg for grading use*/
