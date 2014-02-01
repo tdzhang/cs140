@@ -46,6 +46,10 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   struct load_info_block *lib = malloc(sizeof(struct load_info_block));
+  if(lib==NULL){
+	  palloc_free_page (fn_copy);
+	  return TID_ERROR;
+  }
   /*initialize load_info_block*/
   lib->full_line = fn_copy;
   sema_init(&lib->sema_loaded, 0);
