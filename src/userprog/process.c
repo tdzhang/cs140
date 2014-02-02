@@ -460,6 +460,10 @@ load (void *lib_, void (**eip) (void), void **esp)
  done:
   /* We arrive here whether the load is successful or not. */
   /*file_close (file);*/
+  if (!success) {
+	  /*destroy the pd if failed*/
+	  pagedir_destroy(t->pagedir);
+  }
   return success;
 }
 
