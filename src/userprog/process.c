@@ -41,7 +41,10 @@ process_execute (const char *file_name)
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (0);
+
+  fn_copy=malloc(strlen(file_name));
+  /*fn_copy = palloc_get_page (0);*/
+
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
@@ -69,7 +72,9 @@ process_execute (const char *file_name)
 	  /*palloc_free_page (fn_copy);*/
   }
   /*free it anyway*/
-  palloc_free_page (fn_copy);
+
+  /*palloc_free_page (fn_copy);*/
+  free(fn_copy);
   /*clean up*/
   free(lib);
   return tid;
