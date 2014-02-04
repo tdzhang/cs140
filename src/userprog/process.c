@@ -69,7 +69,10 @@ process_execute (const char *file_name)
 	  /*palloc_free_page (fn_copy);*/
   }
   /*free it anyway*/
-  palloc_free_page (fn_copy);
+  /*palloc_free_page (fn_copy);*/
+  if(lib->full_line!=NULL){
+	  palloc_free_page(lib->full_line);
+  }
   /*clean up*/
   free(lib);
   return tid;
