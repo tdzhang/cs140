@@ -15,5 +15,6 @@ struct file_info_block {
 void syscall_init (void);
 void user_exit(int exit_code);
 void close_file_by_fib(struct file_info_block *fib);
+void print_global_file_list();
 
 #endif /* userprog/syscall.h */

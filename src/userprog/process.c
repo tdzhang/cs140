@@ -248,6 +248,10 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
+  /*print out the global list*/
+  //TODO: to be deleted
+  print_global_file_list();
 }
 
 /* Sets up the CPU for running user code in the current
