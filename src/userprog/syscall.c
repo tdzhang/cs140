@@ -299,7 +299,7 @@ static void sys_open_handler(struct intr_frame *f){
 	}
 
 	printf("|sys_open_handler=>");
-	printf("%s$$$",*file_name);
+	printf("%s$$$",file_name);
 
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
