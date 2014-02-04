@@ -89,6 +89,8 @@ syscall_handler (struct intr_frame *f UNUSED)
  int *sys_call_num = (int*)esp;
 
  /*switch to specfic system call handler*/
+ printf("=======||=======:)  :)\n");
+ printf("SYSTEM CALL NUM = %d\n",*sys_call_num);
  switch(*sys_call_num){
 	case SYS_HALT:
 		sys_halt_handler(f);
