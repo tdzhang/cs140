@@ -185,6 +185,7 @@ process_exit (void)
   if(cur->exec_file_ptr!=NULL){
 	  file_allow_write(cur->exec_file_ptr);
 	  file_close (cur->exec_file_ptr);
+	  cur->exec_file_ptr=NULL;
   }
 
   /*close all opened files of this thread*/
