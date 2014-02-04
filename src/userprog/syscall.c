@@ -245,6 +245,7 @@ void close_file_by_fib(struct file_info_block *fib) {
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
 		lock_release(&filesys_lock);
+		file_close(fib->f);
 		return;
 	} else {
 		/*check the reference number*/
@@ -254,7 +255,6 @@ void close_file_by_fib(struct file_info_block *fib) {
 			gfb->ref_num--;
 		}
 		else{
-			file_close(fib->f);
 			if(gfb->is_deleted){
 				filesys_remove(fib->file_name);
 			}
@@ -267,6 +267,8 @@ void close_file_by_fib(struct file_info_block *fib) {
 		}
 		lock_release(&filesys_lock);
 
+		/*close the file*/
+		file_close(fib->f);
 		/*delete the file_info_block from opened_file_list in current thread*/
 		list_remove(&fib->elem);
 		free(fib->file_name);
@@ -309,6 +311,7 @@ static void sys_open_handler(struct intr_frame *f){
 	if (file_name_copy == NULL) {
 		f->eax = -1;
 		free(fib);
+		file_close(file);
 		return;
 	}
 	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
@@ -331,6 +334,7 @@ static void sys_open_handler(struct intr_frame *f){
 		if (gfb->is_deleted) {
 			f->eax = -1;
 			lock_release(&filesys_lock);
+			file_close(file);
 			return;
 		}
 
