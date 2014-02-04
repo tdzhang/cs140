@@ -89,8 +89,6 @@ syscall_handler (struct intr_frame *f UNUSED)
  int *sys_call_num = (int*)esp;
 
  /*switch to specfic system call handler*/
- printf("||>>==>>=:)");
- printf("SYSCALL=%d$$$",*sys_call_num);
  switch(*sys_call_num){
 	case SYS_HALT:
 		sys_halt_handler(f);
@@ -156,9 +154,6 @@ static void sys_exec_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-
-	printf("|sys_exec_handler=>");
-	printf("%s$$$",full_line);
 
 	/*execute*/
 	tid_t tid=process_execute(full_line);
@@ -298,9 +293,6 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
-	printf("|sys_open_handler=>");
-	printf("%s$$$",file_name);
-
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
 	if (file == NULL) {
@@ -381,12 +373,8 @@ static void sys_wait_handler(struct intr_frame *f){
 	 }
 
 	int *arg=(int *)(esp+1);
-	printf("|sys_wait_handler=>");
-		printf("%d$$$",*arg);
 	/*call process wait and update return value*/
 	f->eax=process_wait(*arg);
-
-
 }
 
 
