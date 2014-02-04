@@ -39,7 +39,6 @@ spawn_child (int c, enum child_termination_mode mode)
   char child_cmd[128];
   snprintf (child_cmd, sizeof child_cmd,
             "%s %d %s", test_name, c, mode == CRASH ? "-k" : "");
-  printf(">>>===>>>create %s\n",child_cmd);
   return exec (child_cmd);
 }
 
@@ -70,7 +69,7 @@ consume_some_resources_and_die (int seed)
   random_init (seed);
   int *PHYS_BASE = (int *)0xC0000000;
 
-  switch (4)   /* random_ulong () % 5 */
+  switch (random_ulong () % 5)
     {
       case 0:
         *(int *) NULL = 42;

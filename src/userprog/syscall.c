@@ -31,21 +31,6 @@ struct global_file_block {
 struct list global_file_list;             /*List of all opened files*/
 
 
-
-void print_global_file_list() {
-	struct list_elem *e = NULL;
-	struct global_file_block *gfb = NULL;
-	printf("//////////////////////////////////////\n");
-	 for (e = list_begin (&global_file_list); e != list_end (&global_file_list);
-				  e = list_next (e))
-	{
-	  /*update the max_priority*/
-	   gfb = list_entry (e, struct global_file_block, elem);
-	   printf(">>ref_num: %d, is_deleted: %d.\n", gfb->ref_num, gfb->is_deleted);
-	}
-	printf("//////////////////////////////////////\n");
-}
-
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (void *uaddr_);
