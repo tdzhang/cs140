@@ -152,6 +152,8 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
+  //TODO: to be deleted
+  printf("enter page fault, if user, call user_exit(-1)\n");
 
   struct thread *cur=thread_current();
   if(cur->is_user){
