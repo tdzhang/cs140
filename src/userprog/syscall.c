@@ -300,6 +300,22 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
+	/*update current thread's opened_file_list*/
+	struct thread *cur = thread_current();
+	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
+	fib->f = file;
+	fib->fd = cur->next_fd_num++;
+	char *file_name_copy = malloc(strlen(file_name)+1);
+	if (file_name_copy == NULL) {
+		f->eax = -1;
+		free(fib);
+		return;
+	}
+	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
+	fib->file_name = file_name_copy;
+	/*add file_info_block of the opened file into current thread's opened_file_list*/
+	list_push_back(&cur->opened_file_list, &fib->elem);
+
 	lock_acquire(&filesys_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list, file->inode->sector);
 
@@ -321,22 +337,6 @@ static void sys_open_handler(struct intr_frame *f){
 		gfb->ref_num++;
 	}
 	lock_release(&filesys_lock);
-
-	/*update current thread's opened_file_list*/
-	struct thread *cur = thread_current();
-	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
-	fib->f = file;
-	fib->fd = cur->next_fd_num++;
-	char *file_name_copy = malloc(strlen(file_name)+1);
-	if (file_name_copy == NULL) {
-		f->eax = -1;
-		free(fib);
-		return;
-	}
-	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
-	fib->file_name = file_name_copy;
-	/*add file_info_block of the opened file into current thread's opened_file_list*/
-	list_push_back(&cur->opened_file_list, &fib->elem);
 
 	f->eax=fib->fd;
 }
