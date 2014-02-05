@@ -4,6 +4,8 @@
 #include <list.h>
 #include "filesys/file.h"
 
+struct lock filesys_lock;          /*global lock for the file system*/
+
 /*store opened files info*/
 struct file_info_block {
 	struct file *f;                /*file structure for the opened file*/
