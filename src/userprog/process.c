@@ -212,13 +212,15 @@ process_exit (void)
 	}
 
 
-  /*update wait_info_block*/
-  ASSERT(wib != NULL);
-  lock_acquire(&wib->l);
-  wib->exit_code = cur->exit_code;
-  wib->t = NULL;
-  cond_signal(&wib->c, &wib->l);
-  lock_release(&wib->l);
+  /*update wait_info_block if its parent process still exists*/
+  if(wib != NULL){
+	  lock_acquire(&wib->l);
+	  wib->exit_code = cur->exit_code;
+	  wib->t = NULL;
+	  cond_signal(&wib->c, &wib->l);
+	  lock_release(&wib->l);
+  }
+
 
   /*terminate children process*/
   struct list *child_list = &cur->child_wait_block_list;
