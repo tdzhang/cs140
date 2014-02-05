@@ -19,7 +19,6 @@ static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
 
 /*self defined */
-struct lock filesys_lock;          /*global lock for the file system*/
 
 struct global_file_block {
 	block_sector_t inode_block_num; /*identification for file*/
