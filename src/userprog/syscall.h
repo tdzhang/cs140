@@ -3,6 +3,7 @@
 
 #include <list.h>
 #include "filesys/file.h"
+#include "threads/synch.h"
 
 struct lock filesys_lock;          /*global lock for the file system*/
 
