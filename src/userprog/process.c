@@ -255,6 +255,11 @@ process_exit (void)
       pagedir_destroy (pd);
     }
 
+  /*if this about to exit process is holding the filesys_lock, release it*/
+  if(lock_held_by_current_thread (&filesys_lock)){
+	  lock_release(&filesys_lock);
+  }
+
 }
 
 /* Sets up the CPU for running user code in the current
