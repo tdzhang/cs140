@@ -1,7 +1,7 @@
- ﻿+--------------------------+
-                                   |                CS 140                |
-                      | PROJECT 2: USER PROGRAMS        |
-                      |            DESIGN DOCUMENT             |
+                      ﻿+--------------------------+
+                      |          CS 140          |
+                      | PROJECT 2: USER PROGRAMS |
+                      |      DESIGN DOCUMENT     |
                       +--------------------------+
  
  ---- GROUP ----
@@ -38,11 +38,9 @@
    ->add a structure
    /*load info struct used for process_execute*/
    struct load_info_block{
-         char * full_line;                             /*full command line
-string*/
+         char * full_line;                  /*full command line string*/
          struct semaphore sema_loaded; /*semaphore used to load thread*/
-         bool success;             /*whether the thread is loaded
-successfully*/
+         bool success;     /*whether the thread is loaded successfully*/
    };
  
  
@@ -105,7 +103,7 @@ the potential data race.
  >> separation.  Identify at least two advantages of the Unix approach.
  Answer:
  1. In Unix approach, a shell does the separation in the user mode. On the
-contrary, Pintos does this in the kernel mode. It’s clearer and safer to do
+contrary, Pintos does this in the kernel mode. It's clearer and safer to do
 the separation in the user mode level. If the separating fails for some
 reason, it can just fail the user shell in the user mode directly. If the
 user is malicious, it has less chance to affect the kernel than letting
@@ -138,13 +136,10 @@ that have relationship/dependency with its running environment.
    ->add a structure
    /*store opened files info*/
    struct file_info_block {
-         struct file *f;                /*file structure for the opened
-file*/
+         struct file *f;           /*file structure for the opened file*/
          char *file_name;               /*file_name for the opened file*/
-         int fd;                        /*file descriptor for the opened
-file*/
-         struct list_elem elem;         /*list elem for thread's
-opened_file_list*/
+         int fd;                  /*file descriptor for the opened file*/
+         struct list_elem elem; /*list elem for thread's opened_file_list*/
    };
  
  
@@ -152,10 +147,8 @@ opened_file_list*/
    ->add a structure
    struct global_file_block {
          block_sector_t inode_block_num; /*identification for file*/
-         int ref_num;                   /*the number of threads holding this
-file*/
-         bool is_deleted;               /*indicates the file is to be
-removed*/
+         int ref_num;         /*the number of threads holding this file*/
+         bool is_deleted;      /*indicates the file is to be removed*/
          struct list_elem elem;         /*list elem for global_file_list*/
    };
  
@@ -171,7 +164,7 @@ removed*/
          struct thread *t;        /*pointer to thread*/
          int exit_code;           /*code for exit status*/
          struct list_elem elem;   /*list elem for children list of its
-parent*/
+                                  parent*/
          struct lock l;           /*lock for this struct itself*/
          struct condition c;      /*cond for wait from the parent*/
    };
@@ -180,8 +173,8 @@ parent*/
  --changes in thread.h --
    ->add properties in a structure
    struct thread {
-    …………………..
-    /*…above untouched…*/
+    ..........................
+    /*---above untouched----*/
  
  
     #ifdef USERPROG
@@ -193,18 +186,16 @@ parent*/
      bool is_user;      /*indicator for user thread*/
      struct wait_info_block *wait_info; /*wait_info_block for this thread*/
      struct list child_wait_block_list;  /*list of wait_info_block of its
-children*/
-     struct list opened_file_list;       /*list of files this thread
-opened*/
-     int next_fd_num;                    /*next fd number for this thread
-locally*/
+                                          children*/
+     struct list opened_file_list;   /*list of files this thread opened*/
+     int next_fd_num;           /*next fd number for this thread locally*/
      struct file* exec_file_ptr;  /*the file which is the excutable file for
-this thread*/
+                                  this thread*/
     #endif
  
  
-   /*…below untouched…*/
-   ……………..
+   /*----below untouched--*/
+    ........................
    };
  
  
@@ -317,7 +308,7 @@ struct thread to help the wait logic.
          struct thread *t;        /*pointer to thread*/
          int exit_code;           /*code for exit status*/
          struct list_elem elem;   /*list elem for children list of its
-parent*/
+                                   parent*/
          struct lock l;           /*lock for this struct itself*/
          struct condition c;      /*cond for wait from the parent*/
  };
@@ -330,7 +321,7 @@ wait_info_block into its child_wait_block_list.
  
  When the parent thread issue a system call to "wait" for a child_tid, it
 first goes through its child_wait_block_list to find the corresponding
-wait_info_block for this child_tid. If failing to find, it’s because either
+wait_info_block for this child_tid. If failing to find, it's because either
 the child_tid is not its child at all or "wait" has already been successfully
 called with the given child_tid (since if called successfully, it removes the
 corresponding wait_info_block from its child_wait_block_list). In either of
@@ -397,7 +388,7 @@ the second argument. In is_user_address(), we calculates the end_pointer that
 points to the last byte of the variable or the the last byte in the buffer.
 Then we check the pointer/buffer and end_pointer are all within user address
 space. Then we check to read one byte of the address stored in pointer,
-pointer+PGSIZE, pointer+2*PGSIZE, …, until end_pointer, since all the
+pointer+PGSIZE, pointer+2*PGSIZE, ..., until end_pointer, since all the
 continuous pages between pointer and end_pointer should be mapped and should
 be able to read a byte back. If any of these checks fails, is_user_address
 return false to indicate pointer/buffer verification fails.
@@ -412,7 +403,7 @@ fails.
  
  With this two helper function, we always verify pointer/buffer/string before
 doing further job in system call handler. In syscall_handler(), we first
-verify the pointer: esp. Only when it’s valid, do we continue to get the
+verify the pointer: esp. Only when it's valid, do we continue to get the
 sys_call_num and dispatch it to corresponding system call handler. Then in
 each system call handler, we will verify its input argument(s) pointers (i.e.
 esp+1, esp+2, ...) using is_user_address. Then if a argument is a buffer or
@@ -439,7 +430,7 @@ the input arguments by:
  is_user_address(esp+3, sizeof(int))
  
  
- Then, we verify the second argument since it’s a buffer by:
+ Then, we verify the second argument since it's a buffer by:
  is_user_address((void *)buffer, *size_ptr)
  ,where   int *size_ptr=(int *)(esp+3);
  
@@ -477,7 +468,7 @@ child processes.
  When the parent thread executing process_execute(file_name), it first
 creates a load_info_block, initializing its full_line as the file_name which
 contains the executable file name and its arguments, initializing the
-sema_loaded’s value to 0, and initializing success to false. Then pass this
+sema_loaded's value to 0, and initializing success to false. Then pass this
 load_info_block to thread_create, and it will be the argument for
 start_process(). After the parent thread calls thread_create(), it blocks
 itself by sema_down() on the sema_loaded. 
@@ -555,13 +546,13 @@ wait_info_block:
  
  
  and go through the "child_wait_block_list" to free the memory used for its
-children processes’ wait_info_block using below:
+children processes' wait_info_block using below:
  
  
    struct list *child_list = &cur->child_wait_block_list;
    while(!list_empty(child_list)) {
            wib = list_entry (list_pop_front(child_list), struct
-wait_info_block, elem);
+                             wait_info_block, elem);
  
  
            lock_acquire(&wib->l);
@@ -646,14 +637,12 @@ situation, no extra space is wasted.  (2)When open a file, maintain the
 need to create a new file_info_block and push it into the linked list. 
  (2)we put the file_info_block struct here for reference
  struct file_info_block {
-         struct file *f;                /*file structure for the opened
-file*/
-         char *file_name;               /*file_name for the opened file*/
-         int fd;                        /*file descriptor for the opened
-file*/
-         struct list_elem elem;         /*list elem for thread's
-opened_file_list*/
+         struct file *f;        /*file structure for the opened file*/
+         char *file_name;       /*file_name for the opened file*/
+         int fd;              /*file descriptor for the opened file*/
+         struct list_elem elem; /*list elem for thread's opened_file_list*/
    };
+
  This is the element struct for "opened_file_list" to keep the info of opened
 files in each process. The file_name part is dynamically allocated to hold
 the file name with exact length, so no extra memory is wasted.
@@ -668,7 +657,7 @@ exists in the "global_file_list". The complexity is O(N).
  (2)every time we perform write, read, and all other operations on file based
 on the file descriptor, we need to traverse the "opened_file_list", which has
 a O(N) complexity.
- Both can be avoided if we are using a hash table or a in-order array.
+ Both cases can be avoided if we are using a hash table or a in-order array.
  
  
  
@@ -677,7 +666,7 @@ a O(N) complexity.
  
  
  Answer:
- We didn’t change the default identical tid_t to pid_t mapping, we used
+ We didn't change the default identical tid_t to pid_t mapping, we used
 those interchangeably because in this project (Pintos) one process only has
 one thread. Under such circumstances, changing it to other mapping will make
 no difference.
