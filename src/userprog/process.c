@@ -84,7 +84,6 @@ static void
 start_process (void *lib_)
 {
   struct load_info_block *lib = (struct load_info_block *) lib_;
-  char *file_name = lib->full_line;
   struct intr_frame if_;
   struct thread *cur=thread_current();
   bool success;
@@ -126,7 +125,7 @@ start_process (void *lib_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid)
 {
 	int exit_code = 0;
 	struct thread * cur=thread_current();
@@ -642,28 +641,26 @@ void get_cmd(const char *full_line, char* cmd){
 
 /*push args into stack*/
 static void push_args2stack(void **esp,const char *full_line){
-	char *token, *save_ptr;
+	char *token, *save_ptr, *null_ptr;
 	int argc=0;
 	int i=0;
 	int j=0;
 	uint8_t zero=0;
 	int zero_int=0;
 
-	//TODO: Need to check overflow: if over 4Kb
 	int esp_limit=(int)(*esp)-PGSIZE;
 
+	null_ptr = (char *)NULL;
 	/*find out how many args are there*/
 	for (token = strtok_r (full_line, " ", &save_ptr); token != NULL;
-		token = strtok_r (NULL, " ", &save_ptr)){
+		token = strtok_r (null_ptr, " ", &save_ptr)){
 		argc++;
 	}
 
 	/*updates argv according to argc*/
 	char* argv[argc];
 	for(i=0;i<argc;i++){
-		while(full_line[j]=='\0'||full_line[j]==' '){
-			j++;
-		}
+		while(full_line[j]=='\0'||full_line[j]==' '){j++;}
 		argv[i]=&full_line[j];
 		while(full_line[j]!='\0'){j++;}
 	}

@@ -11,12 +11,14 @@
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "filesys/inode.h"
+#include "lib/string.h"
+#include "devices/shutdown.h"
+#include "devices/input.h"
 
 
 
 static void syscall_handler (struct intr_frame *);
 static int get_user (const uint8_t *uaddr);
-static bool put_user (uint8_t *udst, uint8_t byte);
 
 /*self defined */
 
@@ -32,7 +34,7 @@ struct list global_file_list;             /*List of all opened files*/
 
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
-static bool is_page_mapped (void *uaddr_);
+static bool is_page_mapped (const void *uaddr_);
 static struct file_info_block* find_fib(struct list* l, int fd);
 static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
 static int write_to_file(struct file *file, char *buffer, size_t size);
@@ -330,7 +332,7 @@ static void sys_open_handler(struct intr_frame *f){
 }
 
 /*handle sys_halt*/
-static void sys_halt_handler(struct intr_frame *f){
+static void sys_halt_handler(struct intr_frame *f UNUSED){
 	/*shutdown pintos*/
 	shutdown_power_off();
 }
@@ -544,8 +546,8 @@ void user_exit(int exit_code){
 
 /*judge if the pointer point to a valid space*/
 static bool is_user_address(const void *pointer, int size){
-	uint32_t address=pointer;
-	const void *end_pointer=address+size-1;
+	uint32_t address=*(int *)pointer;
+	const void *end_pointer=&(address+size-1);
 	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
 	int i;
 	bool mapped=false;
@@ -574,10 +576,8 @@ static bool is_user_address(const void *pointer, int size){
 
 /*judge if the a string's address is valid*/
 static bool is_string_address_valid(const void *pointer){
-	char *str=(char *)pointer;
+	uint8_t *str=(uint8_t *)pointer;
 	int byte_value;
-	int i;
-	bool mapped=false;
 	/*check if pointer is null*/
 	if(str==NULL){
 		return false;
@@ -608,7 +608,7 @@ static bool is_string_address_valid(const void *pointer){
 }
 
 /*check if page mapped*/
-static bool is_page_mapped (void *uaddr_){
+static bool is_page_mapped (const void *uaddr_){
 	uint8_t *uaddr = (uint8_t *)uaddr_;
 	int byte_value= get_user(uaddr);
 	return  byte_value!= -1;
@@ -626,18 +626,6 @@ get_user (const uint8_t *uaddr)
   asm ("movl $1f, %0; movzbl %1, %0; 1:"
        : "=&a" (result) : "m" (*uaddr));
   return result;
-}
-
-/* Writes BYTE to user address UDST.
-   UDST must be below PHYS_BASE.
-   Returns true if successful, false if a segfault occurred. */
-static bool
-put_user (uint8_t *udst, uint8_t byte)
-{
-  int error_code;
-  asm ("movl $1f, %0; movb %b2, %1; 1:"
-       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
-  return error_code != -1;
 }
 
 /*search global file list for the given block_sector_t*/
