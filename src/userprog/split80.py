@@ -1,8 +1,9 @@
 #script used to make sure DESIGNDOC 
 import os
+from subprocess import call
 
-f=open('DESIGNDOC', 'r')
-f_out=open('DESIGNDOC2','w')
+f=open('DESIGNDOC', 'rb')
+f_out=open('DESIGNDOC2','wb')
 line=f.readline();
 count_num=0
 while(line):
@@ -29,4 +30,5 @@ f_out.close()
 
 os.remove("./DESIGNDOC")
 os.rename("DESIGNDOC2", "DESIGNDOC")
-		
+#convert the line break into unix style
+call(["dos2unix","DESIGNDOC"])	
