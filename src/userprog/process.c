@@ -24,7 +24,7 @@ static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
 
 /*self defined*/
-static void push_args2stack(void **esp, const char *full_line);
+static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
 /* Starts a new thread running a user program loaded from
@@ -353,8 +353,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (void *lib_, void (**eip) (void), void **esp)
 {
-  const struct load_info_block *lib = lib_;
-  const char *fn_copy=lib->full_line;
+  struct load_info_block *lib = lib_;
+  char *fn_copy=lib->full_line;
   char file_name[MAX_FILE_NAME+1];
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
@@ -640,7 +640,7 @@ void get_cmd(const char *full_line, char* cmd){
 
 
 /*push args into stack*/
-static void push_args2stack(void **esp,const char *full_line){
+static void push_args2stack(void **esp, char *full_line){
 	char *token, *save_ptr, *null_ptr;
 	int argc=0;
 	int i=0;
@@ -650,10 +650,9 @@ static void push_args2stack(void **esp,const char *full_line){
 
 	int esp_limit=(int)(*esp)-PGSIZE;
 
-	null_ptr = (char *)NULL;
 	/*find out how many args are there*/
 	for (token = strtok_r (full_line, " ", &save_ptr); token != NULL;
-		token = strtok_r (null_ptr, " ", &save_ptr)){
+		token = strtok_r (NULL, " ", &save_ptr)){
 		argc++;
 	}
 
