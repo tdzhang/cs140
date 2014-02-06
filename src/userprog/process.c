@@ -641,7 +641,7 @@ void get_cmd(const char *full_line, char* cmd){
 
 /*push args into stack*/
 static void push_args2stack(void **esp, char *full_line){
-	char *token, *save_ptr, *null_ptr;
+	char *token, *save_ptr;
 	int argc=0;
 	int i=0;
 	int j=0;

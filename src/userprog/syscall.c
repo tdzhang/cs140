@@ -547,7 +547,7 @@ void user_exit(int exit_code){
 /*judge if the pointer point to a valid space*/
 static bool is_user_address(const void *pointer, int size){
 	uint32_t address=*(int *)pointer;
-	const void *end_pointer=&(address+size-1);
+	void *end_pointer=address+size-1;
 	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
 	int i;
 	bool mapped=false;
