@@ -4,21 +4,21 @@
 #include "threads/thread.h"
 #include "threads/synch.h"
 
+/*info used for process waiting*/
 struct wait_info_block {
 	tid_t tid;               /*thread's tid*/
 	struct thread *t;        /*pointer to thread*/
 	int exit_code;           /*code for exit status*/
 	struct list_elem elem;   /*list elem for children list of its parent*/
 	struct lock l;           /*lock for this struct itself*/
-	struct condition c;      /*cond for wait from the parent*/
+	struct condition c;      /*cond for waiting by the parent*/
 };
 
 /*load info struct used for process_execute*/
-struct load_info_block{
-	char * full_line;   /*full command line string*/
-	struct semaphore sema_loaded; /*semaphore used to load thread*/
-	bool success; /*whether the thread is loaded successfully*/
-
+struct load_info_block {
+	char * full_line;               /*full command line string*/
+	struct semaphore sema_loaded;   /*semaphore used to load thread*/
+	bool success;              /*whether the thread is loaded successfully*/
 };
 
 tid_t process_execute (const char *file_name);

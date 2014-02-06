@@ -37,8 +37,6 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
-  //TODO: add lock or something
-
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -46,6 +44,7 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  /*dynamically allocate a load_info_block to help loading new process*/
   struct load_info_block *lib = malloc(sizeof(struct load_info_block));
   if(lib==NULL){
 	  palloc_free_page (fn_copy);
@@ -59,22 +58,19 @@ process_execute (const char *file_name)
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (fn_copy, PRI_DEFAULT, start_process, lib);
 
+  /*wait for load() finishes*/
   sema_down(&lib->sema_loaded);
 
   if (!lib->success) {
 	  tid = TID_ERROR;
   }
 
-  if (tid == TID_ERROR) {
-	  /*palloc_free_page (fn_copy);*/
-  }
-  /*free it anyway*/
-  /*palloc_free_page (fn_copy);*/
+  /*clean up*/
   if(lib->full_line!=NULL){
 	  palloc_free_page(lib->full_line);
   }
-  /*clean up*/
   free(lib);
+
   return tid;
 }
 
@@ -98,6 +94,7 @@ start_process (void *lib_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (lib, &if_.eip, &if_.esp);
   lib->success = success;
+  /*notice the waiting parent thread*/
   sema_up(&lib->sema_loaded);
 
   /* If load failed, quit. */
@@ -203,12 +200,11 @@ process_exit (void)
 	  e = temp;
   }
 
-  /*print out the exit info*/
-	/*print out termination msg for grading use*/
-	if (cur->is_user){
-		get_cmd(cur->name, cmd);
-		printf ("%s: exit(%d)\n", cmd, cur->exit_code);
-	}
+  /*print out termination msg for grading use*/
+  if (cur->is_user){
+	get_cmd(cur->name, cmd);
+	printf ("%s: exit(%d)\n", cmd, cur->exit_code);
+  }
 
 
   /*update wait_info_block if its parent process still exists*/
@@ -221,10 +217,11 @@ process_exit (void)
   }
 
 
-  /*terminate children process*/
+  /*clean up children's wait_info_block*/
   struct list *child_list = &cur->child_wait_block_list;
   while(!list_empty(child_list)) {
-	  wib = list_entry (list_pop_front(child_list), struct wait_info_block, elem);
+	  wib = list_entry (list_pop_front(child_list),
+			  struct wait_info_block, elem);
 
 	  lock_acquire(&wib->l);
 	  list_remove(&wib->elem);
@@ -234,8 +231,6 @@ process_exit (void)
 	  lock_release(&wib->l);
 	  free(wib);
   }
-
-  //TODO: allow write to cmd_file again
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -470,7 +465,6 @@ load (void *lib_, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  /*file_close (file);*/
   return success;
 }
 
@@ -708,6 +702,7 @@ bool init_wait_info_block(struct thread *t) {
 	/*if malloc failed, return false*/
 	if (wib == NULL) return false;
 	t->wait_info = wib;
+	/*init wib*/
 	wib->t = t;
 	wib->tid = t->tid;
 	lock_init(&wib->l);

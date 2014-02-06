@@ -152,6 +152,7 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
+  /*if current thread is a user thread, terminate it with kernel intact*/
   struct thread *cur=thread_current();
   if(cur->is_user){
 	  user_exit(-1);

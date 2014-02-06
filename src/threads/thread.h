@@ -115,21 +115,20 @@ struct thread
                                           for -mlfqs*/
     int nice;                           /*nice value used for -mlfqs*/
 
-    /*project2 used*/
-
-
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
     int exit_code;              /*the status code when exit*/
-    bool is_user;      /*indicator for user thread*/
-    struct wait_info_block *wait_info; /*wait_info_block for this thread*/
-    struct list child_wait_block_list;  /*list of wait_info_block of its children*/
+    bool is_user;               /*indicator for user thread*/
+    struct wait_info_block *wait_info;  /*wait_info_block for this thread*/
+    struct list child_wait_block_list;  /*list of wait_info_block of its
+    	                                      children*/
     struct list opened_file_list;       /*list of files this thread opened*/
-    int next_fd_num;                    /*next fd number for this thread locally*/
-    struct file* exec_file_ptr;  /*the file which is the excutable file for this thread*/
+    int next_fd_num;                    /*next fd number for this thread*/
+    struct file *exec_file_ptr;         /*the file which is the excutable
+                                          file for this thread*/
 #endif
 
     /* Owned by thread.c. */

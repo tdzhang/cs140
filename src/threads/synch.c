@@ -128,12 +128,11 @@ sema_up (struct semaphore *sema)
   	  list_remove(&t->elem);
   	  thread_unblock (t);
   	  if (t->actual_priority > thread_current()->actual_priority) {
-  		  /*yield if that thread has higher priority and not
-  		   * in interrupt*/
+  		  /*yield if that thread has higher priority and not in interrupt*/
   		  if (!intr_context()) {
   			  thread_yield();
   		  } else {
-  			intr_yield_on_return();
+  			  intr_yield_on_return();
   		  }
   	  }
   }

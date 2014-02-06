@@ -20,23 +20,24 @@
 static void syscall_handler (struct intr_frame *);
 static int get_user (const uint8_t *uaddr);
 
-/*self defined */
 
+/*info for opened files in the entire system*/
 struct global_file_block {
-	block_sector_t inode_block_num; /*identification for file*/
+	block_sector_t inode_block_num;/*identification for file*/
 	int ref_num;                   /*the number of threads holding this file*/
 	bool is_deleted;               /*indicates the file is to be removed*/
 	struct list_elem elem;         /*list elem for global_file_list*/
 };
 
-struct list global_file_list;             /*List of all opened files*/
+struct list global_file_list;      /*List of all opened files*/
 
 
 static bool is_user_address(const void *pointer, int size);
 static bool is_string_address_valid(const void *pointer);
 static bool is_page_mapped (const void *uaddr_);
 static struct file_info_block* find_fib(struct list* l, int fd);
-static struct global_file_block *find_opened_file(struct list *l, block_sector_t s);
+static struct global_file_block *find_opened_file(
+		struct list *l, block_sector_t s);
 static int write_to_file(struct file *file, char *buffer, size_t size);
 static int read_from_file(struct file* f, void *buffer, int size);
 static void sys_exit_handler(struct intr_frame *f);
@@ -57,6 +58,7 @@ static void sys_tell_handler(struct intr_frame *f);
 void
 syscall_init (void) 
 {
+  /*init the global file list and filesys locl*/
   lock_init(&filesys_lock);
   list_init(&global_file_list);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
@@ -65,7 +67,6 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-//TODO:may need to check string address
  uint32_t* esp=f->esp;
  if(!is_user_address((void*)esp, sizeof(void *))){
 	 user_exit(-1);
@@ -119,8 +120,6 @@ syscall_handler (struct intr_frame *f UNUSED)
  }
 
 }
-
-/*self defined*/
 
 /*handle sys_exec*/
 static void sys_exec_handler(struct intr_frame *f){
@@ -179,9 +178,9 @@ static void sys_remove_handler(struct intr_frame *f){
 	}
 
 	/*update the global_file_block*/
-
 	lock_acquire(&filesys_lock);
-	struct global_file_block *gfb = find_opened_file(&global_file_list, file->inode->sector);
+	struct global_file_block *gfb = find_opened_file(&global_file_list,
+			file->inode->sector);
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
@@ -214,9 +213,8 @@ static void sys_close_handler(struct intr_frame *f){
 		/*if cur did not hold this file, return with false*/
 		return;
 	}
-	/*update the global_file_block*/
 
-	/*try to close file corresponding to *fd_ptr*/
+	/*close file corresponding to *fd_ptr*/
 	close_file_by_fib(fib);
 
 }
@@ -226,7 +224,8 @@ static void sys_close_handler(struct intr_frame *f){
 void close_file_by_fib(struct file_info_block *fib) {
 	ASSERT(fib != NULL);
 	lock_acquire(&filesys_lock);
-	struct global_file_block *gfb = find_opened_file(&global_file_list, fib->f->inode->sector);
+	struct global_file_block *gfb = find_opened_file(&global_file_list,
+			fib->f->inode->sector);
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
@@ -302,11 +301,14 @@ static void sys_open_handler(struct intr_frame *f){
 	}
 	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
 	fib->file_name = file_name_copy;
-	/*add file_info_block of the opened file into current thread's opened_file_list*/
+	/*add file_info_block of the opened file into current thread's
+	  opened_file_list*/
 	list_push_back(&cur->opened_file_list, &fib->elem);
 
+	/*update global_file_block*/
 	lock_acquire(&filesys_lock);
-	struct global_file_block *gfb = find_opened_file(&global_file_list, file->inode->sector);
+	struct global_file_block *gfb = find_opened_file(&global_file_list,
+			file->inode->sector);
 
 	if (gfb == NULL) {
 		/*open a new file*/
@@ -323,7 +325,7 @@ static void sys_open_handler(struct intr_frame *f){
 			file_close(file);
 			return;
 		}
-
+		/*increase file reference number*/
 		gfb->ref_num++;
 	}
 	lock_release(&filesys_lock);
@@ -420,8 +422,9 @@ static void sys_seek_handler(struct intr_frame *f){
 	int *fd_ptr=(int *)(esp+1);
 	int *pos_ptr=(int *)(esp+2);
 
+	/*find the file_info_block corresponding to the input fd*/
 	struct thread *cur=thread_current();
-	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	struct file_info_block *fib = find_fib(&cur->opened_file_list, *fd_ptr);
 	if(fib==NULL){
 		return;
 	}
@@ -456,7 +459,6 @@ static void sys_write_handler(struct intr_frame *f){
 	int *size_ptr=(int *)(esp+3);
 
 	/*verify whole buffer*/
-
 	if(!is_user_address((void *)buffer, *size_ptr)){
 			 user_exit(-1);
 			 return;
@@ -470,7 +472,7 @@ static void sys_write_handler(struct intr_frame *f){
 		return;
 	}
 
-	//TODO: other normal file write
+	/*write to regular file*/
 	struct thread * cur=thread_current();
 	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
 	if(fib==NULL){
@@ -524,7 +526,9 @@ static void sys_read_handler(struct intr_frame *f){
 		/*handle return value*/
 		f->eax = *size_ptr;
 	} else {
-		struct file_info_block *fib = find_fib(&thread_current()->opened_file_list, *fd_ptr);
+	/*read from regular file*/
+		struct file_info_block *fib =
+				find_fib(&thread_current()->opened_file_list, *fd_ptr);
 		if (fib == NULL) {
 			f->eax = -1;
 		} else {
@@ -536,15 +540,11 @@ static void sys_read_handler(struct intr_frame *f){
 /*user process exit with exit_code*/
 void user_exit(int exit_code){
 	struct thread* cur=thread_current();
-
 	cur->exit_code = exit_code;
-
-	//TODO: handling user process's file handler
-
 	thread_exit();
 }
 
-/*judge if the pointer point to a valid space*/
+/*judge if the pointer points to a valid space*/
 static bool is_user_address(const void *pointer, int size){
 	uint32_t address=(uint32_t)pointer;
 	void *end_pointer=(void *)(address+size-1);
@@ -629,7 +629,8 @@ get_user (const uint8_t *uaddr)
 }
 
 /*search global file list for the given block_sector_t*/
-static struct global_file_block *find_opened_file(struct list* l, block_sector_t s) {
+static struct global_file_block *find_opened_file(
+		struct list* l, block_sector_t s) {
 	struct global_file_block *gf = NULL;
 	struct list_elem *e = NULL;
 
@@ -647,7 +648,7 @@ static struct global_file_block *find_opened_file(struct list* l, block_sector_t
 static struct file_info_block* find_fib(struct list* l, int fd) {
 	struct file_info_block *fib = NULL;
 	struct list_elem *e = NULL;
-	//TODO: if need to handle one file opened multiply time by one thread, using file_name to match
+
 	for (e = list_begin (l); e != list_end (l); e = list_next (e)) {
 		fib = list_entry (e, struct file_info_block, elem);
 		if (fib->fd == fd) {
@@ -705,7 +706,7 @@ static void sys_tell_handler(struct intr_frame *f){
 		return;
 	}
 
-	f->eax= file_tell (fib->f);
+	f->eax = file_tell (fib->f);
 
 }
 
