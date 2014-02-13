@@ -2,7 +2,11 @@
 #define VM_PAGE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <debug.h>
+#include <hash.h>
+#include "filesys/off_t.h"
+
 
 struct supplemental_pte {
 	  uint8_t type_code;		/* type of this spte entry to find the content */
