@@ -19,6 +19,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
@@ -722,6 +723,7 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	spte->offset = ofs;
 	spte->zero_bytes = zero_bytes;
 	hash_insert(&thread_current()->supplemental_pt, &spte->elem);
+	return true;
 }
 
 
