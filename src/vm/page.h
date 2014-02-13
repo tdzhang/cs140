@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <debug.h>
 #include <hash.h>
+#include "threads/thread.h"
 #include "filesys/off_t.h"
 
 
