@@ -131,6 +131,9 @@ struct thread
                                           file for this thread*/
 #endif
 
+    /*added for VM*/
+    struct hash supplemental_pt;               /* supplemental page table */
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
