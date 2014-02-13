@@ -21,7 +21,4 @@ struct supplemental_pte {
 	  struct hash_elem elem;	/* hash elem for the spte in thread's hash table */
 };
 
-unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED);
-bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED);
-
 #endif /* vm/page.h */
