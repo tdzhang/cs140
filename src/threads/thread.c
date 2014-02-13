@@ -18,7 +18,6 @@
 #endif
 /*added for VM*/
 #include "vm/page.h"
-#include "vm/page.c"
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
