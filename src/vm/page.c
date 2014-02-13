@@ -17,7 +17,4 @@ bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
 }
 
 
-void spt_init(struct thread *t) {
-	hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
-}
 
