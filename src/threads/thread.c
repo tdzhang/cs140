@@ -277,7 +277,7 @@ thread_create (const char *name, int priority,
 #endif
 
   /*added for VM*/
-  hash_init (&t->supplemental_pt, &hash_spte1, &hash_less_spte1, NULL);
+  spt_init(t);
 
   /* Add to run queue. */
   thread_unblock (t);
