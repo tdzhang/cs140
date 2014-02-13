@@ -261,7 +261,7 @@ thread_create (const char *name, int priority,
 #endif
 
   /*added for VM*/
-  hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
+  hash_init (&t->supplemental_pt, &hash_spte1, &hash_less_spte1, NULL);
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -274,6 +274,23 @@ thread_create (const char *name, int priority,
   }
   return tid;
 }
+
+
+/*hash function for supplemental page table (a hash table)*/
+unsigned hash_spte1 (const struct hash_elem *e, void *aux UNUSED) {
+  struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+  return hash_int ((int)spte->uaddr);
+}
+
+/*hash less function for supplemental page table (a hash table)*/
+bool hash_less_spte1 (const struct hash_elem *a, const struct hash_elem *b,
+		void *aux UNUSED) {
+  struct supplemental_pte *spte1 = hash_entry (a, struct supplemental_pte, elem);
+  struct supplemental_pte *spte2 = hash_entry (b, struct supplemental_pte, elem);
+  return (spte1->uaddr < spte2->uaddr);
+}
+
+
 
 /* Puts the current thread to sleep.  It will not be scheduled
    again until awoken by thread_unblock().

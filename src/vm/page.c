@@ -16,3 +16,7 @@ bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
   return (spte1->uaddr < spte2->uaddr);
 }
 
+/*
+void spt_init()
+hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
+*/
