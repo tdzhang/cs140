@@ -1,4 +1,5 @@
 #include "vm/frame.h"
+#include "threads/palloc.h"
 
 /* List of all frame_table_entry. */
 static struct list frame_table;
