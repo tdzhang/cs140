@@ -19,6 +19,9 @@ struct supplemental_pte {
 	  size_t zero_bytes;		/* zero bytes number in this page */
 
 	  struct hash_elem elem;	/* hash elem for the spte in thread's hash table */
+
+	  //TODO: need a lock to handle pin etc.
+	  /*-->need init in populate_spte in process.c  */
 };
 
 #endif /* vm/page.h */

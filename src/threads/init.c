@@ -31,6 +31,10 @@
 #else
 #include "tests/threads/tests.h"
 #endif
+/*ifdef VM*/
+//TODO: move down to real ifdef
+#include "vm/frame.h"
+/*endif*/
 #ifdef FILESYS
 #include "devices/block.h"
 #include "devices/ide.h"
@@ -88,7 +92,11 @@ main (void)
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
   thread_init ();
-  console_init ();  
+  console_init ();
+
+  /*ifdef VM*/
+  frame_table_init();
+  /*endif*/
 
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",

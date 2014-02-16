@@ -134,6 +134,12 @@ struct thread
 
     /*added for VM*/
     struct hash supplemental_pt;               /* supplemental page table */
+    //TODO: add a lock for supplemental_pt
+    /* -->need init in thead_create()
+     * -->need to lock and unlock in populate_spte in process.c when doing insersion*/
+
+
+
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
