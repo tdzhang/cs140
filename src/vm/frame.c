@@ -1,5 +1,8 @@
 #include "vm/frame.h"
 #include "threads/palloc.h"
+#include "threads/synch.h"
+#include "threads/malloc.h"
+#include <list.h>
 
 /* List of all frame_table_entry. */
 static struct list frame_table;
@@ -27,7 +30,7 @@ get_frame (struct supplemental_pte *spte)
   if (frame_addr != NULL)
   {
     /* create a frame_table_entry and return */
-    return create_fte (thread_current (), spte, frame_addr);
+    return create_fte (thread_current (), frame_addr, spte);
   } else {
     /* no available frame, need to evict one  */
    //TODO: evict a frame, and return the address
