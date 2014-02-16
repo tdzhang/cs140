@@ -49,11 +49,23 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	return fte;
 }
 
-struct frame_table_entry
+/*free a frame_table_entry*/
+bool
+free_fte (struct frame_table_entry *fte)
 {
-  struct thread *t;		/* the thread who own this entry */
-  uint8_t *frame_addr;		/* the actual frame address */
-  struct list_elem elem;	/* Linked list of frame entries */
-  bool pinned;			/* whether this frame is pinned  */
-  struct supplemental_pte* spte; /*the corresponding spte*/
-};
+  lock_acquire (&frame_table_lock);
+  if(fte->pinned){
+	  /*cannot deallocate when it is pinned*/
+	  lock_release (&frame_table_lock);
+	  return false;
+  }
+
+  /*clean up*/
+  list_remove (&fte->elem);
+  palloc_free_page(fte->frame_addr);
+  free(fte);
+
+  lock_release (&frame_table_lock);
+
+  return true;
+}
