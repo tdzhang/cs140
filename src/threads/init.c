@@ -31,10 +31,7 @@
 #else
 #include "tests/threads/tests.h"
 #endif
-/*ifdef VM*/
-//TODO: move down to real ifdef
-#include "vm/frame.h"
-/*endif*/
+
 #ifdef FILESYS
 #include "devices/block.h"
 #include "devices/ide.h"
@@ -55,6 +52,7 @@ static const char *filesys_bdev_name;
 static const char *scratch_bdev_name;
 #ifdef VM
 static const char *swap_bdev_name;
+#include "vm/frame.h"
 #endif
 #endif /* FILESYS */
 
@@ -94,10 +92,6 @@ main (void)
   thread_init ();
   console_init ();
 
-  /*ifdef VM*/
-  frame_table_init();
-  /*endif*/
-
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
           init_ram_pages * PGSIZE / 1024);
@@ -127,6 +121,10 @@ main (void)
   thread_start ();
   serial_init_queue ();
   timer_calibrate ();
+
+#ifdef VM
+  frame_table_init();
+#endif
 
 #ifdef FILESYS
   /* Initialize file system. */

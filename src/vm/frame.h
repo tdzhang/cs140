@@ -11,8 +11,6 @@ void frame_table_init();
 struct frame_table_entry* get_frame(struct supplemental_pte *spte);
 bool free_fte (struct frame_table_entry *fte);
 
-
-
 struct frame_table_entry
 {
   struct thread *t;		/* the thread who own this entry */
