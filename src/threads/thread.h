@@ -132,12 +132,10 @@ struct thread
                                           file for this thread*/
 #endif
 
-    /*added for VM*/
+#ifdef VM
     struct hash supplemental_pt;               /* supplemental page table */
-    //TODO: add a lock for supplemental_pt
-    /* -->need init in thead_create()
-     * -->need to lock and unlock in populate_spte in process.c when doing insersion*/
-
+    struct lock supplemental_pt_lock; 	 /* lock supplemental page table */
+#endif
 
 
 

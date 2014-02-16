@@ -5,6 +5,8 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/syscall.h"
+#include "vm/frame.h"
+#include "vm/page.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -152,20 +154,38 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  /*if current thread is a user thread, terminate it with kernel intact*/
-  struct thread *cur=thread_current();
-  if(cur->is_user){
-	  user_exit(-1);
-  }
 
-  /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
+   struct thread *cur=thread_current();
+
+   if (not_present)
+   {
+	   /*try to load the page, if success return*/
+	   if(try_load_page(fault_addr)){
+		   return;
+	   }
+     //TODO: try to extend stack, if success retrun
+
+   }
+
+   /*if this is a system_call from a user thread, terminate it with kernel intact*/
+     if(cur->is_user && !user){
+    	 	 user_exit(-1);
+     }
+     /*if this is  a user call, terminate it with kill()*/
+     else if (user){
+    	 	 kill (f);
+     }
+     /* kernel stuff*/
+     else{
+		 /* To implement virtual memory, delete the rest of the function
+			 body, and replace it with code that brings in the page to
+			 which fault_addr refers. */
+		  printf ("Page fault at %p: %s error %s page in %s context.\n",
+				  fault_addr,
+				  not_present ? "not present" : "rights violation",
+				  write ? "writing" : "reading",
+				  user ? "user" : "kernel");
+		  kill (f);
+     }
 }
 

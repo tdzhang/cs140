@@ -722,7 +722,12 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	spte->f = file;
 	spte->offset = ofs;
 	spte->zero_bytes = zero_bytes;
-	hash_insert(&thread_current()->supplemental_pt, &spte->elem);
+	lock_init(&spte->lock);
+
+	struct thread * cur=thread_current();
+	lock_acquire(&cur->supplemental_pt_lock);
+	hash_insert(&cur->supplemental_pt, &spte->elem);
+	lock_release(&cur->supplemental_pt_lock);
 	return true;
 }
 
