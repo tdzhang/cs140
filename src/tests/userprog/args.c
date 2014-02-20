@@ -8,6 +8,7 @@
 int
 main (int argc, char *argv[]) 
 {
+	/*
   int i;
 
   test_name = "args";
@@ -20,6 +21,6 @@ main (int argc, char *argv[])
     else
       msg ("argv[%d] = null", i);
   msg ("end");
-
+*/
   return 0;
 }

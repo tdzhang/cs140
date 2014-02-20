@@ -19,6 +19,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
@@ -26,6 +27,10 @@ static bool load (void *lib_, void (**eip) (void), void **esp);
 /*self defined*/
 static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
+
+
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable);
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -468,9 +473,6 @@ load (void *lib_, void (**eip) (void), void **esp)
   return success;
 }
 
-/* load() helpers. */
-
-static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
@@ -548,27 +550,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
-        return false;
-
-      /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
-      /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-
+      /* populate spte in supplemental page table */
+      bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable);
+      if (!success) {
+    	  	  return false;
+      }
       /* Advance. */
+      ofs += page_read_bytes;
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -605,7 +593,7 @@ setup_stack (void **esp)
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-static bool
+bool
 install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
@@ -715,3 +703,33 @@ bool init_wait_info_block(struct thread *t) {
 	}
 	return true;
 }
+
+
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable) {
+	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
+
+	if (spte == NULL) {
+		return false;
+	}
+
+	spte->type_code = SPTE_FILE;
+	spte->uaddr = upage;
+	spte->writable = writable;
+	spte->f = file;
+	spte->offset = ofs;
+	spte->zero_bytes = zero_bytes;
+	lock_init(&spte->lock);
+
+	struct thread * cur=thread_current();
+	ASSERT(cur != NULL);
+#ifdef VM
+	lock_acquire(&cur->supplemental_pt_lock);
+	hash_insert(&cur->supplemental_pt, &spte->elem);
+	lock_release(&cur->supplemental_pt_lock);
+#endif
+	return true;
+}
+
+
+
+

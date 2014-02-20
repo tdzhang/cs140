@@ -31,5 +31,7 @@ void process_activate (void);
 void get_cmd(const char *full_line, char* cmd);
 bool init_wait_info_block(struct thread *t);
 
+/* load() helpers. */
+bool install_page (void *upage, void *kpage, bool writable);
 
 #endif /* userprog/process.h */
