@@ -19,10 +19,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
-
-#ifdef VM
 #include "vm/page.h"
-#endif
 
 static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
