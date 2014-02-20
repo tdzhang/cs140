@@ -23,7 +23,7 @@ void frame_table_init(){
 struct frame_table_entry*
 get_frame (struct supplemental_pte *spte)
 {
-
+	ASSERT(spte != NULL);
   /* get a physical address of a free frame*/
   uint8_t *frame_addr = palloc_get_page (PAL_USER);
 
@@ -40,8 +40,9 @@ get_frame (struct supplemental_pte *spte)
 
 struct frame_table_entry *
 create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
+	ASSERT(t != NULL);
 	struct frame_table_entry *fte=malloc(sizeof(struct frame_table_entry));
-	//TODO: if null
+	ASSERT(fte != NULL);
 	fte->t=t;
 	fte->frame_addr=frame_addr;
 	fte->spte=spte;
@@ -58,6 +59,7 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 bool
 free_fte (struct frame_table_entry *fte)
 {
+	ASSERT(fte != NULL);
   lock_acquire (&frame_table_lock);
   if(fte->pinned){
 	  /*cannot deallocate when it is pinned*/

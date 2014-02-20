@@ -12,7 +12,7 @@ bool try_load_page(void* fault_addr){
 	uint8_t* target_addr = (uint8_t*)pg_round_down (fault_addr);
 	bool result = false;
 	struct thread* cur= thread_current();
-
+	ASSERT(cur != NULL);
 	/*creat key elem for searching*/
 	struct supplemental_pte key;
 	key.uaddr=target_addr;
@@ -28,6 +28,7 @@ bool try_load_page(void* fault_addr){
 
 	/*get the entry and release lock*/
 	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+	ASSERT(spte != NULL);
 	lock_acquire(&spte->lock);
 	lock_release(&cur->supplemental_pt_lock);
 
@@ -55,6 +56,7 @@ bool load_file(struct supplemental_pte *spte) {
 	}
 
 	struct file *f = spte->f;
+	ASSERT(f != NULL);
 	off_t offset = spte->offset;
 	size_t zero_bytes = spte->zero_bytes;
 	size_t read_bytes = PGSIZE - zero_bytes;

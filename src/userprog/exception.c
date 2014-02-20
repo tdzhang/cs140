@@ -156,7 +156,7 @@ page_fault (struct intr_frame *f)
 
 
    struct thread *cur=thread_current();
-
+   ASSERT(cur != NULL);
    if (not_present)
    {
 	   /*try to load the page, if success return*/
