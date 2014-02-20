@@ -1,4 +1,5 @@
 #include "vm/page.h"
+#include "vm/frame.h"
 #include "threads/vaddr.h"
 #include <hash.h>
 
