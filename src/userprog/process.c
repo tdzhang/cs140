@@ -710,7 +710,7 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	if (spte == NULL) {
 		return false;
 	}
-
+	upage = (uint8_t*)pg_round_down (upage);
 	spte->type_code = SPTE_FILE;
 	spte->uaddr = upage;
 	spte->writable = writable;
