@@ -8,8 +8,10 @@
 #include "threads/thread.h"
 #include "filesys/off_t.h"
 
-bool try_load_page(void* fault_addr);
+#define SPTE_FILE 1
+#define SPTE_IN_SWAP 2
 
+bool try_load_page(void* fault_addr);
 
 struct supplemental_pte {
 	  uint8_t type_code;		/* type of this spte entry to find the content */

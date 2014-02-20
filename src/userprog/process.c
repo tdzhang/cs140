@@ -19,7 +19,10 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+
+#ifdef VM
 #include "vm/page.h"
+#endif
 
 static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
@@ -28,9 +31,7 @@ static bool load (void *lib_, void (**eip) (void), void **esp);
 static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
-/*added for VM*/
-#define SPTE_FILE 1
-#define SPTE_IN_SWAP 2
+
 bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable);
 
 
