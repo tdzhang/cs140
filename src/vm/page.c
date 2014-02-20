@@ -2,6 +2,7 @@
 #include "vm/frame.h"
 #include "threads/vaddr.h"
 #include <hash.h>
+#include "filesys/file.h"
 
 bool load_file(struct supplemental_pte *spte);
 
