@@ -31,7 +31,6 @@
 #else
 #include "tests/threads/tests.h"
 #endif
-
 #ifdef FILESYS
 #include "devices/block.h"
 #include "devices/ide.h"
@@ -52,7 +51,6 @@ static const char *filesys_bdev_name;
 static const char *scratch_bdev_name;
 #ifdef VM
 static const char *swap_bdev_name;
-#include "vm/frame.h"
 #endif
 #endif /* FILESYS */
 
@@ -90,7 +88,7 @@ main (void)
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
   thread_init ();
-  console_init ();
+  console_init ();  
 
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
@@ -121,10 +119,6 @@ main (void)
   thread_start ();
   serial_init_queue ();
   timer_calibrate ();
-
-#ifdef VM
-  frame_table_init();
-#endif
 
 #ifdef FILESYS
   /* Initialize file system. */

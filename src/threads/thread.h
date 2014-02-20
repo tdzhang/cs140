@@ -4,8 +4,6 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include <hash.h>
-#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -132,13 +130,6 @@ struct thread
     struct file *exec_file_ptr;         /*the file which is the excutable
                                           file for this thread*/
 #endif
-
-#ifdef VM
-    struct hash supplemental_pt;               /* supplemental page table */
-    struct lock supplemental_pt_lock; 	 /* lock supplemental page table */
-#endif
-
-
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
