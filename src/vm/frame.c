@@ -41,6 +41,7 @@ get_frame (struct supplemental_pte *spte)
 struct frame_table_entry *
 create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	struct frame_table_entry *fte=malloc(sizeof(struct frame_table_entry));
+	//TODO: if null
 	fte->t=t;
 	fte->frame_addr=frame_addr;
 	fte->spte=spte;
