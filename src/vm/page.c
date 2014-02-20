@@ -57,51 +57,18 @@ bool load_file(struct supplemental_pte *spte) {
 	size_t zero_bytes = spte->zero_bytes;
 	size_t read_bytes = PGSIZE - zero_bytes;
 
+	file_seek(f, offset);
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
-		palloc_free_page (fte->frame_addr);
+		free_fte (fte);
 		return false;
 	}
 	memset(fte->frame_addr+read_bytes, 0, read_bytes);
 
+	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+	//TODO: unpin_frame?
+	if (!success) {
+		free_fte (fte->frame_addr);
+		return false;
+	}
+	return true;
 }
-
-
-
-/* Get a page of memory. */
-     uint8_t *kpage = palloc_get_page (PAL_USER);
-     if (kpage == NULL)
-       return false;
-
-     /* Load this page. */
-     if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-       {
-         palloc_free_page (kpage);
-         return false;
-       }
-     memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
-     /* Add the page to the process's address space. */
-     if (!install_page (upage, kpage, writable))
-       {
-         palloc_free_page (kpage);
-         return false;
-       }
-
-
-struct supplemental_pte {
-	  uint8_t type_code;		/* type of this spte entry to find the content */
-	  //TODO: load_segment need to set type code to file_type(which need to be defined)
-	  uint8_t *uaddr;		/* virtual address of the page */
-	  bool writable;		    /* if the page is writable */
-
-	  struct file *f;		/* file pointer to the file in filesystem */
-	  off_t offset;			/* current offset in the file */
-	  size_t zero_bytes;		/* zero bytes number in this page */
-
-	  struct hash_elem elem;	/* hash elem for the spte in thread's hash table */
-
-	  struct lock lock; /*lock for this struct*/
-
-};
-
-

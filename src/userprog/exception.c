@@ -163,29 +163,29 @@ page_fault (struct intr_frame *f)
 	   if(try_load_page(fault_addr)){
 		   return;
 	   }
-     //TODO: try to extend stack, if success retrun
+     //TODO: try to extend stack, if success return
 
    }
 
-   /*if this is a system_call from a user thread, terminate it with kernel intact*/
-     if(cur->is_user && !user){
-    	 	 user_exit(-1);
-     }
-     /*if this is  a user call, terminate it with kill()*/
-     else if (user){
-    	 	 kill (f);
-     }
-     /* kernel stuff*/
-     else{
-		 /* To implement virtual memory, delete the rest of the function
-			 body, and replace it with code that brings in the page to
-			 which fault_addr refers. */
-		  printf ("Page fault at %p: %s error %s page in %s context.\n",
-				  fault_addr,
-				  not_present ? "not present" : "rights violation",
-				  write ? "writing" : "reading",
-				  user ? "user" : "kernel");
-		  kill (f);
-     }
+    /*if this is a system_call from a user thread, terminate it with kernel intact*/
+	if(cur->is_user && !user){
+		 user_exit(-1);
+	}
+	/*if this is  a user call, terminate it with kill()*/
+	else if (user){
+		 kill (f);
+	}
+	/* kernel stuff*/
+	else{
+	 /* To implement virtual memory, delete the rest of the function
+		 body, and replace it with code that brings in the page to
+		 which fault_addr refers. */
+	  printf ("Page fault at %p: %s error %s page in %s context.\n",
+			  fault_addr,
+			  not_present ? "not present" : "rights violation",
+			  write ? "writing" : "reading",
+			  user ? "user" : "kernel");
+	  kill (f);
+	}
 }
 
