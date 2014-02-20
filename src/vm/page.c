@@ -61,11 +61,14 @@ bool load_file(struct supplemental_pte *spte) {
 	size_t zero_bytes = spte->zero_bytes;
 	size_t read_bytes = PGSIZE - zero_bytes;
 
+	off_t old_pos = file_tell (f);
 	file_seek(f, offset);
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
+		file_seek (f, old_pos);
 		free_fte (fte);
 		return false;
 	}
+	file_seek (f, old_pos);
 	memset(fte->frame_addr+read_bytes, 0, read_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
