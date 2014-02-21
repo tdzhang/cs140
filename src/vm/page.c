@@ -5,6 +5,7 @@
 #include "filesys/file.h"
 
 bool load_file(struct supplemental_pte *spte);
+bool extend_stack(struct supplemental_pte *spte);
 
 bool try_load_page(void* fault_addr){
 	ASSERT (fault_addr < PHYS_BASE);
