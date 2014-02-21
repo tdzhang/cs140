@@ -168,7 +168,7 @@ page_fault (struct intr_frame *f)
 		//TODO: the condition maybe esp-4 and esp-32, double check
 		//TODO: if esp > Stack Limite, need to handle
 		//TODO: handle case that stack and heap meet
-	   if(fault_addr>=esp-32){
+	   if(fault_addr>=(uint8_t *)esp-32){
 		   /*need to extend the stack*/
 		   /*create new spte*/
 		   if(generate_spte4stack(fault_addr)){
