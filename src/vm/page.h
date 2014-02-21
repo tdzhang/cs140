@@ -10,8 +10,11 @@
 
 #define SPTE_FILE 1
 #define SPTE_IN_SWAP 2
+#define SPTE_STACK_INIT 3
 
 bool try_load_page(void* fault_addr);
+bool generate_spte4stack(void* fault_addr);
+bool extend_stack(struct supplemental_pte *spte);
 
 struct supplemental_pte {
 	  uint8_t type_code;		/* type of this spte entry to find the content */
@@ -28,5 +31,6 @@ struct supplemental_pte {
 	  struct lock lock; /*lock for this struct*/
 
 };
+
 
 #endif /* vm/page.h */

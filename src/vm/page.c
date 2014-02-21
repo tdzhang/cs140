@@ -38,7 +38,11 @@ bool try_load_page(void* fault_addr){
 		result = load_file(spte);
 	} else if (spte->type_code == SPTE_IN_SWAP) {
 		//TODO: swap into memory
-	} else {
+	} else if (spte->type_code ==SPTE_STACK_INIT){
+		/*deal with stack extension*/
+		result = extend_stack(spte);
+	}
+	else {
 		PANIC("invalid spte type_code!");
 	}
 
@@ -69,7 +73,7 @@ bool load_file(struct supplemental_pte *spte) {
 		return false;
 	}
 	file_seek (f, old_pos);
-	memset(fte->frame_addr+read_bytes, 0, read_bytes);
+	memset(fte->frame_addr+read_bytes, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
 	//TODO: unpin_frame?
@@ -77,5 +81,59 @@ bool load_file(struct supplemental_pte *spte) {
 		free_fte (fte->frame_addr);
 		return false;
 	}
+	return true;
+}
+
+
+bool extend_stack(struct supplemental_pte *spte) {
+	ASSERT(spte != NULL);
+	ASSERT(spte->type_code == SPTE_STACK_INIT);
+
+	struct frame_table_entry *fte = get_frame(spte);
+	if (fte == NULL) {
+		return false;
+	}
+
+	struct file *f = spte->f;
+	ASSERT(f != NULL);
+
+	size_t zero_bytes = spte->zero_bytes;
+
+	memset(fte->frame_addr, 0, zero_bytes);
+
+	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+	//TODO: unpin_frame?
+	if (!success) {
+		free_fte (fte->frame_addr);
+		return false;
+	}
+	return true;
+}
+
+/**/
+bool generate_spte4stack(void* fault_addr){
+	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
+
+	if (spte == NULL) {
+		return false;
+	}
+
+	void * vs_addr=pg_round_down(fault_addr);
+
+	spte->type_code = SPTE_STACK_INIT;
+	spte->uaddr = vs_addr;
+	spte->writable = true;
+	spte->f = NULL;
+	spte->offset = NULL;
+	spte->zero_bytes = PGSIZE;
+	lock_init(&spte->lock);
+
+	struct thread * cur=thread_current();
+	ASSERT(cur != NULL);
+	#ifdef VM
+		lock_acquire(&cur->supplemental_pt_lock);
+		hash_insert(&cur->supplemental_pt, &spte->elem);
+		lock_release(&cur->supplemental_pt_lock);
+	#endif
 	return true;
 }

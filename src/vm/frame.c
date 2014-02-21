@@ -19,7 +19,7 @@ void frame_table_init(){
 	  list_init (&frame_table);
 }
 
-/**/
+/*get a frame, and generate a correspinding frame_table_entry*/
 struct frame_table_entry*
 get_frame (struct supplemental_pte *spte)
 {

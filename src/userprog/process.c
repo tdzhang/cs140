@@ -708,12 +708,13 @@ bool init_wait_info_block(struct thread *t) {
 bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable) {
 	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
 
+	void * vs_addr=pg_round_down((const void *)upage);
 	if (spte == NULL) {
 		return false;
 	}
 
 	spte->type_code = SPTE_FILE;
-	spte->uaddr = upage;
+	spte->uaddr = (uint8_t*)vs_addr;
 	spte->writable = writable;
 	spte->f = file;
 	spte->offset = ofs;

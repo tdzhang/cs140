@@ -132,6 +132,7 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
+  void *esp=f->esp;  /*get esp address*/
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -164,7 +165,18 @@ page_fault (struct intr_frame *f)
 		   return;
 	   }
      //TODO: try to extend stack, if success return
-
+	  //TODO: the condition maybe esp-4 and esp-32, double check
+	   //TODO: if esp > Stack Limite, need to handle
+	   if(fault_addr>=esp-32){
+		   /*need to extend the stack*/
+		   /*create new spte*/
+		   if(generate_spte4stack(fault_addr)){
+			   /*try load page*/
+			   if(try_load_page(fault_addr)){
+				   return;
+			   }
+		   }
+	   }
    }
 
     /*if this is a system_call from a user thread, terminate it with kernel intact*/
