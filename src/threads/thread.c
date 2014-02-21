@@ -284,6 +284,7 @@ thread_create (const char *name, int priority,
   /*init thread's supplemental_pt*/
   hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
   lock_init(&t->supplemental_pt_lock);
+  t->esp=NULL;
 #endif
 
   /* Add to run queue. */

@@ -136,6 +136,7 @@ struct thread
 #ifdef VM
     struct hash supplemental_pt;               /* supplemental page table */
     struct lock supplemental_pt_lock; 	 /* lock supplemental page table */
+    void * esp;   /*save esp when user -> kernel*/
 #endif
 
 

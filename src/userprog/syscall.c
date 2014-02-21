@@ -68,9 +68,14 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
  uint32_t* esp=f->esp;
+ /*save esp*/
+thread_current()->esp=esp;
+
  if(!is_user_address((void*)esp, sizeof(void *))){
 	 user_exit(-1);
  }
+
+
 
  /*get system call number*/
  int *sys_call_num = (int*)esp;

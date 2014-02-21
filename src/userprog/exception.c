@@ -132,7 +132,7 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
-  void *esp=f->esp;  /*get esp address*/
+  void *esp;  /*get esp address*/
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -156,8 +156,19 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
 
+
    struct thread *cur=thread_current();
    ASSERT(cur != NULL);
+
+   /*get the esp*/
+    if(user){
+  	  esp=f->esp;
+    }
+    else{
+  	  esp=cur->esp;
+    }
+
+
    if (not_present)
    {
 	   /*try to load the page, if success return*/
