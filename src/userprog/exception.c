@@ -164,9 +164,10 @@ page_fault (struct intr_frame *f)
 	   if(try_load_page(fault_addr)){
 		   return;
 	   }
-     //TODO: try to extend stack, if success return
-	  //TODO: the condition maybe esp-4 and esp-32, double check
-	   //TODO: if esp > Stack Limite, need to handle
+		//TODO: try to extend stack, if success return
+		//TODO: the condition maybe esp-4 and esp-32, double check
+		//TODO: if esp > Stack Limite, need to handle
+		//TODO: handle case that stack and heap meet
 	   if(fault_addr>=esp-32){
 		   /*need to extend the stack*/
 		   /*create new spte*/
