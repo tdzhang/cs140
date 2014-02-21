@@ -8,6 +8,7 @@
 #include "vm/frame.h"
 #include "vm/page.h"
 #include "threads/vaddr.h"
+#include <stdint.h>
 
 #define STACK_LIMIT_BASE (void *)((unit8_t *)PHYS_BASE-0x800000)
 
