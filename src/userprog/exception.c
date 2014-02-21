@@ -7,6 +7,9 @@
 #include "userprog/syscall.h"
 #include "vm/frame.h"
 #include "vm/page.h"
+#include "threads/vaddr.h"
+
+#define STACK_LIMIT_BASE (void *)((unit8_t *)PHYS_BASE-0x800000)
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -175,11 +178,10 @@ page_fault (struct intr_frame *f)
 	   if(try_load_page(fault_addr)){
 		   return;
 	   }
-		//TODO: try to extend stack, if success return
+
 		//TODO: the condition maybe esp-4 and esp-32, double check
-		//TODO: if esp > Stack Limite, need to handle
 		//TODO: handle case that stack and heap meet
-	   if(fault_addr>=(uint8_t *)esp-32){
+	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
 		   /*need to extend the stack*/
 		   /*create new spte*/
 		   if(generate_spte4stack(fault_addr)){
