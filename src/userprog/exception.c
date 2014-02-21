@@ -10,7 +10,7 @@
 #include "threads/vaddr.h"
 #include <stdint.h>
 
-#define STACK_LIMIT_BASE (void *)((unit8_t *)PHYS_BASE-0x800000)
+#define STACK_LIMIT_BASE (void *)((uint8_t *)PHYS_BASE-0x800000)
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
