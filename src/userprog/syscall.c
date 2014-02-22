@@ -176,6 +176,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 
 	uint32_t file_size=mib->file_size;
 	uint8_t* uaddr=mib->uaddr;
+	lock_acquire(&cur->supplemental_pt_lock);
 	while (file_size > 0)
 	{
 	  /*clear pagedir*/
@@ -184,7 +185,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 	  /*delect corresponding spte and frame_table_entry*/
 		struct supplemental_pte key;
 		key.uaddr=pg_round_down(uaddr);
-		lock_acquire(&cur->supplemental_pt_lock);
+
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
 			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
@@ -193,7 +194,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 			hash_delete(&cur->supplemental_pt,e);
 			free(spte);
 		}
-		lock_release(&cur->supplemental_pt_lock);
+
 
 	  /*clean mmap_list*/
 		list_remove(&mib->elem);
@@ -203,6 +204,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 	  file_size -= PGSIZE;
 	  uaddr += PGSIZE;
 	}
+	lock_release(&cur->supplemental_pt_lock);
 	//TODO: continue
 }
 
