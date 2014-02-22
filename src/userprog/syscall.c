@@ -179,10 +179,9 @@ static void sys_munmap_handler(struct intr_frame *f){
 
 	while (file_size > 0)
 	{
-	  /*clear pagedir*/
-	  pagedir_clear_page(cur->pagedir,uaddr);
 
-	  /*delect corresponding spte and frame_table_entry*/
+
+	  /*clean up*/
 		struct supplemental_pte key;
 		key.uaddr=pg_round_down(uaddr);
 		lock_acquire(&cur->supplemental_pt_lock);
@@ -191,6 +190,8 @@ static void sys_munmap_handler(struct intr_frame *f){
 			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 			if(spte->fte!=NULL){
 				free_fte(&spte->fte);
+				/*clear pagedir*/
+				pagedir_clear_page(cur->pagedir,uaddr);
 			}
 			hash_delete(&cur->supplemental_pt,e);
 			free(spte);
