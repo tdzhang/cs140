@@ -386,6 +386,7 @@ thread_exit (void)
 
   /*added for VM*/
   //TODO: clean up supplemental_pt
+  //TODO: clean up mmap_list
 
 
   /* Remove thread from all threads list, set our status to dying,
