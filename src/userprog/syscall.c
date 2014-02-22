@@ -128,9 +128,11 @@ thread_current()->esp=esp;
 		sys_close_handler(f);
 		break;
 	case SYS_MMAP:                   /* Map a file into memory. */
-		/*sys_mmap_handler(f);*/
+		sys_mmap_handler(f);
+		break;
 	case SYS_MUNMAP:                 /* Remove a memory mapping. */
 		//TODO: sys_munmap_handler(f);
+		break;
 	default:break;
  }
 
