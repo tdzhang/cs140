@@ -27,7 +27,7 @@ struct supplemental_pte {
 	  size_t zero_bytes;		/* zero bytes number in this page */
 
 	  struct hash_elem elem;	/* hash elem for the spte in thread's hash table */
-
+	  struct frame_table_entry* fte;
 	  struct lock lock; /*lock for this struct*/
 
 };

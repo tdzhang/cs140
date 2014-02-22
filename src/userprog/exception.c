@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include "userprog/process.h"
 
-#define STACK_LIMIT_BASE (void *)((uint8_t *)PHYS_BASE-0x800000)
+
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;

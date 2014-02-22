@@ -46,6 +46,7 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	fte->t=t;
 	fte->frame_addr=frame_addr;
 	fte->spte=spte;
+	spte->fte=fte;
 
 	/*add the new entry into frame_table */
 	lock_acquire(&frame_table_lock);

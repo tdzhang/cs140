@@ -47,6 +47,7 @@ static struct global_file_block *find_opened_file(
 static int write_to_file(struct file *file, char *buffer, size_t size);
 static int read_from_file(struct file* f, void *buffer, int size);
 static void sys_mmap_handler(struct intr_frame *f);
+static void sys_munmap_handler(struct intr_frame *f);
 static void sys_exit_handler(struct intr_frame *f);
 static void sys_halt_handler(struct intr_frame *f);
 static void sys_exec_handler(struct intr_frame *f);
@@ -132,7 +133,7 @@ thread_current()->esp=esp;
 		sys_mmap_handler(f);
 		break;
 	case SYS_MUNMAP:                 /* Remove a memory mapping. */
-		//TODO: sys_munmap_handler(f);
+		sys_munmap_handler(f);
 		break;
 	default:break;
  }
@@ -140,7 +141,69 @@ thread_current()->esp=esp;
 }
 
 /*handle sys_mumap*/
+static void sys_munmap_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*get the mmap_id*/
+	uint32_t mmap_id=*(uint32_t *)(esp+1);
 
+	/*search for the mmap_info_blcock entry*/
+	struct mmap_info_block *mib = NULL;
+	struct list_elem *e = NULL;
+	struct thread* cur=thread_current();
+	struct list* l=&cur->mmap_list
+	for (e = list_begin (l); e != list_end (l); e = list_next (e)) {
+		mib = list_entry (e, struct mmap_info_block, elem);
+		if (mib->mmap_id == mmap_id) {
+			break;
+		}
+	}
+	if (mib->mmap_id != mmap_id) {
+		/*return if no mid was found*/
+		return;
+	}
+
+	/*if the block is dirty, write it back to disk*/
+	//TODO: if mib mapped place is dirty, write back
+
+	/*unstall all the related mapped page, clean mmap_info_block, spte, frame_table_entry*/
+
+	uint32_t file_size=mib->file_size;
+	uint8_t* uaddr=mib->uaddr;
+	while (file_size > 0)
+	{
+	  /*clear pagedir*/
+	  pagedir_clear_page(cur->pagedir,uaddr);
+
+	  /*delect corresponding spte and frame_table_entry*/
+		struct supplemental_pte key;
+		key.uaddr=pg_round_down(uaddr);
+		lock_acquire(&cur->supplemental_pt_lock);
+		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
+		if(e!=NULL){
+			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+			list_remove(&spte->fte->elem);
+			free(spte->fte);
+			hash_delete(&cur->supplemental_pt,e);
+			free(spte);
+		}
+		lock_release(&cur->supplemental_pt_lock);
+
+	  /*clean mmap_list*/
+		list_remove(&mib->elem);
+		free(mib);
+
+	  /* Advance. */
+	  file_size -= PGSIZE;
+	  uaddr += PGSIZE;
+	}
+	//TODO: continue
+}
 
 /*handle sys_mmap*/
 static void sys_mmap_handler(struct intr_frame *f){
