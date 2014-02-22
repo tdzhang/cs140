@@ -15,6 +15,7 @@
 #include "devices/shutdown.h"
 #include "devices/input.h"
 #include "vm/page.h"
+#include "userprog/exception.h"
 #include <stdint.h>
 
 
@@ -139,19 +140,7 @@ thread_current()->esp=esp;
 }
 
 /*handle sys_mumap*/
-static void sys_munmap_handler(struct intr_frame *f){
-	uint32_t* esp=f->esp;
-	/*validate the 1st argument*/
-	if(!is_user_address(esp+1, sizeof(int))){
-		 /* exit with -1*/
-		 user_exit(-1);
-		 return;
-	 }
-	/*get the mmap_id*/
-	uint32_t mmap_id=*(uint32_t *)(esp+1);
 
-	//TODO: continue
-}
 
 /*handle sys_mmap*/
 static void sys_mmap_handler(struct intr_frame *f){
