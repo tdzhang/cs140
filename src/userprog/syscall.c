@@ -14,6 +14,7 @@
 #include "lib/string.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include "vm/page.h"
 #include <stdint.h>
 
 
@@ -183,10 +184,11 @@ static void sys_mmap_handler(struct intr_frame *f){
 				f->eax=-1;
 				return;
 			}
-			//TODO:generate spte for MAP
+			//TODO:generate spte for MAP, return mapid
 			/*populate_spte(, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable)
-			*/
+
 			f->eax = read_from_file(fib->f, buffer, *size_ptr);
+			*/
 		}
 	}
 }
