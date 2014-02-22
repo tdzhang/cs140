@@ -21,9 +21,6 @@
 
 static void syscall_handler (struct intr_frame *);
 static int get_user (const uint8_t *uaddr);
-static bool
-load_mmap (struct file *file, off_t ofs, uint8_t *upage,
-              uint32_t read_bytes, uint32_t zero_bytes, bool writable);
 
 
 /*info for opened files in the entire system*/
@@ -128,7 +125,7 @@ thread_current()->esp=esp;
 		sys_close_handler(f);
 		break;
 	case SYS_MMAP:                   /* Map a file into memory. */
-		/*sys_mmap_handler(f);*/
+		sys_mmap_handler(f);
 	case SYS_MUNMAP:                 /* Remove a memory mapping. */
 		//TODO: sys_munmap_handler(f);
 	default:break;
@@ -162,7 +159,7 @@ static void sys_mmap_handler(struct intr_frame *f){
 		/*handle return value*/
 		f->eax = -1;
 	} else {
-		/* return -1 if the addr is already used(overlap with others)*/
+		/*if the addr is already used(overlap with others)*/
 		struct thread* cur=thread_current();
 		struct supplemental_pte key;
 		key.uaddr=addr;
@@ -175,37 +172,24 @@ static void sys_mmap_handler(struct intr_frame *f){
 		}
 		lock_release(&cur->supplemental_pt_lock);
 
-		/*normal case, need to generate spte*/
+
+		/* generate spte*/
 		struct file_info_block *fib =
 				find_fib(&thread_current()->opened_file_list, *fd_ptr);
 		if (fib == NULL) {
-			/*if the file is not open already, return -1*/
 			f->eax = -1;
 			return;
 		} else {
-			off_t file_size=file_length(fib->f);
-			if(file_size==0){
+			if(file_length(fib->f)==0){
 				/*return -1 if file_size == 0*/
 				f->eax=-1;
 				return;
 			}
-			/*generate spte for MAP, return mapid*/
-			if(load_mmap (fib->f, 0, addr, file_size, PGSIZE-file_size%PGSIZE, !fib->f->deny_write)){
-				struct thread *cur = thread_current();
-				struct mmap_info_block *mib = malloc(sizeof(struct mmap_info_block));
-				mib->file_size = file_size;
-				mib->mmap_id=cur->next_mmap_id++;
-				mib->uaddr=addr;
-				/*add mmap_info_block into current thread's
-				  mmap_list*/
-				list_push_back(&cur->mmap_list, &mib->elem);
-				f->eax = mib->mmap_id;
-			}else{
-				/*if load_mmap fail, return -1*/
-				f->eax=-1;
-			}
+			//TODO:generate spte for MAP, return mapid
+			/*populate_spte(, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable)
 
-
+			f->eax = read_from_file(fib->f, buffer, *size_ptr);
+			*/
 		}
 	}
 }
@@ -810,36 +794,5 @@ static int write_to_file(struct file *file, char *buffer, size_t size){
 	return file_write (file, buffer, size);
 }
 
-
-static bool
-load_mmap (struct file *file, off_t ofs, uint8_t *upage,
-              uint32_t read_bytes, uint32_t zero_bytes, bool writable)
-{
-  ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
-  ASSERT (pg_ofs (upage) == 0);
-  ASSERT (ofs % PGSIZE == 0);
-
-  file_seek (file, ofs);
-  while (read_bytes > 0 || zero_bytes > 0)
-    {
-      /* Calculate how to fill this page.
-         We will read PAGE_READ_BYTES bytes from FILE
-         and zero the final PAGE_ZERO_BYTES bytes. */
-      size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
-      size_t page_zero_bytes = PGSIZE - page_read_bytes;
-
-      /* populate spte in supplemental page table */
-      bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable,SPTE_MMAP);
-      if (!success) {
-    	  	  return false;
-      }
-      /* Advance. */
-      ofs += page_read_bytes;
-      read_bytes -= page_read_bytes;
-      zero_bytes -= page_zero_bytes;
-      upage += PGSIZE;
-    }
-  return true;
-}
 
 

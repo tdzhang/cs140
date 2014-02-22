@@ -284,8 +284,6 @@ thread_create (const char *name, int priority,
   /*init thread's supplemental_pt*/
   hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
   lock_init(&t->supplemental_pt_lock);
-  list_init(&t->mmap_list);
-  t->next_mmap_id = 0;
   t->esp=NULL;
 #endif
 
@@ -386,7 +384,6 @@ thread_exit (void)
 
   /*added for VM*/
   //TODO: clean up supplemental_pt
-  //TODO: clean up mmap_list
 
 
   /* Remove thread from all threads list, set our status to dying,
