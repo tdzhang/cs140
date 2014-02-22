@@ -29,7 +29,7 @@ static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable);
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint8_t type);
 
 
 /* Starts a new thread running a user program loaded from
@@ -551,7 +551,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* populate spte in supplemental page table */
-      bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable);
+      bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable,SPTE_FILE);
       if (!success) {
     	  	  return false;
       }
@@ -705,7 +705,7 @@ bool init_wait_info_block(struct thread *t) {
 }
 
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable) {
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint_8 type) {
 	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
 
 	void * vs_addr=pg_round_down((const void *)upage);
@@ -713,7 +713,7 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 		return false;
 	}
 
-	spte->type_code = SPTE_FILE;
+	spte->type_code = type;
 	spte->uaddr = (uint8_t*)vs_addr;
 	spte->writable = writable;
 	spte->f = file;

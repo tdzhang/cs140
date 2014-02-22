@@ -9,6 +9,7 @@
 #include "vm/page.h"
 #include "threads/vaddr.h"
 #include <stdint.h>
+#include "userprog/process.h"
 
 #define STACK_LIMIT_BASE (void *)((uint8_t *)PHYS_BASE-0x800000)
 
@@ -185,7 +186,7 @@ page_fault (struct intr_frame *f)
 	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
 		   /*need to extend the stack*/
 		   /*create new spte*/
-		   if(generate_spte4stack(fault_addr)){
+		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true, SPTE_STACK_INIT)){
 			   /*try load page*/
 			   if(try_load_page(fault_addr)){
 				   return;

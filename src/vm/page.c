@@ -108,30 +108,4 @@ bool extend_stack(struct supplemental_pte *spte) {
 	return true;
 }
 
-/**/
-bool generate_spte4stack(void* fault_addr){
-	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
 
-	if (spte == NULL) {
-		return false;
-	}
-
-	void * vs_addr=pg_round_down(fault_addr);
-
-	spte->type_code = SPTE_STACK_INIT;
-	spte->uaddr = vs_addr;
-	spte->writable = true;
-	spte->f = NULL;
-	spte->offset = NULL;
-	spte->zero_bytes = PGSIZE;
-	lock_init(&spte->lock);
-
-	struct thread * cur=thread_current();
-	ASSERT(cur != NULL);
-	#ifdef VM
-		lock_acquire(&cur->supplemental_pt_lock);
-		hash_insert(&cur->supplemental_pt, &spte->elem);
-		lock_release(&cur->supplemental_pt_lock);
-	#endif
-	return true;
-}

@@ -11,9 +11,9 @@
 #define SPTE_FILE 1
 #define SPTE_IN_SWAP 2
 #define SPTE_STACK_INIT 3
+#define SPTE_MMAP 4
 
 bool try_load_page(void* fault_addr);
-bool generate_spte4stack(void* fault_addr);
 
 
 struct supplemental_pte {

@@ -14,6 +14,7 @@
 #include "lib/string.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include <stdint.h>
 
 
 
@@ -121,9 +122,73 @@ thread_current()->esp=esp;
 	case SYS_CLOSE:
 		sys_close_handler(f);
 		break;
+	case SYS_MMAP:                   /* Map a file into memory. */
+		sys_mmap_handler(f);
+	case SYS_MUNMAP:                 /* Remove a memory mapping. */
+		//TODO: sys_munmap_handler(f);
 	default:break;
  }
 
+}
+
+/*handle sys_mmap*/
+static void sys_mmap_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+2, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *fd_ptr=(int *)(esp+1);
+	uint8_t *addr=*(uint8_t **)(esp+2);
+
+
+	/*return -1 if the map if for console, or mapping addr is 0,
+	 * or addr is not page-aligned*/
+	if(*fd_ptr==0 || *fd_ptr==1 || addr==0 || (int)addr%PGSIZE!=0){
+		/*handle return value*/
+		f->eax = -1;
+	} else {
+		/*if the addr is already used(overlap with others)*/
+		struct thread* cur=thread_current();
+		struct supplemental_pte key;
+		key.uaddr=addr;
+		lock_acquire(&cur->supplemental_pt_lock);
+		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
+		if(e!=NULL){
+			f->eax = -1;
+			lock_release(&cur->supplemental_pt_lock);
+			return;
+		}
+		lock_release(&cur->supplemental_pt_lock);
+
+
+		/* generate spte*/
+		struct file_info_block *fib =
+				find_fib(&thread_current()->opened_file_list, *fd_ptr);
+		if (fib == NULL) {
+			f->eax = -1;
+			return;
+		} else {
+			if(file_length(fib->f)==0){
+				/*return -1 if file_size == 0*/
+				f->eax=-1;
+				return;
+			}
+			//TODO:
+			/*populate_spte(, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable)
+			*/
+			f->eax = read_from_file(fib->f, buffer, *size_ptr);
+		}
+	}
 }
 
 /*handle sys_exec*/
