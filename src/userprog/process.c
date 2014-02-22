@@ -29,8 +29,6 @@ static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
 
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint8_t type);
-
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -705,7 +703,7 @@ bool init_wait_info_block(struct thread *t) {
 }
 
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint_8 type) {
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint8_t type) {
 	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
 
 	void * vs_addr=pg_round_down((const void *)upage);
