@@ -34,7 +34,7 @@ bool try_load_page(void* fault_addr){
 	lock_release(&cur->supplemental_pt_lock);
 
 	//TODO: actually try to load/swap according to the type_code
-	if (spte->type_code == SPTE_FILE) {
+	if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
 		/* load file from disk into frame */
 		result = load_file(spte);
 	} else if (spte->type_code == SPTE_IN_SWAP) {
