@@ -137,6 +137,8 @@ struct thread
     struct hash supplemental_pt;               /* supplemental page table */
     struct lock supplemental_pt_lock; 	 /* lock supplemental page table */
     void * esp;   /*save esp when user -> kernel*/
+    struct list mmap_list;       /*list of memory mapping*/
+    int next_mmap_id;               /*next mmap_id number for this thread*/
 #endif
 
 
