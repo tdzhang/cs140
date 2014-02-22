@@ -213,9 +213,16 @@ static void sys_munmap_handler(struct intr_frame *f){
 		list_remove(&mib->elem);
 		free(mib);
 
-	    /* Advance. */
-	    file_size -= PGSIZE;
-	    uaddr += PGSIZE;
+
+	  /* Advance. */
+	  if(file_size<PGSIZE){
+		  file_size=0;
+	  }
+	  else{
+		  file_size -= PGSIZE;
+	  }
+	  uaddr += PGSIZE;
+
 	}
 
 	//TODO: continue
