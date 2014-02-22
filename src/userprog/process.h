@@ -3,6 +3,7 @@
 
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "filesys/off_t.h"
 
 /*info used for process waiting*/
 struct wait_info_block {
