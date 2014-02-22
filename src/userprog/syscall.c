@@ -15,6 +15,7 @@
 #include "devices/shutdown.h"
 #include "devices/input.h"
 #include "vm/page.h"
+#include "vm/frame.h"
 #include "userprog/exception.h"
 #include <stdint.h>
 
@@ -156,7 +157,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 	struct mmap_info_block *mib = NULL;
 	struct list_elem *e = NULL;
 	struct thread* cur=thread_current();
-	struct list* l=&cur->mmap_list
+	struct list* l=&cur->mmap_list;
 	for (e = list_begin (l); e != list_end (l); e = list_next (e)) {
 		mib = list_entry (e, struct mmap_info_block, elem);
 		if (mib->mmap_id == mmap_id) {
