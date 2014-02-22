@@ -169,43 +169,53 @@ static void sys_munmap_handler(struct intr_frame *f){
 		return;
 	}
 
-	/*if the block is dirty, write it back to disk*/
-	//TODO: if mib mapped place is dirty, write back
 
 	/*unstall all the related mapped page, clean mmap_info_block, spte, frame_table_entry*/
 
 	uint32_t file_size=mib->file_size;
-	uint8_t* uaddr=mib->uaddr;
-
+	uint8_t* uaddr=pg_round_down(mib->uaddr);
+	struct supplemental_pte key;
+	struct file *file = NULL;
 	while (file_size > 0)
 	{
 
 
-	  /*clean up*/
-		struct supplemental_pte key;
-		key.uaddr=pg_round_down(uaddr);
+	    /*clean up*/
+		key.uaddr=uaddr;
 		lock_acquire(&cur->supplemental_pt_lock);
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
 			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 			if(spte->fte!=NULL){
+
+				/*if the block is dirty, write it back to disk*/
+				bool is_dirty = pagedir_is_dirty (cur->pagedir, uaddr);
+				if (is_dirty) {
+					file = spte->f;
+					off_t ofs = spte->offset;
+					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
+					file_seek(file, ofs);
+					file_write(file, spte->fte->frame_addr, page_write_bytes);
+				}
+
 				free_fte(&spte->fte);
 				/*clear pagedir*/
 				pagedir_clear_page(cur->pagedir,uaddr);
 			}
+			file_close(file);
 			hash_delete(&cur->supplemental_pt,e);
 			free(spte);
 		}
 		lock_release(&cur->supplemental_pt_lock);
 
 
-	  /*clean mmap_list*/
+	    /*clean mmap_list*/
 		list_remove(&mib->elem);
 		free(mib);
 
-	  /* Advance. */
-	  file_size -= PGSIZE;
-	  uaddr += PGSIZE;
+	    /* Advance. */
+	    file_size -= PGSIZE;
+	    uaddr += PGSIZE;
 	}
 
 	//TODO: continue
@@ -253,11 +263,13 @@ static void sys_mmap_handler(struct intr_frame *f){
 		/*normal case, need to generate spte*/
 		struct file_info_block *fib =
 				find_fib(&thread_current()->opened_file_list, *fd_ptr);
+
 		if (fib == NULL) {
 			/*if the file is not open already, return -1*/
 			f->eax = -1;
 			return;
 		} else {
+			struct file *reopened_file = file_reopen(fib->f);
 			off_t file_size=file_length(fib->f);
 			if(file_size==0){
 				/*return -1 if file_size == 0*/
@@ -265,7 +277,7 @@ static void sys_mmap_handler(struct intr_frame *f){
 				return;
 			}
 			/*generate spte for MAP, return mapid*/
-			if(load_mmap (fib->f, 0, addr, file_size, PGSIZE-file_size%PGSIZE, !fib->f->deny_write)){
+			if(load_mmap (reopened_file, 0, addr, file_size, PGSIZE-file_size%PGSIZE, !fib->f->deny_write)){
 				struct thread *cur = thread_current();
 				struct mmap_info_block *mib = malloc(sizeof(struct mmap_info_block));
 				mib->file_size = file_size;
