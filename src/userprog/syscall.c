@@ -190,9 +190,8 @@ static void sys_munmap_handler(struct intr_frame *f){
 		if(e!=NULL){
 			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 			if(spte->fte!=NULL){
-				list_remove(&spte->fte->elem);
+				free_fte(&spte->fte);
 			}
-			free(spte->fte);
 			hash_delete(&cur->supplemental_pt,e);
 			free(spte);
 		}
