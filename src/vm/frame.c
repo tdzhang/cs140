@@ -60,7 +60,6 @@ evict_frame(struct supplemental_pte *spte){
 
 		/*update the page table*/
 		pagedir_clear_page(cur->pagedir,fte->spte->uaddr);
-		bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
 
 		if (!success) {
 			free_fte (fte);
