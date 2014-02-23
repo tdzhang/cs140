@@ -77,7 +77,9 @@ bool load_file(struct supplemental_pte *spte) {
 	memset(fte->frame_addr+read_bytes, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
-	//TODO: unpin_frame?
+
+	/*finished the memset, unpin the frame*/
+	fte->pinned=false;
 	if (!success) {
 		free_fte (fte);
 		return false;
@@ -100,7 +102,8 @@ bool extend_stack(struct supplemental_pte *spte) {
 	memset(fte->frame_addr, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
-	//TODO: unpin_frame?
+	/*finished the memset, unpin the frame*/
+	fte->pinned=false;
 	if (!success) {
 		free_fte (fte);
 		return false;

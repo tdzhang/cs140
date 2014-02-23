@@ -11,6 +11,8 @@ static struct lock frame_table_lock;
 
 struct frame_table_entry *
 create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte);
+struct frame_table_entry *
+evict_frame(struct supplemental_pte *spte);
 
 
 /*init frame table*/
@@ -33,9 +35,39 @@ get_frame (struct supplemental_pte *spte)
     return create_fte (thread_current (), frame_addr, spte);
   } else {
     /* no available frame, need to evict one  */
-   //TODO: evict a frame, and return the address
-	  return NULL;
+	  return evict_frame(spte);
   }
+}
+
+
+struct frame_table_entry *
+evict_frame(struct supplemental_pte *spte){
+	//TODO: clock algorithm
+	//TODO: swap handle
+	lock_acquire (&frame_table_lock);
+	struct list_elem *e;
+	struct frame_table_entry *fte;
+	for (e = list_begin (&frame_table); e != list_end (&frame_table);
+						  e = list_next (e)) {
+				fte = list_entry (e, struct frame_table_entry, elem);
+				if(!fte->pinned)break;
+			}
+	if(fte!=NULL && !fte->pinned){
+		/*put the fte into the tail*/
+		list_remove(&fte->elem);
+		list_push_back(&frame_table,&fte->elem);
+		fte->spte=spte;
+		fte->t=thread_current();
+		spte->fte=fte;
+		/*pin the fte to avoid IO conflict, need to unpin outside*/
+		fte->pinned=true;
+	}
+	else{
+		/*cannot find a frame to evict*/
+		fte=NULL;
+	}
+	lock_release (&frame_table_lock);
+	return fte;
 }
 
 struct frame_table_entry *
@@ -47,7 +79,8 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	fte->frame_addr=frame_addr;
 	fte->spte=spte;
 	spte->fte=fte;
-
+	/*pin the fte to avoid IO conflict, need to unpin outside*/
+	fte->pinned=true;
 	/*add the new entry into frame_table */
 	lock_acquire(&frame_table_lock);
 	list_push_back(&frame_table,&fte->elem);
