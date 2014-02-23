@@ -44,6 +44,7 @@ struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	//TODO: clock algorithm
 	//TODO: swap handle
+	//TODO: handle mmap dirty frame, need to write back to disk before evict or swap
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
