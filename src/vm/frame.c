@@ -61,11 +61,6 @@ evict_frame(struct supplemental_pte *spte){
 		/*update the page table*/
 		pagedir_clear_page(cur->pagedir,fte->spte->uaddr);
 
-		if (!success) {
-			free_fte (fte);
-			return NULL;
-		}
-
 		/*put the fte into the tail*/
 		list_remove(&fte->elem);
 		list_push_back(&frame_table,&fte->elem);
