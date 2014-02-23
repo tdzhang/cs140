@@ -48,12 +48,25 @@ evict_frame(struct supplemental_pte *spte){
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
+	struct thread* cur=thread_current();
 	for (e = list_begin (&frame_table); e != list_end (&frame_table);
 						  e = list_next (e)) {
 				fte = list_entry (e, struct frame_table_entry, elem);
 				if(!fte->pinned)break;
-			}
+	}
+
 	if(fte!=NULL && !fte->pinned){
+		fte->spte->fte=NULL;
+
+		/*update the page table*/
+		pagedir_clear_page(cur->pagedir,fte->spte->uaddr);
+		bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+
+		if (!success) {
+			free_fte (fte);
+			return NULL;
+		}
+
 		/*put the fte into the tail*/
 		list_remove(&fte->elem);
 		list_push_back(&frame_table,&fte->elem);
