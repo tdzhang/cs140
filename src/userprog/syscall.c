@@ -187,7 +187,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 			if(spte->fte!=NULL){
 
 				/*if the block is dirty, write it back to disk*/
-				bool is_dirty = pagedir_is_dirty (cur->pagedir, uaddr);
+				bool is_dirty = pagedir_is_dirty (spte->fte->t->pagedir, uaddr);
 				if (is_dirty) {
 					file = spte->f;
 					off_t ofs = spte->offset;
@@ -201,7 +201,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 
 				free_fte(&spte->fte);
 				/*clear pagedir*/
-				pagedir_clear_page(cur->pagedir,uaddr);
+				pagedir_clear_page(spte->fte->t->pagedir,uaddr);
 			}
 			file_close(file);
 			hash_delete(&cur->supplemental_pt,e);

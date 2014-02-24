@@ -2,6 +2,7 @@
 #include "threads/palloc.h"
 #include "threads/synch.h"
 #include "threads/malloc.h"
+#include "threads/vaddr.h"
 #include <list.h>
 
 /* List of all frame_table_entry. */
@@ -58,8 +59,23 @@ evict_frame(struct supplemental_pte *spte){
 	if(fte!=NULL && !fte->pinned){
 		fte->spte->fte=NULL;
 
+		/*pin the fte to avoid IO conflict, need to unpin outside*/
+		fte->pinned=true;
+
+		/*if the block is dirty, write it back to disk*/
+		struct supplemental_pte *old_spte=fte->spte;
+		struct file* file;
+		bool is_dirty = pagedir_is_dirty (fte->t->pagedir, old_spte->uaddr);
+		if (is_dirty&&(old_spte->type_code == SPTE_FILE||old_spte->type_code == SPTE_MMAP)) {
+			file = old_spte->f;
+			off_t ofs = old_spte->offset;
+			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
+			file_seek(file, ofs);
+			file_write(file, fte->frame_addr, page_write_bytes);
+		}
+
 		/*update the page table*/
-		pagedir_clear_page(cur->pagedir,fte->spte->uaddr);
+		pagedir_clear_page(fte->t->pagedir,fte->spte->uaddr);
 
 		/*put the fte into the tail*/
 		list_remove(&fte->elem);
@@ -67,8 +83,7 @@ evict_frame(struct supplemental_pte *spte){
 		fte->spte=spte;
 		fte->t=thread_current();
 		spte->fte=fte;
-		/*pin the fte to avoid IO conflict, need to unpin outside*/
-		fte->pinned=true;
+
 	}
 	else{
 		/*cannot find a frame to evict*/
