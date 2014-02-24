@@ -27,5 +27,5 @@ struct mmap_info_block{
 void syscall_init (void);
 void user_exit(int exit_code);
 void close_file_by_fib(struct file_info_block *fib);
-
+void mib_clean_up(struct mmap_info_block *mib);
 #endif /* userprog/syscall.h */
