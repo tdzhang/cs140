@@ -193,7 +193,10 @@ static void sys_munmap_handler(struct intr_frame *f){
 					off_t ofs = spte->offset;
 					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
 					file_seek(file, ofs);
-					file_write(file, spte->uaddr, page_write_bytes);
+					//TODO: possibly need sema
+					spte->fte->pinned=true;
+					file_write(file, spte->fte->frame_addr, page_write_bytes);
+					spte->fte->pinned=false;
 				}
 
 				free_fte(&spte->fte);

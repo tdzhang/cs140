@@ -88,6 +88,7 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	fte->spte=spte;
 	spte->fte=fte;
 	/*pin the fte to avoid IO conflict, need to unpin outside*/
+
 	fte->pinned=true;
 	/*add the new entry into frame_table */
 	lock_acquire(&frame_table_lock);
