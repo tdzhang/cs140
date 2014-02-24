@@ -7,6 +7,7 @@
 #include <hash.h>
 #include "threads/synch.h"
 
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -188,4 +189,5 @@ void thread_set_actual_priority (struct thread *t,
 		int act_priority);
 int find_max_actual_priority(struct list* lock_list);
 
+void mib_clean_up(struct mmap_info_block *mib);
 #endif /* threads/thread.h */

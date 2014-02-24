@@ -90,6 +90,7 @@ inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 static void mlfqs_update_vars(void);
 inline int clamp_priority(int prior);
 inline int clamp_nice(int nice);
+void process_vm_clean();
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -385,8 +386,14 @@ thread_exit (void)
 #endif
 
   /*added for VM*/
-  //TODO: clean up supplemental_pt
+#ifdef VM
+
   //TODO: clean up mmap_list
+  process_vm_clean();
+  //TODO: clean up supplemental_pt
+
+#endif
+
 
 
   /* Remove thread from all threads list, set our status to dying,
@@ -957,4 +964,87 @@ inline int clamp_nice(int nice) {
 	if (nice > NICE_MAX) return NICE_MAX;
 	if (nice < NICE_MIN) return NICE_MIN;
 	return nice;
+}
+
+
+/*clean up the vm related stuff when process exits*/
+void process_vm_clean(){
+	struct thread* cur= thread_current();
+	struct list* mmap_list_ptr=&cur->mmap_list;
+
+
+	 /*close all opened files of this thread*/
+	  struct list_elem *e = list_begin (mmap_list_ptr);
+	  struct list_elem *temp = NULL;
+	  struct mmap_info_block *mib;
+
+	  while (e != list_end (mmap_list_ptr)){
+		  temp = list_next (e);
+		  mib = list_entry (e, struct mmap_info_block, elem);
+		  mib_clean_up(mib);
+		  e = temp;
+	  }
+
+	  //TODO: spt list
+}
+
+
+/*handle sys_mumap*/
+void mib_clean_up(struct mmap_info_block *mib){
+
+	/*unstall all the related mapped page, clean mmap_info_block, spte, frame_table_entry*/
+	struct thread* cur= thread_current();
+	uint32_t file_size=mib->file_size;
+	uint8_t* uaddr=pg_round_down(mib->uaddr);
+	struct supplemental_pte key;
+	struct file *file = NULL;
+	while (file_size > 0)
+	{
+	    /*clean up*/
+		key.uaddr=uaddr;
+		lock_acquire(&cur->supplemental_pt_lock);
+		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
+		if(e!=NULL){
+			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+			if(spte->fte!=NULL){
+
+				/*if the block is dirty, write it back to disk*/
+				bool is_dirty = pagedir_is_dirty (spte->fte->t->pagedir, uaddr);
+				if (is_dirty) {
+					file = spte->f;
+					off_t ofs = spte->offset;
+					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
+					file_seek(file, ofs);
+					//TODO: possibly need sema
+					spte->fte->pinned=true;
+					file_write(file, spte->fte->frame_addr, page_write_bytes);
+					spte->fte->pinned=false;
+				}
+
+				free_fte(&spte->fte);
+				/*clear pagedir*/
+				pagedir_clear_page(spte->fte->t->pagedir,uaddr);
+			}
+			file_close(file);
+			hash_delete(&cur->supplemental_pt,e);
+			free(spte);
+		}
+		lock_release(&cur->supplemental_pt_lock);
+
+
+	    /*clean mmap_list*/
+		list_remove(&mib->elem);
+		free(mib);
+
+
+	  /* Advance. */
+	  if(file_size<PGSIZE){
+		  file_size=0;
+	  }
+	  else{
+		  file_size -= PGSIZE;
+	  }
+	  uaddr += PGSIZE;
+
+	}
 }
