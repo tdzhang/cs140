@@ -178,8 +178,6 @@ static void sys_munmap_handler(struct intr_frame *f){
 	struct file *file = NULL;
 	while (file_size > 0)
 	{
-
-
 	    /*clean up*/
 		key.uaddr=uaddr;
 		lock_acquire(&cur->supplemental_pt_lock);
@@ -195,7 +193,7 @@ static void sys_munmap_handler(struct intr_frame *f){
 					off_t ofs = spte->offset;
 					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
 					file_seek(file, ofs);
-					file_write(file, spte->fte->frame_addr, page_write_bytes);
+					file_write(file, spte->uaddr, page_write_bytes);
 				}
 
 				free_fte(&spte->fte);
