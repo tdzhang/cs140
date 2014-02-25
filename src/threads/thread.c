@@ -382,18 +382,19 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
+#ifdef VM
+
+//TODO: clean up mmap_list
+process_vm_clean();
+//TODO: clean up supplemental_pt
+
+#endif
+
 #ifdef USERPROG
   process_exit ();
 #endif
 
-  /*added for VM*/
-#ifdef VM
 
-  //TODO: clean up mmap_list
-  process_vm_clean();
-  //TODO: clean up supplemental_pt
-
-#endif
 
 
 
