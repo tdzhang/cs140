@@ -900,12 +900,12 @@ void mib_clean_up(struct mmap_info_block *mib){
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
 			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+			file = spte->f;
 			if(spte->fte!=NULL){
-
 				/*if the block is dirty, write it back to disk*/
+
 				bool is_dirty = pagedir_is_dirty (spte->fte->t->pagedir, uaddr);
 				if (is_dirty) {
-					file = spte->f;
 					off_t ofs = spte->offset;
 					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
 					file_seek(file, ofs);
@@ -919,7 +919,6 @@ void mib_clean_up(struct mmap_info_block *mib){
 				/*clear pagedir*/
 				pagedir_clear_page(spte->fte->t->pagedir,uaddr);
 			}
-			file_close(file);
 			hash_delete(&cur->supplemental_pt,e);
 			free(spte);
 		}
@@ -937,6 +936,7 @@ void mib_clean_up(struct mmap_info_block *mib){
 	  uaddr += PGSIZE;
 
 	}
+	file_close(file);
 	/*clean mmap_list*/
 	list_remove(&mib->elem);
 	free(mib);
