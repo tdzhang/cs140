@@ -936,7 +936,7 @@ void mib_clean_up(struct mmap_info_block *mib){
 	  uaddr += PGSIZE;
 
 	}
-	/*file_close(file);*/
+	file_close(file);
 	/*clean mmap_list*/
 	list_remove(&mib->elem);
 	free(mib);
