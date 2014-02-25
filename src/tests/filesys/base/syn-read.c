@@ -11,7 +11,7 @@
 
 static char buf[BUF_SIZE];
 
-#define CHILD_CNT 2 /*10*/
+#define CHILD_CNT 5 /*10*/
 
 void
 test_main (void) 
