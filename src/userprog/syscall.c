@@ -926,10 +926,6 @@ void mib_clean_up(struct mmap_info_block *mib){
 		lock_release(&cur->supplemental_pt_lock);
 
 
-	    /*clean mmap_list*/
-		list_remove(&mib->elem);
-		free(mib);
-
 
 	  /* Advance. */
 	  if(file_size<PGSIZE){
@@ -941,6 +937,9 @@ void mib_clean_up(struct mmap_info_block *mib){
 	  uaddr += PGSIZE;
 
 	}
+	/*clean mmap_list*/
+	list_remove(&mib->elem);
+	free(mib);
 }
 
 
