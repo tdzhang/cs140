@@ -634,20 +634,20 @@ static void sys_read_handler(struct intr_frame *f){
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(int))){
 		 /* exit with -1*/
-		 user_exit(-1);
+		 user_exit(-2);
 		 return;
 	 }
 	/*validate the 2nd argument*/
 	if(!is_user_address(esp+2, sizeof(void **))){
 		 /* exit with -1*/
-		 user_exit(-1);
+		 user_exit(-3);
 		 return;
 	 }
 
 	/*validate the 3rd argument*/
 	if(!is_user_address(esp+3, sizeof(int))){
 		 /* exit with -1*/
-		 user_exit(-1);
+		 user_exit(-4);
 		 return;
 	 }
 
@@ -657,13 +657,13 @@ static void sys_read_handler(struct intr_frame *f){
 
 	/*verify the buffer is writable*/
 	if(!is_writable_buffer((void *)buffer, *size_ptr)) {
-		user_exit(-1);
+		user_exit(-5);
 		return;
 	}
 
 	/*verify whole buffer*/
 	if(!is_user_address((void *)buffer, *size_ptr)){
-		 user_exit(-1);
+		 user_exit(-6);
 		 return;
 	}
 
