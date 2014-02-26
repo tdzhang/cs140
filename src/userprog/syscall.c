@@ -642,6 +642,7 @@ static void sys_read_handler(struct intr_frame *f){
 		 user_exit(-1);
 		 return;
 	 }
+
 	/*validate the 3rd argument*/
 	if(!is_user_address(esp+3, sizeof(int))){
 		 /* exit with -1*/
