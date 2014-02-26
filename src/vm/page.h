@@ -14,7 +14,7 @@
 #define SPTE_MMAP 4
 
 bool try_load_page(void* fault_addr);
-bool extend_stack(struct supplemental_pte *spte);
+
 
 struct supplemental_pte {
 	  uint8_t type_code;		/* type of this spte entry to find the content */
