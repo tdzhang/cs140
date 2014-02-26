@@ -568,11 +568,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  if(!populate_spte(NULL, NULL, PHYS_BASE, PGSIZE, true, SPTE_STACK_INIT)) {
+  if(!populate_spte(NULL, NULL, PHYS_BASE-PGSIZE, PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
 
-  if(!try_load_page(PHYS_BASE)) {
+  if(!try_load_page(PHYS_BASE-PGSIZE)) {
 	  return false;
   }
   *esp = PHYS_BASE;
