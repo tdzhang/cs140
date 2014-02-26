@@ -661,11 +661,6 @@ static void sys_read_handler(struct intr_frame *f){
 		return;
 	}
 
-	/*verify whole buffer*/
-	if(!is_user_address((void *)buffer, *size_ptr)){
-		 user_exit(-6);
-		 return;
-	}
 
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2);
 	lock_acquire(&filesys_lock);
@@ -728,7 +723,7 @@ static bool is_writable_buffer(const void *pointer, int size) {
 /*decide if the page is writable*/
 static bool is_writable_page (void *addr) {
 	struct thread* cur= thread_current();
-
+	void *esp;
 	ASSERT(cur != NULL);
 	/*create key elem for searching*/
 	struct supplemental_pte key;
@@ -738,8 +733,12 @@ static bool is_writable_page (void *addr) {
 	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 
 	if(e==NULL){
-		/*if not found, return false*/
 		lock_release(&cur->supplemental_pt_lock);
+		esp=cur->esp;
+		/*if it is in the stack , return true, otherwise*/
+		if(addr>=(uint8_t *)esp-32 && addr>STACK_LIMIT_BASE){
+			return true;
+		}
 		return false;
 	}
 
