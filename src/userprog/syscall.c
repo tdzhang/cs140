@@ -662,6 +662,7 @@ static void sys_read_handler(struct intr_frame *f){
 	}
 
 
+
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2);
 	lock_acquire(&filesys_lock);
 	/*handle if fd==0, which is read from console*/
@@ -707,6 +708,9 @@ static bool is_writable_buffer(const void *pointer, int size) {
 		return false;
 	}
 
+	if(!(is_user_vaddr(pointer)&&is_user_vaddr(end_pointer))){
+			return false;
+	}
 
 	/*check if the address is mapped*/
 	for(i=0;i<page_range;i++){
