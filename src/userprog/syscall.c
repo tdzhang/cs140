@@ -345,7 +345,9 @@ static void sys_close_handler(struct intr_frame *f){
 	}
 
 	/*close file corresponding to *fd_ptr*/
+	lock_acquire(&filesys_lock);
 	close_file_by_fib(fib);
+	lock_release(&filesys_lock);
 
 }
 
@@ -410,6 +412,8 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
+	lock_acquire(&filesys_lock);
+
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
 	if (file == NULL) {
@@ -436,7 +440,7 @@ static void sys_open_handler(struct intr_frame *f){
 	list_push_back(&cur->opened_file_list, &fib->elem);
 
 	/*update global_file_block*/
-	lock_acquire(&filesys_lock);
+
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
 
@@ -525,8 +529,9 @@ static void sys_create_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-
+	lock_acquire(&filesys_lock);
 	bool success = filesys_create(file_name, *file_size);
+	lock_release(&filesys_lock);
 	/*return the value returned by filesys_create*/
 	f->eax=success;
 }
@@ -594,11 +599,13 @@ static void sys_write_handler(struct intr_frame *f){
 			 return;
 	}
 
+	lock_acquire(&filesys_lock);
 	/*handle if fd==1, which is write to console*/
 	if(*fd_ptr==1){
 		putbuf(buffer,*size_ptr);
 		/*handle return value*/
 		f->eax= *size_ptr;
+		lock_release(&filesys_lock);
 		return;
 	}
 
@@ -607,11 +614,13 @@ static void sys_write_handler(struct intr_frame *f){
 	struct file_info_block*fib = find_fib(&cur->opened_file_list, *fd_ptr);
 	if(fib==NULL){
 		/*if cur didnot hold this file, exit*/
+		lock_release(&filesys_lock);
 		user_exit(-1);
 		return;
 	}
 	/*write to file*/
 	int result = write_to_file(fib->f, buffer, *size_ptr);
+	lock_release(&filesys_lock);
 	f->eax= result;
 }
 
@@ -647,6 +656,7 @@ static void sys_read_handler(struct intr_frame *f){
 		 return;
 	}
 
+	lock_acquire(&filesys_lock);
 	/*handle if fd==0, which is read from console*/
 	if(*fd_ptr==0){
 		int already_read = 0;
@@ -662,9 +672,12 @@ static void sys_read_handler(struct intr_frame *f){
 		if (fib == NULL) {
 			f->eax = -1;
 		} else {
+
 			f->eax = read_from_file(fib->f, buffer, *size_ptr);
+
 		}
 	}
+	lock_release(&filesys_lock);
 }
 
 /*user process exit with exit_code*/
