@@ -816,9 +816,23 @@ static bool is_string_address_valid(const void *pointer){
 
 /*check if page mapped*/
 static bool is_page_mapped (const void *uaddr_){
-	uint8_t *uaddr = (uint8_t *)uaddr_;
-	int byte_value= get_user(uaddr);
-	return  byte_value!= -1;
+	struct thread* cur= thread_current();
+	ASSERT(cur != NULL);
+	/*create key elem for searching*/
+	struct supplemental_pte key;
+	key.uaddr=(uint8_t *)pg_round_down(uaddr_);
+
+	lock_acquire(&cur->supplemental_pt_lock);
+	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
+
+	if(e==NULL){
+		/*if not found, return false*/
+		lock_release(&cur->supplemental_pt_lock);
+		return false;
+	}
+
+	lock_release(&cur->supplemental_pt_lock);
+	return true;
 }
 
 
