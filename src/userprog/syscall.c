@@ -360,8 +360,8 @@ void close_file_by_fib(struct file_info_block *fib) {
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
-		lock_release(&filesys_lock);
 		file_close(fib->f);
+		lock_release(&filesys_lock);
 		return;
 	} else {
 		/*check the reference number*/
@@ -381,7 +381,7 @@ void close_file_by_fib(struct file_info_block *fib) {
 			free(gfb);
 
 		}
-		lock_release(&filesys_lock);
+
 
 		/*close the file*/
 		file_close(fib->f);
@@ -389,6 +389,7 @@ void close_file_by_fib(struct file_info_block *fib) {
 		list_remove(&fib->elem);
 		free(fib->file_name);
 		free(fib);
+		lock_release(&filesys_lock);
 	}
 }
 
