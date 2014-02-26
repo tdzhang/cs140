@@ -924,10 +924,12 @@ void mib_clean_up(struct mmap_info_block *mib){
 				if (is_dirty) {
 					off_t ofs = spte->offset;
 					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
+					lock_acquire(&filesys_lock);
 					file_seek(file, ofs);
 					//TODO: possibly need sema
 					spte->fte->pinned=true;
 					file_write(file, spte->fte->frame_addr, page_write_bytes);
+					lock_release(&filesys_lock);
 					spte->fte->pinned=false;
 				}
 
