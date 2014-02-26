@@ -62,7 +62,7 @@ static void sys_read_handler(struct intr_frame *f);
 static void sys_filesize_handler(struct intr_frame *f);
 static void sys_seek_handler(struct intr_frame *f);
 static void sys_tell_handler(struct intr_frame *f);
-static bool is_writable_buffer(const void *pointer, int size)
+static bool is_writable_buffer(const void *pointer, int size);
 static bool is_writable_page (void *addr);
 
 void
