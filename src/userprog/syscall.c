@@ -732,7 +732,7 @@ static bool is_writable_page (void *addr) {
 	ASSERT(cur != NULL);
 	/*create key elem for searching*/
 	struct supplemental_pte key;
-	key.uaddr=(uint8_t *)addr;
+	key.uaddr=(uint8_t *)pg_round_down(addr);
 
 	lock_acquire(&cur->supplemental_pt_lock);
 	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
