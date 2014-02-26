@@ -345,9 +345,8 @@ static void sys_close_handler(struct intr_frame *f){
 	}
 
 	/*close file corresponding to *fd_ptr*/
-	lock_acquire(&filesys_lock);
 	close_file_by_fib(fib);
-	lock_release(&filesys_lock);
+
 
 }
 
@@ -411,7 +410,7 @@ static void sys_open_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-
+	 ASSERT (!lock_held_by_current_thread (&filesys_lock) && 1==1);
 	lock_acquire(&filesys_lock);
 
 	struct file *file = filesys_open(file_name);
@@ -655,7 +654,7 @@ static void sys_read_handler(struct intr_frame *f){
 		 user_exit(-1);
 		 return;
 	}
-
+	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2);
 	lock_acquire(&filesys_lock);
 	/*handle if fd==0, which is read from console*/
 	if(*fd_ptr==0){
