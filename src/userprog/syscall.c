@@ -62,7 +62,8 @@ static void sys_read_handler(struct intr_frame *f);
 static void sys_filesize_handler(struct intr_frame *f);
 static void sys_seek_handler(struct intr_frame *f);
 static void sys_tell_handler(struct intr_frame *f);
-
+static bool is_writable_buffer(const void *pointer, int size)
+static bool is_writable_page (void *addr);
 
 void
 syscall_init (void) 
@@ -654,11 +655,18 @@ static void sys_read_handler(struct intr_frame *f){
 	char *buffer=*(char **)(esp+2);
 	int *size_ptr=(int *)(esp+3);
 
+	/*verify the buffer is writable*/
+	if(!is_writable_buffer((void *)buffer, *size_ptr)) {
+		user_exit(-1);
+		return;
+	}
+
 	/*verify whole buffer*/
 	if(!is_user_address((void *)buffer, *size_ptr)){
 		 user_exit(-1);
 		 return;
 	}
+
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2);
 	lock_acquire(&filesys_lock);
 	/*handle if fd==0, which is read from console*/
@@ -691,6 +699,58 @@ void user_exit(int exit_code){
 	thread_exit();
 }
 
+/*decide if the whole buffer is writable*/
+static bool is_writable_buffer(const void *pointer, int size) {
+	uint32_t address=(uint32_t)pointer;
+	void *end_pointer=(void *)(address+size-1);
+	int page_range=(address+size-1)/PGSIZE-address/PGSIZE;
+
+	int i;
+	bool writable=false;
+	/*check if pointer is null*/
+	if(pointer==NULL){
+		return false;
+	}
+
+
+	/*check if the address is mapped*/
+	for(i=0;i<page_range;i++){
+		writable = is_writable_page((void *)(address+i*PGSIZE));
+		if(!writable){
+			/*if writable, return false*/
+			return false;
+		}
+	}
+
+	return is_writable_page(end_pointer);
+}
+
+/*decide if the page is writable*/
+static bool is_writable_page (void *addr) {
+	struct thread* cur= thread_current();
+
+	ASSERT(cur != NULL);
+	/*create key elem for searching*/
+	struct supplemental_pte key;
+	key.uaddr=(uint8_t *)addr;
+
+	lock_acquire(&cur->supplemental_pt_lock);
+	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
+
+	if(e==NULL){
+		/*if not found, return false*/
+		lock_release(&cur->supplemental_pt_lock);
+		return false;
+	}
+
+	/*get the entry and release lock*/
+	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+	ASSERT(spte != NULL);
+	lock_release(&cur->supplemental_pt_lock);
+	return spte->writable;
+}
+
+
 /*judge if the pointer points to a valid space*/
 static bool is_user_address(const void *pointer, int size){
 	uint32_t address=(uint32_t)pointer;
@@ -710,7 +770,7 @@ static bool is_user_address(const void *pointer, int size){
 
 	/*check if the address is mapped*/
 	for(i=0;i<page_range;i++){
-		mapped = is_page_mapped(pointer+i*PGSIZE);
+		mapped = is_page_mapped((void *)(address+i*PGSIZE));
 		if(!mapped){
 			/*if unmapped, return false*/
 			return false;
