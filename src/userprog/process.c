@@ -568,11 +568,15 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  if(!populate_spte(NULL, NULL, *esp, PGSIZE, true, SPTE_STACK_INIT)) {
+  if(!populate_spte(NULL, NULL, PHYS_BASE, PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
 
-  return try_load_page(*esp);
+  if(!try_load_page(PHYS_BASE)) {
+	  return false;
+  }
+  *esp = PHYS_BASE;
+  return true;
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel

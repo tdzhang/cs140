@@ -8,7 +8,7 @@ bool load_file(struct supplemental_pte *spte);
 bool extend_stack(struct supplemental_pte *spte);
 
 bool try_load_page(void* fault_addr){
-	ASSERT (fault_addr < PHYS_BASE);
+	ASSERT (fault_addr <= PHYS_BASE);
 	/* Round down to nearest page boundary. */
 	uint8_t* target_addr = (uint8_t*)pg_round_down (fault_addr);
 	bool result = false;
