@@ -418,6 +418,7 @@ static void sys_open_handler(struct intr_frame *f){
 	/*return -1 if failed to open the file*/
 	if (file == NULL) {
 		f->eax = -1;
+		lock_release(&filesys_lock);
 		return;
 	}
 
@@ -431,6 +432,7 @@ static void sys_open_handler(struct intr_frame *f){
 		f->eax = -1;
 		free(fib);
 		file_close(file);
+		lock_release(&filesys_lock);
 		return;
 	}
 	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
@@ -455,8 +457,9 @@ static void sys_open_handler(struct intr_frame *f){
 		/*the file is opened already*/
 		if (gfb->is_deleted) {
 			f->eax = -1;
-			lock_release(&filesys_lock);
+
 			file_close(file);
+			lock_release(&filesys_lock);
 			return;
 		}
 		/*increase file reference number*/
