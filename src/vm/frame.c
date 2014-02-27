@@ -58,7 +58,7 @@ evict_frame(struct supplemental_pte *spte){
 	}
 	*/
 
-	for (e = frame_table.tail.prev; e != frame_table.head;
+	for (e = frame_table.tail.prev; e != &frame_table.head;
 							  e = list_prev (e)) {
 					fte = list_entry (e, struct frame_table_entry, elem);
 					if(!fte->pinned)break;
