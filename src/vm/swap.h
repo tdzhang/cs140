@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <list.h>
 
+
+
+#include "vm/page.h"
+#include "vm/frame.h"
+#include <debug.h>
+
 struct swap_page_block {
 	block_sector_t block_sector_head;
 	struct list_elem elem;
