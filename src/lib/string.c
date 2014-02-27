@@ -280,7 +280,7 @@ void *
 memset (void *dst_, int value, size_t size) 
 {
 	bool print = false;
-	if (size == 20480) {
+	if (size == 2 * 1024 * 1024) {
 		print = true;
 	}
 	if (print) {
