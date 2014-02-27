@@ -49,6 +49,7 @@ bool try_load_page(void* fault_addr){
 			return false;
 		}
 		fte->pinned = false;
+		result = true;
 	} else {
 		if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
 				/* load file from disk into frame */
