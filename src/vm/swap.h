@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include <list.h>
 
-struct list swap_space_pool;  /* swap table */
-struct lock swap_space_pool_lock; /* the lock of swap table */
 struct swap_page_block {
 	block_sector_t block_sector_head;
 	struct list_elem elem;

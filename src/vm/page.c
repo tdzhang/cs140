@@ -1,8 +1,6 @@
 #include "vm/page.h"
 #include "vm/frame.h"
-#ifdef VM
 #include "vm/swap.h"
-#endif
 #include "threads/vaddr.h"
 #include <hash.h>
 #include "filesys/file.h"
