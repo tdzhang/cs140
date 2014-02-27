@@ -5,8 +5,8 @@
 
 #define BLOCKS_UNIT_NUMBER 8
 
-struct list swap_space_pool;  /* swap table */
-struct lock swap_space_pool_lock; /* the lock of swap table */
+static struct list swap_space_pool;  /* swap table */
+static struct lock swap_space_pool_lock; /* the lock of swap table */
 
 struct block *swap_block;
 struct swap_page_block *get_free_spb();
