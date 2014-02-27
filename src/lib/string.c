@@ -281,9 +281,11 @@ memset (void *dst_, int value, size_t size)
   unsigned char *dst = dst_;
 
   ASSERT (dst != NULL || size == 0);
-  
+  int i = 0;
   while (size-- > 0) {
-	  printf("======dst = %u=====", (unsigned)dst);
+	  i++;
+	  printf("======i = %d=====\n", i);
+	  printf("======dst = %u=====\n", (unsigned)dst);
     *dst++ = value;
   }
 
