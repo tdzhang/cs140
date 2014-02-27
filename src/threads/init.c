@@ -53,7 +53,6 @@ static const char *scratch_bdev_name;
 #ifdef VM
 static const char *swap_bdev_name;
 #include "vm/frame.h"
-#include "vm/swap.h"
 #endif
 #endif /* FILESYS */
 
@@ -123,6 +122,9 @@ main (void)
   serial_init_queue ();
   timer_calibrate ();
 
+#ifdef VM
+  frame_table_init();
+#endif
 
 #ifdef FILESYS
   /* Initialize file system. */
@@ -130,13 +132,6 @@ main (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
-
-
-#ifdef VM
-  frame_table_init();
-  swap_pool_init();
-#endif
-
 
   printf ("Boot complete.\n");
   
