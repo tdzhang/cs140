@@ -278,14 +278,17 @@ strtok_r (char *s, const char *delimiters, char **save_ptr)
 void *
 memset (void *dst_, int value, size_t size) 
 {
+	printf("======dst = %u=====\n", (unsigned)dst_);
   unsigned char *dst = dst_;
 
   ASSERT (dst != NULL || size == 0);
   int i = 0;
   while (size-- > 0) {
 	  i++;
-	  printf("======i = %d=====\n", i);
-	  printf("======dst = %u=====\n", (unsigned)dst);
+	  if (i % 1024 == 0) {
+		  printf("======i = %d=====\n", i);
+		  printf("======dst = %u=====\n", (unsigned)dst);
+	  }
     *dst++ = value;
   }
 
