@@ -20,7 +20,7 @@ void swap_pool_init() {
 
 	swap_block = block_get_role (BLOCK_SWAP);
 	uint32_t swap_pool_size = block_size(swap_block);
-	int i;
+	uint32_t i;
 	struct swap_page_block *spb = NULL;
 	/* populate the whole swap pool */
 	lock_acquire(&swap_space_pool_lock);
@@ -63,7 +63,7 @@ void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb) {
 	/* indicate the spte is not swapped */
 	spte->spb = NULL;
 
-	int i;
+	uint32_t i;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
 		block_read(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}
@@ -84,7 +84,7 @@ void swap_out(struct frame_table_entry *fte) {
 	ASSERT(spte != NULL);
 	/* indicate the spte is swapped */
 	spte->spb = spb;
-	int i;
+	uint32_t i;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
 		block_write(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}
