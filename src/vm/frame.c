@@ -66,6 +66,7 @@ evict_frame(struct supplemental_pte *spte){
 		struct supplemental_pte *old_spte=fte->spte;
 		struct file* file;
 		bool is_dirty = pagedir_is_dirty (fte->t->pagedir, old_spte->uaddr);
+		/*
 		if (is_dirty&&old_spte->writable&&(old_spte->type_code == SPTE_FILE||old_spte->type_code == SPTE_MMAP)) {
 			file = old_spte->f;
 			off_t ofs = old_spte->offset;
@@ -73,7 +74,7 @@ evict_frame(struct supplemental_pte *spte){
 			file_seek(file, ofs);
 			file_write(file, fte->frame_addr, page_write_bytes);
 		}
-
+		*/
 		/*update the page table*/
 		pagedir_clear_page(fte->t->pagedir,fte->spte->uaddr);
 
