@@ -284,7 +284,7 @@ memset (void *dst_, int value, size_t size)
 		print = true;
 	}
 	if (print) {
-		printf("start in memset\n");
+		printf("=======================start in memset==================\n");
 		printf("==size = %d==\n", size);
 		printf("====dst = %u====\n", (unsigned)dst_);
 	}
