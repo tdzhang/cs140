@@ -278,7 +278,7 @@ strtok_r (char *s, const char *delimiters, char **save_ptr)
 void *
 memset (void *dst_, int value, size_t size) 
 {
-	printf("start in memset");
+	printf("start in memset\n");
 	printf("==size = %d==\n", size);
 	printf("====dst = %u====\n", (unsigned)dst_);
   unsigned char *dst = dst_;
@@ -287,7 +287,8 @@ memset (void *dst_, int value, size_t size)
   int i = 0;
   while (size-- > 0) {
 	  i++;
-	  if (i % 1024 == 0) {
+	  if (i % 1024 == 0 || i > 4090) {
+		  printf("==size = %d==\n", size);
 		  printf("======i = %d=====\n", i);
 		  printf("======dst = %u=====\n", (unsigned)dst);
 	  }
