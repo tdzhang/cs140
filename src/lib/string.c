@@ -1,6 +1,5 @@
 #include <string.h>
 #include <debug.h>
-#include <stdbool.h>
 
 /* Copies SIZE bytes from SRC to DST, which must not overlap.
    Returns DST. */
@@ -279,33 +278,12 @@ strtok_r (char *s, const char *delimiters, char **save_ptr)
 void *
 memset (void *dst_, int value, size_t size) 
 {
-	bool print = false;
-	if (size == 2 * 1024 * 1024) {
-		print = true;
-	}
-	/*
-	if (print) {
-		printf("=======================start in memset==================\n");
-		printf("==size = %d==\n", size);
-		printf("====dst = %u====\n", (unsigned)dst_);
-	}
-	*/
-
   unsigned char *dst = dst_;
 
   ASSERT (dst != NULL || size == 0);
-  int i = 0;
-  while (size-- > 0) {
-	  /*
-	  i++;
-	  if (print && i % 1024 == 0) {
-		  printf("==size = %d==\n", size);
-		  printf("======i = %d=====\n", i);
-		  printf("======dst = %u=====\n", (unsigned)dst);
-	  }
-	  */
+  
+  while (size-- > 0)
     *dst++ = value;
-  }
 
   return dst_;
 }

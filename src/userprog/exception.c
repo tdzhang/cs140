@@ -173,11 +173,6 @@ page_fault (struct intr_frame *f)
   	  esp=cur->esp;
     }
 
-    printf(">>>> fault addr = %p <<<<", fault_addr);
-
-    if (fault_addr == 0xbfffff74) {
-    		printf("\n////////fault_addr == 0xbfffff74////////\n");
-    }
 
    if (not_present)
    {

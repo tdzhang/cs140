@@ -1,5 +1,6 @@
 #include "vm/page.h"
 #include "vm/frame.h"
+#include "vm/swap.h"
 #include "threads/vaddr.h"
 #include <hash.h>
 #include "filesys/file.h"
@@ -33,18 +34,32 @@ bool try_load_page(void* fault_addr){
 	lock_acquire(&spte->lock);
 	lock_release(&cur->supplemental_pt_lock);
 
-	//TODO: actually try to load/swap according to the type_code
-	if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
-		/* load file from disk into frame */
-		result = load_file(spte);
-	} else if (spte->type_code == SPTE_IN_SWAP) {
-		//TODO: swap into memory
-	} else if (spte->type_code ==SPTE_STACK_INIT){
-		/*deal with stack extension*/
-		result = extend_stack(spte);
-	}
-	else {
-		PANIC("invalid spte type_code!");
+	if (spte->spb != NULL) {
+		/* swap in the frame from swap pool */
+		struct frame_table_entry *fte = get_frame(spte);
+		if (fte == NULL) {
+			lock_release(&spte->lock);
+			return false;
+		}
+		swap_in(fte, spte->spb);
+		bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+		if (!success) {
+			free_fte(fte);
+			lock_release(&spte->lock);
+			return false;
+		}
+		fte->pinned = false;
+	} else {
+		if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
+				/* load file from disk into frame */
+				result = load_file(spte);
+		} else if (spte->type_code ==SPTE_STACK_INIT){
+			/*deal with stack extension*/
+			result = extend_stack(spte);
+		}
+		else {
+			PANIC("invalid spte type_code!");
+		}
 	}
 
 	lock_release(&spte->lock);
@@ -56,7 +71,6 @@ bool load_file(struct supplemental_pte *spte) {
 	ASSERT(spte != NULL);
 
 	struct frame_table_entry *fte = get_frame(spte);
-	ASSERT(fte != NULL && 8==8);
 	if (fte == NULL) {
 		return false;
 	}
@@ -94,7 +108,6 @@ bool extend_stack(struct supplemental_pte *spte) {
 	ASSERT(spte->type_code == SPTE_STACK_INIT);
 
 	struct frame_table_entry *fte = get_frame(spte);
-	ASSERT(fte != NULL && 9==9);
 	if (fte == NULL) {
 		return false;
 	}

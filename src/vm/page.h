@@ -29,7 +29,7 @@ struct supplemental_pte {
 	  struct hash_elem elem;	/* hash elem for the spte in thread's hash table */
 	  struct frame_table_entry* fte;
 	  struct lock lock; /*lock for this struct*/
-
+	  struct swap_page_block *spb;
 };
 
 
