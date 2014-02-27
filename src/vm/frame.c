@@ -44,11 +44,6 @@ get_frame (struct supplemental_pte *spte)
 
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
-	if (spte->uaddr == 0x81c2000) {
-		printf(">> spte->uaddr == 0x81c2000 <<");
-	}
-
-
 	//TODO: clock algorithm
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;

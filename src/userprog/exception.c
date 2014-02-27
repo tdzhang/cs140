@@ -174,12 +174,6 @@ page_fault (struct intr_frame *f)
     }
 
 
-    printf(" >> fault_addr = %p << ", fault_addr);
-    if (fault_addr == 0x81c2000) {
-    		printf(" >> fault_addr = %p << ", fault_addr);
-    }
-
-
    if (not_present)
    {
 	   /*try to load the page, if success return*/
