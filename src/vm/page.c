@@ -42,6 +42,12 @@ bool try_load_page(void* fault_addr){
 			return false;
 		}
 		swap_in(fte, spte->spb);
+		bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+		if (!success) {
+			free_fte(fte);
+			lock_release(&spte->lock);
+			return false;
+		}
 		fte->pinned = false;
 	} else {
 		if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
