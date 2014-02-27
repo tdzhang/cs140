@@ -39,7 +39,7 @@ struct swap_page_block *get_free_spb() {
 		lock_release(&swap_space_pool_lock);
 		PANIC("NO FREE SWAP BLOCK");
 	}
-	struct swap_page_block *result = list_pop_front(&swap_space_pool);
+	struct swap_page_block *result = list_entry(list_pop_front(&swap_space_pool), struct swap_page_block, elem);
 	lock_release(&swap_space_pool_lock);
 	return result;
 }
