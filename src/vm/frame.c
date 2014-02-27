@@ -49,10 +49,19 @@ evict_frame(struct supplemental_pte *spte){
 	struct list_elem *e;
 	struct frame_table_entry *fte;
 	struct thread* cur=thread_current();
+	/*
 	for (e = list_begin (&frame_table); e != list_end (&frame_table);
 						  e = list_next (e)) {
 				fte = list_entry (e, struct frame_table_entry, elem);
 				if(!fte->pinned)break;
+	}
+	*/
+
+
+	for (e = frame_table.tail.prev; e != &frame_table.head;
+								  e = list_prev (e)) {
+						fte = list_entry (e, struct frame_table_entry, elem);
+						if(!fte->pinned)break;
 	}
 
 	if(fte!=NULL && !fte->pinned){
