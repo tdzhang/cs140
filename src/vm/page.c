@@ -56,6 +56,7 @@ bool load_file(struct supplemental_pte *spte) {
 	ASSERT(spte != NULL);
 
 	struct frame_table_entry *fte = get_frame(spte);
+	ASSERT(fte != NULL && 8==8);
 	if (fte == NULL) {
 		return false;
 	}
@@ -93,6 +94,7 @@ bool extend_stack(struct supplemental_pte *spte) {
 	ASSERT(spte->type_code == SPTE_STACK_INIT);
 
 	struct frame_table_entry *fte = get_frame(spte);
+	ASSERT(fte != NULL && 9==9);
 	if (fte == NULL) {
 		return false;
 	}
