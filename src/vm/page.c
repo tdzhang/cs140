@@ -38,6 +38,7 @@ bool try_load_page(void* fault_addr){
 		/* swap in the frame from swap pool */
 		struct frame_table_entry *fte = get_frame(spte);
 		if (fte == NULL) {
+			lock_release(&spte->lock);
 			return false;
 		}
 		swap_in(fte, spte->spb);
