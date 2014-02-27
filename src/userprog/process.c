@@ -715,6 +715,7 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	spte->offset = ofs;
 	spte->zero_bytes = zero_bytes;
 	lock_init(&spte->lock);
+	spte->spb = NULL;
 
 	struct thread * cur=thread_current();
 	ASSERT(cur != NULL);

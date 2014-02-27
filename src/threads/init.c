@@ -53,6 +53,7 @@ static const char *scratch_bdev_name;
 #ifdef VM
 static const char *swap_bdev_name;
 #include "vm/frame.h"
+#include "vm/swap.h"
 #endif
 #endif /* FILESYS */
 
@@ -124,6 +125,7 @@ main (void)
 
 #ifdef VM
   frame_table_init();
+  swap_pool_init();
 #endif
 
 #ifdef FILESYS

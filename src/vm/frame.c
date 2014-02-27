@@ -3,6 +3,7 @@
 #include "threads/synch.h"
 #include "threads/malloc.h"
 #include "threads/vaddr.h"
+#include "vm/swap.h"
 #include <list.h>
 
 /* List of all frame_table_entry. */
@@ -44,8 +45,6 @@ get_frame (struct supplemental_pte *spte)
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	//TODO: clock algorithm
-	//TODO: swap handle
-	//TODO: handle mmap dirty frame, need to write back to disk before evict or swap
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
@@ -61,6 +60,8 @@ evict_frame(struct supplemental_pte *spte){
 
 		/*pin the fte to avoid IO conflict, need to unpin outside*/
 		fte->pinned=true;
+		/* swap out the frame swap pool */
+		swap_out(fte);
 
 		/*if the block is dirty, write it back to disk*/
 		struct supplemental_pte *old_spte=fte->spte;
