@@ -12,6 +12,6 @@ struct swap_page_block {
 
 void swap_pool_init();
 void swap_out(struct frame_table_entry *fte);
-void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb);
+/*void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb);*/
 
 #endif /* vm/swap.h */
