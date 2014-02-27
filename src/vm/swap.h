@@ -4,6 +4,8 @@
 #include "devices/block.h"
 #include <stdint.h>
 #include <list.h>
+#include "vm/page.h"
+#include "vm/frame.h"
 
 void swap_pool_init();
 void swap_out(struct frame_table_entry *fte);
