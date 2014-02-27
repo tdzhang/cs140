@@ -296,7 +296,7 @@ memset (void *dst_, int value, size_t size)
   while (size-- > 0) {
 
 	  i++;
-	  if (print || i % 1024 == 0) {
+	  if (print && i % 1024 == 0) {
 		  printf("==size = %d==\n", size);
 		  printf("======i = %d=====\n", i);
 		  printf("======dst = %u=====\n", (unsigned)dst);
