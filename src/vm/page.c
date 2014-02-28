@@ -32,6 +32,7 @@ bool try_load_page(void* fault_addr){
 	/*get the entry and release lock*/
 	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 	ASSERT(spte != NULL);
+	ASSERT (!lock_held_by_current_thread (&spte->lock) && 1==1 );
 	lock_acquire(&spte->lock);
 	lock_release(&cur->supplemental_pt_lock);
 
