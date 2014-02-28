@@ -177,7 +177,10 @@ page_fault (struct intr_frame *f)
   	  esp=cur->esp;
     }
 
-    printf(" >>> fault_addr = %p <<< ", fault_addr);
+
+    if (0x804d000 == fault_addr) {
+    		printf(" >>> fault_addr = %p <<< ", fault_addr);
+    }
 
 
    if (not_present)
