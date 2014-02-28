@@ -203,10 +203,6 @@ process_exit (void)
 	  e = temp;
   }
 
-  if (cur->exit_code == 1) {
-	  printf ("cur->exit_code == 1");
-  }
-
   /*print out termination msg for grading use*/
   if (cur->is_user){
 	get_cmd(cur->name, cmd);
