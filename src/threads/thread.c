@@ -383,12 +383,7 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef VM
-
-//TODO: clean up mmap_list
-//TODO: clean up swap
-process_vm_clean();
-//TODO: clean up supplemental_pt
-
+  process_vm_clean();
 #endif
 
 #ifdef USERPROG
@@ -969,11 +964,28 @@ inline int clamp_nice(int nice) {
 	return nice;
 }
 
+/* action function for clean up supplemental page table*/
+void spt_clean_up_func (struct hash_elem *e, void *aux) {
+	struct thread *cur = thread_current();
+	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+	struct swap_page_block *spb = spte->spb;
+	struct frame_table_entry *fte = spte->fte;
+	if (spb != NULL) {
+		put_back_spb(spb);
+	}
+	if (fte != NULL) {
+		pagedir_clear_page(&cur->pagedir,spte->uaddr);
+		free_fte(fte);
+	}
+}
+
 
 /*clean up the vm related stuff when process exits*/
 void process_vm_clean(){
 	struct thread* cur= thread_current();
 	struct list* mmap_list_ptr=&cur->mmap_list;
+	struct hash* supplemental_pt=&cur->supplemental_pt;
+
 
 
 	 /*close all opened files of this thread*/
@@ -988,7 +1000,8 @@ void process_vm_clean(){
 		  e = temp;
 	  }
 
-	  //TODO: spt list
+	  /* clean up supplemental page table and swap */
+	  hash_destroy (supplemental_pt, spt_clean_up_func);
 }
 
 
