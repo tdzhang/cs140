@@ -176,6 +176,7 @@ page_fault (struct intr_frame *f)
 
    if (not_present)
    {
+	   ASSERT (!lock_held_by_current_thread (&filesys_lock) && 19==19 );
 	   /*try to load the page, if success return*/
 	   if(try_load_page(fault_addr)){
 		   return;
