@@ -976,7 +976,7 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 
 	if (fte != NULL) {
 
-		pagedir_clear_page(&cur->pagedir,spte->uaddr);
+		pagedir_clear_page(&fte->t->pagedir,spte->uaddr);
 		/*
 		free_fte(fte);
 		*/
