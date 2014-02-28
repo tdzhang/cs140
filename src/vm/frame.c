@@ -44,7 +44,7 @@ get_frame (struct supplemental_pte *spte)
 
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
-	//TODO: clock algorithm
+
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
@@ -57,7 +57,7 @@ evict_frame(struct supplemental_pte *spte){
 	}
 	*/
 
-
+	//TODO: clock algorithm
 	for (e = frame_table.tail.prev; e != &frame_table.head;
 								  e = list_prev (e)) {
 						fte = list_entry (e, struct frame_table_entry, elem);
@@ -76,12 +76,14 @@ evict_frame(struct supplemental_pte *spte){
 		struct supplemental_pte *old_spte=fte->spte;
 		struct file* file;
 		bool is_dirty = pagedir_is_dirty (fte->t->pagedir, old_spte->uaddr);
-		if (is_dirty&&(old_spte->type_code == SPTE_FILE||old_spte->type_code == SPTE_MMAP)) {
+		if (is_dirty&&old_spte->writable&&(old_spte->type_code == SPTE_FILE||old_spte->type_code == SPTE_MMAP)) {
 			file = old_spte->f;
 			off_t ofs = old_spte->offset;
 			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
+			lock_acquire(&filesys_lock);
 			file_seek(file, ofs);
 			file_write(file, fte->frame_addr, page_write_bytes);
+			lock_release(&filesys_lock);
 		}
 
 		/*update the page table*/

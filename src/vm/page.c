@@ -83,13 +83,16 @@ bool load_file(struct supplemental_pte *spte) {
 	size_t read_bytes = PGSIZE - zero_bytes;
 
 	off_t old_pos = file_tell (f);
+	lock_acquire(&filesys_lock);
 	file_seek(f, offset);
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
 		file_seek (f, old_pos);
 		free_fte (fte);
+		lock_release(&filesys_lock);
 		return false;
 	}
 	file_seek (f, old_pos);
+	lock_release(&filesys_lock);
 	memset(fte->frame_addr+read_bytes, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
