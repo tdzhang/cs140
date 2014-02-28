@@ -80,7 +80,7 @@ evict_frame(struct supplemental_pte *spte){
 		/*pin the fte to avoid IO conflict, need to unpin outside*/
 		fte->pinned=true;
 		/* swap out the frame swap pool */
-		if(fte->spte->type_code == SPTE_DATA_SEG){
+		if(fte->spte->type_code != SPTE_MMAP){
 			swap_out(fte);
 		}
 
