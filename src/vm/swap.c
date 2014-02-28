@@ -1,5 +1,5 @@
 #include "vm/swap.h"
-#include "threads/malloc.h"
+
 #include <debug.h>
 
 
@@ -9,7 +9,7 @@ static struct list swap_space_pool;  /* swap table */
 static struct lock swap_space_pool_lock; /* the lock of swap table */
 
 struct block *swap_block;
-struct swap_page_block *get_free_spb(void);
+struct swap_page_block *get_free_spb();
 
 
 
@@ -33,7 +33,7 @@ void swap_pool_init() {
 }
 
 /* retrieve a free swap_page_block from the swap pool*/
-struct swap_page_block *get_free_spb(void) {
+struct swap_page_block *get_free_spb() {
 	lock_acquire(&swap_space_pool_lock);
 	if (list_empty(&swap_space_pool)) {
 		lock_release(&swap_space_pool_lock);
