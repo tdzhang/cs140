@@ -207,6 +207,9 @@ static void sys_mmap_handler(struct intr_frame *f){
 		struct supplemental_pte key;
 		key.uaddr=pg_round_down(addr);
 		ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 2==2 );
+
+
+		/************/
 		lock_acquire(&cur->supplemental_pt_lock);
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
@@ -215,6 +218,8 @@ static void sys_mmap_handler(struct intr_frame *f){
 			return;
 		}
 		lock_release(&cur->supplemental_pt_lock);
+		/*****************/
+
 
 		/*normal case, need to generate spte*/
 		struct file_info_block *fib =
@@ -957,6 +962,9 @@ load_mmap (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
+  struct supplemental_pte key;
+  struct hash_elem *e=NULL;
+  struct thread* cur=thread_current();
 
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0)
@@ -966,6 +974,16 @@ load_mmap (struct file *file, off_t ofs, uint8_t *upage,
          and zero the final PAGE_ZERO_BYTES bytes. */
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
+
+      /*check if there exist overlapping between the mmap and the code or data segment*/
+      key.uaddr=upage;
+      lock_acquire(&cur->supplemental_pt_lock);
+      e = hash_find (&cur->supplemental_pt, &key.elem);
+      if(e!=NULL){
+    	  	  lock_release(&cur->supplemental_pt_lock);
+    	  	  return false;
+      }
+      lock_release(&cur->supplemental_pt_lock);
 
       /* populate spte in supplemental page table */
       bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable,SPTE_MMAP);
