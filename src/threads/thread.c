@@ -1001,7 +1001,7 @@ void process_vm_clean(){
 	  }
 
 	  /* clean up supplemental page table and swap */
-	  hash_destroy (supplemental_pt, spt_clean_up_func);
+	  /*hash_destroy (supplemental_pt, spt_clean_up_func);*/
 }
 
 
