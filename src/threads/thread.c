@@ -385,6 +385,7 @@ thread_exit (void)
 #ifdef VM
 
 //TODO: clean up mmap_list
+//TODO: clean up swap
 process_vm_clean();
 //TODO: clean up supplemental_pt
 
