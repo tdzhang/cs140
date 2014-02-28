@@ -160,9 +160,8 @@ free_fte (struct frame_table_entry *fte)
   }
 
   /*clean up*/
-
   list_remove (&fte->elem);
-  /*palloc_free_page(fte->frame_addr);*/
+  palloc_free_page(fte->frame_addr);
   free(fte);
 
   lock_release (&frame_table_lock);

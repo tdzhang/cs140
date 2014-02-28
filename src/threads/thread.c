@@ -18,7 +18,6 @@
 #include "userprog/process.h"
 #endif
 #include "vm/page.h"
-#include "vm/frame.h"
 
 
 /* Random value for struct thread's `magic' member.
@@ -977,10 +976,9 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 
 	if (fte != NULL) {
 		/*
-		pagedir_clear_page(&fte->t->pagedir,spte->uaddr);
-*/
+		pagedir_clear_page(&cur->pagedir,spte->uaddr);
+		*/
 		free_fte(fte);
-
 	}
 
 }
@@ -1007,9 +1005,7 @@ void process_vm_clean(){
 	  }
 
 	  /* clean up supplemental page table and swap */
-	  lock_acquire(&cur->supplemental_pt_lock);
 	  hash_destroy (supplemental_pt, spt_clean_up_func);
-	  lock_release(&cur->supplemental_pt_lock);
 }
 
 
