@@ -89,6 +89,7 @@ evict_frame(struct supplemental_pte *spte){
 			already_hold_lock=true;
 		}
 
+
 		fte->spte->fte=NULL;
 
 		/*pin the fte to avoid IO conflict, need to unpin outside*/
