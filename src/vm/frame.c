@@ -132,6 +132,7 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 
 	fte->pinned=true;
 	/*add the new entry into frame_table */
+	ASSERT (!lock_held_by_current_thread (&frame_table_lock) && 1==1 );
 	lock_acquire(&frame_table_lock);
 	list_push_back(&frame_table,&fte->elem);
 	lock_release(&frame_table_lock);

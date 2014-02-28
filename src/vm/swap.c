@@ -23,6 +23,7 @@ void swap_pool_init() {
 	uint32_t i;
 	struct swap_page_block *spb = NULL;
 	/* populate the whole swap pool */
+	ASSERT (!lock_held_by_current_thread (&swap_space_pool_lock) && 1==1 );
 	lock_acquire(&swap_space_pool_lock);
 	for (i = 0; i < swap_pool_size; i = i+BLOCKS_UNIT_NUMBER) {
 		spb = malloc(sizeof(struct swap_page_block));
@@ -34,6 +35,7 @@ void swap_pool_init() {
 
 /* retrieve a free swap_page_block from the swap pool*/
 struct swap_page_block *get_free_spb() {
+	ASSERT (!lock_held_by_current_thread (&swap_space_pool_lock) && 2==2 );
 	lock_acquire(&swap_space_pool_lock);
 	if (list_empty(&swap_space_pool)) {
 		lock_release(&swap_space_pool_lock);
@@ -47,6 +49,7 @@ struct swap_page_block *get_free_spb() {
 /* put the swap_page_block back into the swap pool */
 void put_back_spb(struct swap_page_block *spb) {
 	ASSERT(spb != NULL);
+	ASSERT (!lock_held_by_current_thread (&swap_space_pool_lock) && 11==11 );
 	lock_acquire(&swap_space_pool_lock);
 	list_push_back(&swap_space_pool, &spb->elem);
 	lock_release(&swap_space_pool_lock);
