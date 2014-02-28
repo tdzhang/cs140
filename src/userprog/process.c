@@ -725,6 +725,7 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	struct thread * cur=thread_current();
 	ASSERT(cur != NULL);
 #ifdef VM
+	ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 1==1 );
 	lock_acquire(&cur->supplemental_pt_lock);
 	hash_insert(&cur->supplemental_pt, &spte->elem);
 	lock_release(&cur->supplemental_pt_lock);

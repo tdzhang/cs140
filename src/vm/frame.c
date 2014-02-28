@@ -45,7 +45,7 @@ get_frame (struct supplemental_pte *spte)
 
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
-
+	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 8==8 );
 	lock_acquire (&frame_table_lock);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
@@ -81,6 +81,7 @@ evict_frame(struct supplemental_pte *spte){
 			file = old_spte->f;
 			off_t ofs = old_spte->offset;
 			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
+			ASSERT (!lock_held_by_current_thread (&filesys_lock) && 10==10 );
 			lock_acquire(&filesys_lock);
 			file_seek(file, ofs);
 			file_write(file, fte->frame_addr, page_write_bytes);

@@ -19,7 +19,7 @@ bool try_load_page(void* fault_addr){
 	/*creat key elem for searching*/
 	struct supplemental_pte key;
 	key.uaddr=target_addr;
-
+	ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 6==6 );
 	lock_acquire(&cur->supplemental_pt_lock);
 	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 
@@ -84,6 +84,7 @@ bool load_file(struct supplemental_pte *spte) {
 	size_t read_bytes = PGSIZE - zero_bytes;
 
 	off_t old_pos = file_tell (f);
+	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 9==9 );
 	lock_acquire(&filesys_lock);
 	file_seek(f, offset);
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
