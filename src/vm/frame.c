@@ -152,7 +152,7 @@ free_fte (struct frame_table_entry *fte)
   }
 
   /* update clock hand */
-  if (fte->elem == clock_hand) {
+  if (&fte->elem == clock_hand) {
 	  clock_hand = list_next (clock_hand);
 	  if (clock_hand == list_end(&frame_table)) {
 		  clock_hand = list_begin(&frame_table);
