@@ -64,6 +64,7 @@ void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb) {
 	spte->spb = NULL;
 
 	uint32_t i;
+	fte->accessed = true;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
 		block_read(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}
@@ -85,6 +86,7 @@ void swap_out(struct frame_table_entry *fte) {
 	/* indicate the spte is swapped */
 	spte->spb = spb;
 	uint32_t i;
+	fte->accessed = true;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
 		block_write(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}

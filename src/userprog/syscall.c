@@ -1012,6 +1012,7 @@ void mib_clean_up(struct mmap_info_block *mib){
 					file_seek(file, ofs);
 					//TODO: possibly need sema
 					spte->fte->pinned=true;
+					spte->fte->accessed = true;
 					file_write(file, spte->fte->frame_addr, page_write_bytes);
 					lock_release(&filesys_lock);
 					spte->fte->pinned=false;

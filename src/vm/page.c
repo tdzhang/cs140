@@ -87,6 +87,7 @@ bool load_file(struct supplemental_pte *spte) {
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 9==9 );
 	lock_acquire(&filesys_lock);
 	file_seek(f, offset);
+	fte->accessed = true;
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
 		file_seek (f, old_pos);
 		free_fte (fte);
@@ -119,7 +120,7 @@ bool extend_stack(struct supplemental_pte *spte) {
 	}
 
 	size_t zero_bytes = spte->zero_bytes;
-
+	fte->accessed = true;
 	memset(fte->frame_addr, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);

@@ -18,7 +18,7 @@ struct frame_table_entry
   struct list_elem elem;	/* Linked list of frame entries */
   bool pinned;			/* whether this frame is pinned  */
   struct supplemental_pte* spte; /*the corresponding spte*/
-
+  bool accessed;
 };
 
 #endif

@@ -10,6 +10,7 @@
 /* List of all frame_table_entry. */
 static struct list frame_table;
 static struct lock frame_table_lock;
+struct list_elem *clock_hand;  /*current frame_table_entry the clock algorithm is pointing to*/
 
 
 struct frame_table_entry *
@@ -20,6 +21,7 @@ evict_frame(struct supplemental_pte *spte);
 
 /*init frame table*/
 void frame_table_init(){
+	  clock_hand = NULL;
 	  lock_init (&frame_table_lock);
 	  list_init (&frame_table);
 }
@@ -50,19 +52,34 @@ evict_frame(struct supplemental_pte *spte){
 	struct list_elem *e;
 	struct frame_table_entry *fte;
 	struct thread* cur=thread_current();
-	/*
-	for (e = list_begin (&frame_table); e != list_end (&frame_table);
-						  e = list_next (e)) {
-				fte = list_entry (e, struct frame_table_entry, elem);
-				if(!fte->pinned)break;
-	}
-	*/
 
-	//TODO: clock algorithm
+	if (clock_hand == NULL) {
+		clock_hand = list_begin (&frame_table);
+	}
+
+	/* choose the frame to evict using "second-chance" algorithm */
+	while(true) {
+		if (clock_hand == list_end (&frame_table)) {
+			clock_hand = list_begin (&frame_table);
+		}
+		fte = list_entry (clock_hand, struct frame_table_entry, elem);
+		if(fte->accessed || fte->pinned || fte->spte->type_code == SPTE_CODE_SEG) {
+			fte->accessed = false;
+			clock_hand = list_next (clock_hand);
+		} else {
+
+			fte->accessed = true;
+			clock_hand = list_next (clock_hand);
+			break;
+		}
+	}
+
+
 	for (e = frame_table.tail.prev; e != &frame_table.head;
 								  e = list_prev (e)) {
 		fte = list_entry (e, struct frame_table_entry, elem);
-		if(!fte->pinned && fte->spte->type_code != SPTE_CODE_SEG)break;
+		if(!fte->pinned && fte->spte->type_code != SPTE_CODE_SEG)
+			break;
 	}
 
 	if(fte!=NULL && !fte->pinned){
@@ -83,6 +100,7 @@ evict_frame(struct supplemental_pte *spte){
 			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
 			ASSERT (!lock_held_by_current_thread (&filesys_lock) && 10==10 );
 			lock_acquire(&filesys_lock);
+			fte->accessed = true;
 			file_seek(file, ofs);
 			file_write(file, fte->frame_addr, page_write_bytes);
 			lock_release(&filesys_lock);
@@ -94,6 +112,7 @@ evict_frame(struct supplemental_pte *spte){
 		/*put the fte into the tail*/
 		list_remove(&fte->elem);
 		list_push_back(&frame_table,&fte->elem);
+		fte->accessed = true;
 		fte->spte=spte;
 		fte->t=thread_current();
 		spte->fte=fte;
@@ -115,6 +134,7 @@ create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
 	fte->t=t;
 	fte->frame_addr=frame_addr;
 	fte->spte=spte;
+	fte->accessed = false;
 	spte->fte=fte;
 	/*pin the fte to avoid IO conflict, need to unpin outside*/
 
