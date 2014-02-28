@@ -178,11 +178,6 @@ page_fault (struct intr_frame *f)
     }
 
 
-    if (0x804d000 == fault_addr) {
-    		printf(" >>> fault_addr = %p <<< ", fault_addr);
-    }
-
-
    if (not_present)
    {
 	   ASSERT (!lock_held_by_current_thread (&filesys_lock) && 19==19 );
