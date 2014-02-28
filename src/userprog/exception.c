@@ -18,7 +18,6 @@ static long long page_fault_cnt;
 
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
-static struct lock global_page_fault_lock;
 
 /* Registers handlers for interrupts that can be caused by user
    programs.
@@ -67,8 +66,6 @@ exception_init (void)
      We need to disable interrupts for page faults because the
      fault address is stored in CR2 and needs to be preserved. */
   intr_register_int (14, 0, INTR_OFF, page_fault, "#PF Page-Fault Exception");
-
-  lock_init(&global_page_fault_lock);
 }
 
 /* Prints exception statistics. */
@@ -142,10 +139,6 @@ page_fault (struct intr_frame *f)
   void *fault_addr;  /* Fault address. */
   void *esp;  /*get esp address*/
 
-  bool already_hold_lock=false;
-
-
-
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
      data.  It is not necessarily the address of the instruction
@@ -187,22 +180,12 @@ page_fault (struct intr_frame *f)
 
    if (not_present)
    {
-	   if(!lock_held_by_current_thread (&global_page_fault_lock)){
-	   	  lock_acquire(&global_page_fault_lock);
-	     }else{
-	   	  already_hold_lock=true;
-	     }
 	   ASSERT (!lock_held_by_current_thread (&filesys_lock) && 19==19 );
 	   /*try to load the page, if success return*/
 	   if(try_load_page(fault_addr)){
 		   if (holding_filesys_lock) {
 		   	  lock_acquire(&filesys_lock);
 		   }
-
-		   if(!already_hold_lock){
-			   lock_release(&global_page_fault_lock);
-		   }
-
 		   return;
 	   }
 
@@ -217,15 +200,9 @@ page_fault (struct intr_frame *f)
 				   if (holding_filesys_lock) {
 				   		   	  lock_acquire(&filesys_lock);
 				   }
-				   if(!already_hold_lock){
-				   			   lock_release(&global_page_fault_lock);
-				   }
 				   return;
 			   }
 		   }
-	   }
-	   if(!already_hold_lock){
-	  				    lock_release(&global_page_fault_lock);
 	   }
    }
 
