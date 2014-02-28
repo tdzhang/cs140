@@ -1,0 +1,623 @@
+                      ﻿+---------------------------+
+                      |                CS 140     |
+                      | PROJECT 3: VIRTUAL MEMORY |
+                      |           DESIGN DOCUMENT |
+                      +---------------------------+
+  
+  ---- GROUP ----
+  
+  >> Fill in the names and email addresses of your group members.
+  Tongda Zhang <tdzhang@stanford.edu>
+  Bing Han <bhan11@stanford.edu>
+  
+  ---- PRELIMINARIES ----
+  
+  >> If you have any preliminary comments on your submission, notes for the
+  >> TAs, or extra credit, please give them here.
+  
+  >> Please cite any offline or online sources you consulted while
+  >> preparing your submission, other than the Pintos documentation, course
+  >> text, lecture notes, and course staff.
+  
+                          PAGE TABLE MANAGEMENT
+                          =====================
+  
+  ---- DATA STRUCTURES ----
+  
+  >> A1: Copy here the declaration of each new or changed `struct' or
+  >> `struct' member, global or static variable, `typedef', or
+  >> enumeration.  Identify the purpose of each in 25 words or less.
+  
+  
+  -- changes in page.h--
+      ->add some macro definitions
+  /*these are the flag values stand for code segment, 
+  data segment, stack part and mmap part*/
+  #define SPTE_CODE_SEG 1
+  #define SPTE_DATA_SEG 2
+  #define SPTE_STACK_INIT 3
+  #define SPTE_MMAP 4
+  
+  
+      ->add a structure
+  /*the supplemental page table entry*/
+  struct supplemental_pte {
+            uint8_t type_code;                /* type of this spte entry to
+                                              find the content */
+            uint8_t *uaddr;                /* virtual address of the page*/
+            bool writable;                    /* if the page is writable */
+  
+  
+            struct file *f;    /* file pointer to the file in filesystem */
+            off_t offset;                   /* current offset in the file*/
+            size_t zero_bytes;         /* zero bytes number in this page */
+  
+  
+            struct hash_elem elem;        /* hash elem for the spte in
+                                         thread's hash table */
+            struct frame_table_entry* fte;
+            struct lock lock; /*lock for this struct*/
+            struct swap_page_block *spb;
+  };
+  
+  
+    
+  -- changes in thread.h--
+      ->add properties in a structure
+  struct thread
+   {..................
+    #ifdef VM
+      struct hash supplemental_pt;            /* supplemental page table*/
+      struct lock supplemental_pt_lock;  /* lock supplemental page table */
+      ………………..    
+    #endif
+    …………….
+  }
+  
+  
+  
+  
+  -- changes in exception.h--
+      ->add a macro definition
+          /*the limitation of stack growth*/
+  #define STACK_LIMIT_BASE (void *)((uint8_t *)PHYS_BASE-0x800000)
+  
+  
+  
+  ---- ALGORITHMS ----
+  
+  >> A2: In a few paragraphs, describe your code for locating the frame,
+  >> if any, that contains the data of a given page.
+  
+  
+  Answer:
+  1) if the present bit of a pte in page table is true, then it will not
+cause page fault and we can use the page table to get the frame address
+ corresponding to the virtual address.
+  
+  2) when load file from file system, we generate supplemental page table
+ entry (SPTE) (which use virtual address as key) in load_segment(), and
+lazily load the file into frame in page fault. We will get a frame (palloc to get
+ new one or evict one) and wrap it with a frame_table_entry (FTE). Then put
+a pointer of this frame_table_entry into the SPTE. In this way, we have to
+ mapping from virtual address (uaddr in SPTE) to frame address (frame_addr
+in FTE). So we can locate frame with the help of SPTE.
+ 
+  3) in case of stack growth, we firstly create a new SPTE, and then
+retrieve a FTE (create or evict) and zero the frame. So we can use the SPTE to
+locate the frame using the FTE pointer within the SPTE.
+  
+  4) if we need to swap in a page from swap partition, the SPTE use
+ swap_page_block (SPB) to get the information about where the page is in
+swap partition and then load the page back from the swap location to the frame.
+We locate the frame by FTE pointer within SPTE, which is setup when swap out
+ happen.
+  
+  5) when the page does not exist, we will call user_exit to terminate the
+ user program or kill() for kernel case.
+  
+  >> A3: How does your code coordinate accessed and dirty bits between
+  >> kernel and user virtual addresses that alias a single frame, or
+  >> alternatively how do you avoid the issue?
+  Answer:
+  Our strategy is access the data only through the user’s virtual address
+ with the help of supplemental page table, which will address all the issues
+ mentioned above.
+  
+  ---- SYNCHRONIZATION ----
+  
+  >> A4: When two user processes both need a new frame at the same time,
+  >> how are races avoided?
+  Answer:
+  We avoided the races through 2 steps. First, the frame entry table is
+ protected by frame_table_lock. So in any given time, only one process can
+ operate the frame entry table. Second, when palloc_get_page (PAL_USER) can
+ not give us a free frame, a evict algorithm ("second chance"/clock
+ algorithem) is triggered, which picks currently in memory page to be
+evicted. We used a “pinned” property for frame table entry: when we make a
+ decision on which frame to be evict, we set the “pinned” property of
+the entry, and our clock algorithm will not selected such entry again because
+it is already being used. Therefore, using the pinned property, we avoid the
+ possibility that multiple user processes will share the same frame.
+  
+  
+  
+  ---- RATIONALE ----
+  
+  >> A5: Why did you choose the data structure(s) that you did for
+  >> representing virtual-to-physical mappings?
+  Answer:
+  1) if the page is already in memory, we can use the basic page table entry
+ as the virtual-to-physical mapping. Under such cases, no extra mapping
+ structure is needed.
+  
+  
+  2) if a page is code, data, or mmaped file, stack, and not in memory, then
+ we can use supplemental page table entry as the virtual-to-physical
+mappings. The supplemental page table is implemented using hash_table, which 
+has a good performance since insert, delete, find are of O(1). And the SPT 
+is mainly used for searching, so the structure we choose meet the function
+requirement very well.
+  
+  
+  3) if a page is in swap, we can use SPTE and SPB (swap_page_block)
+together as the virtual-to-physical mappings. SPTE stores virtual address 
+and a pointer to SPB, and SPB has the starting block_sector of the swap 
+location. When we find that the spte is pointing to a SPB, we know that the content
+is in swap.
+  
+                         PAGING TO AND FROM DISK
+                         =======================
+  
+  ---- DATA STRUCTURES ----
+  
+  >> B1: Copy here the declaration of each new or changed `struct' or
+  >> `struct' member, global or static variable, `typedef', or
+  >> enumeration.  Identify the purpose of each in 25 words or less.
+  
+  
+  -- adding new files frame.c frame.h, page.c page.h, swap.c swap.h-
+      ->add a structure in page.h
+  struct frame_table_entry
+  {
+    struct thread *t;                /* the thread who own this entry */
+    uint8_t *frame_addr;                /* the actual frame address */
+    struct list_elem elem;        /* Linked list of frame entries */
+    bool pinned;                        /* whether this frame is pinned  */
+    struct supplemental_pte* spte; /*the corresponding spte*/
+    bool accessed;
+  };
+  
+  
+      ->add a structure in page.h
+      struct swap_page_block {
+          block_sector_t block_sector_head;
+          struct list_elem elem;
+       };
+  
+  
+    -- changes in thread.h--
+  
+  
+  #ifdef VM
+          ...
+  void * esp;   /*save esp when user -> kernel*/
+          ...
+  #endif
+  
+  
+  -- changes in exception.c --
+  static struct lock global_page_fault_lock;  /*global lock for page
+                                                 fault*/
+  
+  
+  
+  
+  
+  
+  ---- ALGORITHMS ----
+  
+  >> B2: When a frame is required but none is free, some frame must be
+  >> evicted.  Describe your code for choosing a frame to evict.
+  Answer:
+  We use "second chance" (clock algorithm) to choose the frame to be
+evicted. We use "clock_hand" to point to a FTE and every time we need to evict a
+ frame, we search the FTE one-by-one (restart from the front if reaching the
+ end, a circular like order), when meeting an accessed frame, we clear the
+ accessed flag and move to the next FTE, and when visiting a not accessed
+ frame, we set the accessed flag of the FTE and choose it as the frame to be
+ evicted. Another thing is if the frame is pinned or corresponding to the
+code segment of a program, we will just pass it and not pick it to be evicted. 
+
+  
+  >> B3: When a process P obtains a frame that was previously used by a
+  >> process Q, how do you adjust the page table (and any other data
+  >> structures) to reflect the frame Q no longer has?
+  Answer:
+  When a process P try to obtains a frame that was previously used by a
+ process Q, we first need to using evict_frame() to get the frame out of Q.
+To be specific, assuming that frame is chosen by the "second chance"/clock
+ algorithm, we set the pinned property of the frame table entry which
+prevent other processes from accessing that frame. Then we try to swap out the
+ content of that frame from memory into the swap place. If the frame is
+dirty and writable, and is mmap type, we write it back to the disk to update 
+the information. After that, we use pagedir_clear_page function to update
+process Q’s page table by remove the mapping of that frame(all the operation
+on the supplemental_pt requires the process hold the supplemental_pt_lock, 
+which will handle the possible race conditions). From here, we get a free 
+frame table entry and try to attach it to process P. Using the information 
+from process P’s spte(supplemental page table entry), we operate the related
+ operations like file read, swap in and so on to load the content back into
+ memory. Last, we use install_page to install the new mapping for process
+Q.
+  
+  
+  
+  >> B4: Explain your heuristic for deciding whether a page fault for an
+  >> invalid virtual address should cause the stack to be extended into
+  >> the page that faulted.
+  Answer:
+  We add a esp in thread.h to keep track of the current stack pointer. In
+ syscall, we set the current thread's esp as f->esp. Then in page fault, if
+ it's caused by kernel, we can retrieve the esp from thread_current()->esp
+and if it's caused by user, we can retrieve the esp directly from f->esp.
+  
+  
+  After retrieving the current stack pointer, we can decide if it's a valid
+ stack growth by the following rules:
+  1) fault_addr is larger than or equal to STACK_LIMIT_BASE, where
+ STACK_LIMIT_BASE is 3G-8M (stack limit is 8M)
+  2) fault_addr is larger than or equal to esp-32.
+  
+  
+  If both of above conditions are met, we treat this as stack growth.
+  
+  
+  ---- SYNCHRONIZATION ----
+  
+  >> B5: Explain the basics of your VM synchronization design.  In
+  >> particular, explain how it prevents deadlock.  (Refer to the
+  >> textbook for an explanation of the necessary conditions for
+  >> deadlock.)
+  
+  
+  Answer:
+  The synchronization design we  used  is described as follows.
+  
+  First, to avoid the potential race conditions in the global frame table
+list “frame_table ”, we used a single lock “frame_table_lock”. So at any 
+given time, only one operation is performed on the frame_table. The deadlock 
+is prevent naturally. No circle around frame_table will ever be formed since 
+the worst case is that one thread is holding the lock and all others is
+ waiting for it.
+  
+  
+  We are using a list swap_space_pool to represent the available resource
+pool for the swap space (swap table). And to avoid multiple threads access the
+ list at the same time, we use a single global lock swap_space_pool_lock.
+Thus the deadlock cannot happen due to the same reason we provided in the
+previous case: the worst case is that one thread is holding the lock and all 
+others is waiting for it.
+  
+  
+  At last, for each process’s hash table  supplemental_pt (the
+supplemental page table), we use a supplemental_pt_lock to constrain that
+ the number of access to a supplemental page table of a process is to be 
+ less or equal to 1. And for each supplemental page table entry in the hash 
+ table, we also use a lock to make sure only a single operation can be 
+ performed on an entry at a time. To avoid the deadlock, we use a lock 
+ acquire and release sequence that always acquire supplemental_pt_lock 
+ before entry lock, and release supplemental_pt_lock before entry lock. 
+ Such sequence will help us avoid the deadlock.
+  
+  
+  >> B6: A page fault in process P can cause another process Q's frame
+  >> to be evicted.  How do you ensure that Q cannot access or modify
+  >> the page during the eviction process?  How do you avoid a race
+  >> between P evicting Q's frame and Q faulting the page back in?
+  Answer:
+  We add a global lock "global_page_fault_lock" for avoiding multiply page
+ fault. Then when P enters page fault handler, it firstly acquire the lock,
+ and then load page for file, swap, mmapped files, or extend stack. In any
+of
+ those process, when it needs to evict a page of Q. it can go ahead to evict
+ it and to perform other necessary steps. In the meantime, if Q gets
+scheduled
+ and need to access or modify the page evicted by P, it will be trapped into
+ page fault. However, Q cannot successfully acquires the
+ global_page_fault_lock since P is holding it. So Q will wait there without
+ moving forward to faulting the page back in. Then when P completely
+finishes
+ the evict the frame and return to the page fault, before returning from
+page
+ fault, P will release the lock. So when Q is scheduled next time, it will
+be
+ able to acquire the global lock and perform its page fault. In this way we
+ can avoid a race between P evicting Q's frame and Q faulting the page back
+ in.
+  
+  
+  
+  
+  
+  
+  >> B7: Suppose a page fault in process P causes a page to be read from
+  >> the file system or swap.  How do you ensure that a second process Q
+  >> cannot interfere by e.g. attempting to evict the frame while it is
+  >> still being read in?
+  Answer:
+  We add a pinned flag in frame_table_entry (FTE). When P causes a page to
+be
+ read from the file system or swap, it first set the pinned flag. Then when
+Q
+ is trying to evict a frame, it only tries to evict an unpinned frame
+without
+ touching the pinned frames. When P finishes the reading or swapping, it
+ clears the pinned flag. In this way, we can make sure that Q cannot
+interfere
+ while P is reading or swapping.
+  
+  
+  >> B8: Explain how you handle access to paged-out pages that occur
+  >> during system calls.  Do you use page faults to bring in pages (as
+  >> in user programs), or do you have a mechanism for "locking" frames
+  >> into physical memory, or do you use some other design?  How do you
+  >> gracefully handle attempted accesses to invalid virtual addresses?
+  Answer:
+  We use page faults to bring in pages. In system call handler, we acquire a
+ filesys_lock before access file system. To avoid reacquire the same lock in
+ page fault handler, we release the filesys_lock in the beginning of page
+ fault handler if it is holding the filesys_lock. Then page fault loads
+page,
+ swaps in page or extends stack. After that, it will acquire the lock before
+ page fault returns if it's holding the filesys_lock when it enters.
+  
+  
+  We use the following logic to handle the page fault:
+  1) if a page is not present, we will try to load it from file or swap. If
+it
+ succeeds, return from page fault
+  2) if the fault_addr is valid for stack growth, we will try to extend
+stack.
+ If it succeeds, return from page fault
+  3) if current thread is an user thread (is_user added in Project 2) but
+ "user" flag is false, then this page fault is caused by system call
+handler.
+ So we just call user_exit(-1) without touching the kernel.
+  4) if "user" flag is true, then this page fault is caused by user program
+ directly. So we just call user_exit(-1) without touching the kernel.
+  5) if the page fault is caused by kernel. We will call kill().
+  
+  
+  For those invalid virtual addresses as the input of system call, we have
+ already verified them at the beginning of each system call handler. If any
+ verification fails, we call user_exit(-1) directly without touching the
+ kernel.
+  
+  
+  ---- RATIONALE ----
+  
+  >> B9: A single lock for the whole VM system would make
+  >> synchronization easy, but limit parallelism.  On the other hand,
+  >> using many locks complicates synchronization and raises the
+  >> possibility for deadlock but allows for high parallelism.  Explain
+  >> where your design falls along this continuum and why you chose to
+  >> design it this way.
+  Answer:
+  
+  
+  To maintain the simplicity of the code in this project, we are trying to
+use
+ as few locks as possible. Therefore, for global lists such as the
+ supplemental frame table, the swap list pool and each thread's supplemental
+ page table, we are using global lock for each of these shared structure.
+  
+  
+  However, the side effect of the single lock is reduced parallelism. To
+keep
+ the simplicity and at the same time maximize the parallelism, we try our
+best
+ to keep the critical sections as short as possible. 
+  
+  
+  The single lock's simplicity makes our system very easy to avoid possible
+ deadlocks from the beginning, and the code is much easier to understand.
+The
+ only complicated thing we introduced is that for each supplemental frame
+ entry we add a lock to control the accessibility for each lock. Without
+those
+ individual locks, if we want to avoid the potential race conditions when
+ multiple processes perform operation on the same entry, we must use a
+global
+ entry to constrain that only one entry can be accessed at a time. This will
+ result in a great loss of the parallelism.
+  
+  
+  Therefore, the tradeoff we made in this project is single global lock for 
+ supplemental frame table, the swap list pool and each thread's supplemental
+ page table, and the individual lock for each supplemental frame entry in
+each
+ thread.
+  
+  
+                           MEMORY MAPPED FILES
+                           ===================
+  
+  ---- DATA STRUCTURES ----
+  
+  >> C1: Copy here the declaration of each new or changed `struct' or
+  >> `struct' member, global or static variable, `typedef', or
+  >> enumeration.  Identify the purpose of each in 25 words or less.
+  
+  
+  -- changes in syscall.h--
+      ->add a structure
+  /*mmap info clock*/
+  struct mmap_info_block{
+          uint32_t mmap_id;
+          uint8_t *uaddr;
+          uint32_t file_size;
+          struct list_elem elem;
+  };
+  
+  -- changes in thread.h--
+      ->add properties in a structure
+  struct thread
+   {..................
+  #ifdef VM
+      struct list mmap_list;       /*list of memory mapping*/
+      int next_mmap_id;          /*next mmap_id number for this thread*/
+      ………………..    
+  #endif
+  …………….
+  }
+  
+  
+  
+  
+  ---- ALGORITHMS ----
+  
+  >> C2: Describe how memory mapped files integrate into your virtual
+  >> memory subsystem.  Explain how the page fault and eviction
+  >> processes differ between swap pages and other pages.
+  Answer:
+  mmapped file is one of the type of our SPTE record. 
+  
+  In the mmap system call handler, it populates the the corresponding SPTE
+ records based the file info. Later, when reading/writing the file, it will
+ cause page fault and we will load the file into memory and then return from
+ page fault to resume the reading/writing.  
+  
+  
+  In the munmap system call handler, it will free the corresponding frame,
+ SPTE, and clear the page in the pagedir. If the file is dirty, it is also
+ written back to the file. When a process exits, it will unmap all its
+mmapped
+ files. 
+  
+  
+  In page fault, we use the following logic to handle different types of
+ SPTE:
+  1) if a page is not present, we will try to load it from file, mmapped, or
+ swap partition
+  1.1) if the page is in swap, we will swap in the page and update the
+ corresponding SPTE and FTE.
+  1.2) if the page is corresponding a file or a mmapped file, we read in the
+ file or load the mmapped file into memory and update the corresponding SPTE
+ and FTE.
+  If it succeeds, return from page fault.
+  2) if the fault_addr is valid for stack growth, we will try to extend
+stack
+ and update the corresponding SPTE and FTE. If it succeeds, return from page
+ fault
+  3) if current thread is a user thread (is_user added in Project 2) but
+ "user" flag is false, then this page fault is caused by system call
+handler.
+ So we just call user_exit(-1) without touching the kernel.
+  4) if "user" flag is true, then this page fault is caused by user program
+ directly. So we just call user_exit(-1) without touching the kernel.
+  5) if the page fault is caused by kernel. We will call kill().
+  
+  
+  In eviction algorithm, if the page is dirty and it's a memory mapped file,
+ we will write the the frame back to its corresponding file. If it needs to
+be evicted to swap partition, we will swap it out. 
+  
+  
+  Another difference is that for a SPTE with swapped page, we will set its
+spb points to a swap_page_block which keeps track of the starting block sector
+in disk but for the pages not swapped, their spb will point to NULL.
+  
+  
+  
+  
+  
+  
+  >> C3: Explain how you determine whether a new file mapping overlaps
+  >> any existing segment.
+  Answer:
+  Our implementation is: when receiving a new file mapping request, we first
+ calculate the number of pages the file will take in the space using
+ file_size/PGSIZE. Then we round down the request mapping address and
+ calculate each head address of the following pages. After that, we look up
+ each of these address in the supplemental page table to find out if there
+is already a supplemental page table entry corresponding to one of the
+ addresses. If so, we can know that the mapping overlaps with an existing
+ segment, and the program will refuse that mapping request.
+  
+  
+  ---- RATIONALE ----
+  
+  >> C4: Mappings created with "mmap" have similar semantics to those of
+  >> data demand-paged from executables, except that "mmap" mappings are
+  >> written back to their original files, not to swap.  This implies
+  >> that much of their implementation can be shared.  Explain why your
+  >> implementation either does or does not share much of the code for
+  >> the two situations.
+  Answer:
+  In our implementation, the supplemental page table entry have the
+following types
+  
+  
+  #define SPTE_CODE_SEG 1
+  #define SPTE_DATA_SEG 2
+  #define SPTE_STACK_INIT 3
+  #define SPTE_MMAP 4
+  
+  
+  With the types information, when triggered the page_fault, both mmap and
+ data demanded-paged from executables will using the same function
+ try_load_page() with the fault_addr. Inside that function, both type will
+be treated the same, load_file() function will be used to page in. mmap and
+data demanded-paged from executables are also regarded the same in the frame
+ eviction process using the "second chance"/clock algorithm. 
+  
+  
+  In the load_file() function, the uninitialized data will have PGSIZE
+ zerobytes and it do not need to actually read from the disk but only memset
+ the whole page with zero; the mmap part on the other hand, will have to
+read from the disk into memory. Although the load_file() works differently on
+ uninitialized data part and mmap part, but the code used for both purpose
+is the same, with only input parameter different. By sharing the code, the
+ structure of the page loading part and frame eviction part become much more
+ concise, and the code become more readable.
+  
+                             SURVEY QUESTIONS
+                             ================
+  
+  Answering these questions is optional, but it will help us improve the
+  course in future quarters.  Feel free to tell us anything you
+  want--these questions are just to spur your thoughts.  You may also
+  choose to respond anonymously in the course evaluations at the end of
+  the quarter.
+  
+  >> In your opinion, was this assignment, or any one of the three problems
+  >> in it, too easy or too hard?  Did it take too long or too little time?
+  
+  
+  the synchronization part takes a lot of time to figure out.
+  
+  >> Did you find that working on a particular part of the assignment gave
+  >> you greater insight into some aspect of OS design?
+  
+  
+  the eviction part is really interesting, help us understand how operating
+ system actually works.
+  
+  >> Is there some particular fact or hint we should give students in
+  >> future quarters to help them solve the problems?  Conversely, did you
+  >> find any of our guidance to be misleading?
+  
+  
+  No.
+  
+  >> Do you have any suggestions for the TAs to more effectively assist
+  >> students, either for future quarters or the remaining projects?
+  
+  
+  No.
+  
+  >> Any other comments?
+  
+  
+  No.
