@@ -160,6 +160,10 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
+  bool holding_filesys_lock = lock_held_by_current_thread (&filesys_lock);
+  if (holding_filesys_lock) {
+	  lock_release(&filesys_lock);
+  }
 
 
    struct thread *cur=thread_current();
@@ -179,6 +183,9 @@ page_fault (struct intr_frame *f)
 	   ASSERT (!lock_held_by_current_thread (&filesys_lock) && 19==19 );
 	   /*try to load the page, if success return*/
 	   if(try_load_page(fault_addr)){
+		   if (holding_filesys_lock) {
+		   	  lock_acquire(&filesys_lock);
+		   }
 		   return;
 	   }
 
@@ -190,6 +197,9 @@ page_fault (struct intr_frame *f)
 		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true, SPTE_STACK_INIT)){
 			   /*try load page*/
 			   if(try_load_page(fault_addr)){
+				   if (holding_filesys_lock) {
+				   		   	  lock_acquire(&filesys_lock);
+				   }
 				   return;
 			   }
 		   }
@@ -198,10 +208,16 @@ page_fault (struct intr_frame *f)
 
     /*if this is a system_call from a user thread, terminate it with kernel intact*/
 	if(cur->is_user && !user){
+		if (holding_filesys_lock) {
+			lock_acquire(&filesys_lock);
+		}
 		 user_exit(-1);
 	}
 	/*if this is  a user call, terminate it with kill()*/
 	else if (user){
+		if (holding_filesys_lock) {
+			lock_acquire(&filesys_lock);
+		}
 		 kill (f);
 	}
 	/* kernel stuff*/
@@ -214,6 +230,9 @@ page_fault (struct intr_frame *f)
 			  not_present ? "not present" : "rights violation",
 			  write ? "writing" : "reading",
 			  user ? "user" : "kernel");
+	  if (holding_filesys_lock) {
+		lock_acquire(&filesys_lock);
+	  }
 	  kill (f);
 	}
 }
