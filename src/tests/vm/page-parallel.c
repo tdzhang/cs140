@@ -4,7 +4,7 @@
 #include "tests/lib.h"
 #include "tests/main.h"
 
-#define CHILD_CNT 3
+#define CHILD_CNT 1
 
 void
 test_main (void)
