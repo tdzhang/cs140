@@ -576,7 +576,7 @@ setup_stack (void **esp)
   if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE, PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
-  ASSERT (!lock_held_by_current_thread (&filesys_lock) && 29==29 );
+
   if(!try_load_page((void *)((uint8_t *)PHYS_BASE-PGSIZE))) {
 	  return false;
   }
