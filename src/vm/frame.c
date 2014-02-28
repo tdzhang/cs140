@@ -10,7 +10,6 @@
 /* List of all frame_table_entry. */
 static struct list frame_table;
 static struct lock frame_table_lock;
-
 struct list_elem *clock_hand;  /*current frame_table_entry the clock algorithm is pointing to*/
 
 
@@ -24,7 +23,6 @@ evict_frame(struct supplemental_pte *spte);
 void frame_table_init(){
 	  clock_hand = NULL;
 	  lock_init (&frame_table_lock);
-	  lock_init (&frame_table_lock_dummy);
 	  list_init (&frame_table);
 }
 
@@ -51,8 +49,6 @@ struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 8==8 );
 	lock_acquire (&frame_table_lock);
-	ASSERT(!lock_held_by_current_thread (&frame_table_lock_dummy)&1==1);
-	lock_acquire (&frame_table_lock_dummy);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
 	struct thread* cur=thread_current();
@@ -81,17 +77,7 @@ evict_frame(struct supplemental_pte *spte){
 	bool already_hold_lock_old=false;
 	bool already_hold_lock=false;
 	if(fte!=NULL && !fte->pinned){
-		if(!lock_held_by_current_thread (&fte->spte->lock)){
-			lock_acquire(&fte->spte->lock);
-		}else{
-			already_hold_lock_old=true;
-		}
 
-		if(!lock_held_by_current_thread (&spte->lock)){
-			lock_acquire(&spte->lock);
-		}else{
-			already_hold_lock=true;
-		}
 
 
 		fte->spte->fte=NULL;
@@ -129,21 +115,14 @@ evict_frame(struct supplemental_pte *spte){
 		fte->spte=spte;
 		fte->t=thread_current();
 		spte->fte=fte;
-		if(!already_hold_lock_old){
-			lock_release(&old_spte->lock);
-		}
-		if(!already_hold_lock){
-			lock_release(&spte->lock);
-		}
+
 
 	}
 	else{
 		/*cannot find a frame to evict*/
 		fte=NULL;
 	}
-
 	lock_release (&frame_table_lock);
-	lock_release (&frame_table_lock_dummy);
 	return fte;
 }
 

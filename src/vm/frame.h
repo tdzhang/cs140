@@ -10,7 +10,6 @@
 void frame_table_init();
 struct frame_table_entry* get_frame(struct supplemental_pte *spte);
 bool free_fte (struct frame_table_entry *fte);
-struct lock frame_table_lock_dummy;
 
 struct frame_table_entry
 {
