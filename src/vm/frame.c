@@ -20,7 +20,7 @@ evict_frame(struct supplemental_pte *spte);
 
 
 /*init frame table*/
-void frame_table_init(void){
+void frame_table_init(){
 	  clock_hand = NULL;
 	  lock_init (&frame_table_lock);
 	  list_init (&frame_table);

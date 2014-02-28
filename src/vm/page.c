@@ -5,9 +5,6 @@
 #include <hash.h>
 #include "filesys/file.h"
 #include "userprog/syscall.h"
-#include "userprog/process.h"
-#include <string.h>
-#include <debug.h>
 
 bool load_file(struct supplemental_pte *spte);
 bool extend_stack(struct supplemental_pte *spte);
@@ -92,7 +89,7 @@ bool load_file(struct supplemental_pte *spte) {
 	lock_acquire(&filesys_lock);
 	file_seek(f, offset);
 	fte->accessed = true;
-	if (file_read (f, fte->frame_addr, read_bytes) != (off_t)read_bytes) {
+	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
 		file_seek (f, old_pos);
 		free_fte (fte);
 		lock_release(&filesys_lock);

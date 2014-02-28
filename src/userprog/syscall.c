@@ -16,7 +16,6 @@
 #include "devices/input.h"
 #include "vm/page.h"
 #include "vm/frame.h"
-#include "vm/swap.h"
 #include "userprog/exception.h"
 #include <stdint.h>
 
@@ -199,7 +198,7 @@ static void sys_mmap_handler(struct intr_frame *f){
 
 	/*return -1 if the map if for console, or mapping addr is 0,
 	 * or addr is not page-aligned*/
-	if(*fd_ptr==0 || *fd_ptr==1 || addr==0 || (void *)addr>STACK_LIMIT_BASE || (int)addr%PGSIZE!=0){
+	if(*fd_ptr==0 || *fd_ptr==1 || addr==0 || addr>STACK_LIMIT_BASE || (int)addr%PGSIZE!=0){
 		/*handle return value*/
 		f->eax = -1;
 	} else {
@@ -750,7 +749,7 @@ static bool is_writable_page (void *addr) {
 		lock_release(&cur->supplemental_pt_lock);
 		esp=cur->esp;
 		/*if it is in the stack , return true, otherwise*/
-		if((uint8_t *)addr>=(uint8_t *)esp-32 && (void *)addr>STACK_LIMIT_BASE){
+		if(addr>=(uint8_t *)esp-32 && addr>STACK_LIMIT_BASE){
 			return true;
 		}
 		return false;
@@ -1037,7 +1036,7 @@ void mib_clean_up(struct mmap_info_block *mib){
 					spte->fte->pinned=false;
 				}
 
-				free_fte(spte->fte);
+				free_fte(&spte->fte);
 				/*clear pagedir*/
 				pagedir_clear_page(spte->fte->t->pagedir,uaddr);
 			}

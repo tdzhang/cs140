@@ -10,7 +10,7 @@ static struct lock swap_space_pool_lock; /* the lock of swap table */
 
 struct block *swap_block;
 struct swap_page_block *get_free_spb();
-
+void put_back_spb(struct swap_page_block *spb);
 
 
 /* swap pool init */
