@@ -18,6 +18,7 @@
 #include "userprog/process.h"
 #endif
 #include "vm/page.h"
+#include "vm/frame.h"
 
 
 /* Random value for struct thread's `magic' member.
