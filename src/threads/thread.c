@@ -975,10 +975,11 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 	}
 
 	if (fte != NULL) {
-		/*
+
 		pagedir_clear_page(&cur->pagedir,spte->uaddr);
-		*/
+		/*
 		free_fte(fte);
+		*/
 	}
 
 }
@@ -1005,7 +1006,7 @@ void process_vm_clean(){
 	  }
 
 	  /* clean up supplemental page table and swap */
-	  /*hash_destroy (supplemental_pt, spt_clean_up_func);*/
+	  hash_destroy (supplemental_pt, spt_clean_up_func);
 }
 
 
