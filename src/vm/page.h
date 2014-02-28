@@ -8,6 +8,8 @@
 #include "threads/thread.h"
 #include "filesys/off_t.h"
 
+/*these are the flag values stand for code 
+ * segment, data segment, stack part and mmap part*/
 #define SPTE_CODE_SEG 1
 #define SPTE_DATA_SEG 2
 #define SPTE_STACK_INIT 3
