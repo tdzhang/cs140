@@ -573,7 +573,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE, PGSIZE, true, SPTE_STACK_INIT)) {
+  if(!populate_spte(NULL, (off_t)0, (uint8_t *)PHYS_BASE-PGSIZE, PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
 

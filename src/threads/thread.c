@@ -970,8 +970,7 @@ inline int clamp_nice(int nice) {
 }
 
 /* action function for clean up supplemental page table*/
-void spt_clean_up_func (struct hash_elem *e, void *aux) {
-	struct thread *cur = thread_current();
+void spt_clean_up_func (struct hash_elem *e, void *aux UNUSED) {
 	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 	struct swap_page_block *spb = spte->spb;
 	struct frame_table_entry *fte = spte->fte;
