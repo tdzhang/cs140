@@ -113,7 +113,7 @@ evict_frame(struct supplemental_pte *spte){
 		fte->t=thread_current();
 		spte->fte=fte;
 
-		lock_release(&fte->spte->lock);
+		lock_release(&old_spte->lock);
 		lock_release(&spte->lock);
 	}
 	else{
