@@ -11,7 +11,7 @@
 #include "tests/main.h"
 
 #define CHUNK_SIZE (128 * 1024)
-#define CHUNK_CNT 8                             /* Number of chunks. */
+#define CHUNK_CNT 4                             /* Number of chunks. */
 #define DATA_SIZE (CHUNK_CNT * CHUNK_SIZE)      /* Buffer size. */
 
 unsigned char buf1[DATA_SIZE], buf2[DATA_SIZE];
