@@ -3,6 +3,7 @@
 #include "threads/synch.h"
 #include "threads/malloc.h"
 #include "threads/vaddr.h"
+#include "userprog/pagedir.h"
 #include "vm/swap.h"
 #include "userprog/syscall.h"
 #include <list.h>
@@ -49,9 +50,7 @@ struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 8==8 );
 	lock_acquire (&frame_table_lock);
-	struct list_elem *e;
 	struct frame_table_entry *fte;
-	struct thread* cur=thread_current();
 
 	if (clock_hand == NULL) {
 		clock_hand = list_begin (&frame_table);
