@@ -153,7 +153,7 @@ process_wait (tid_t child_tid)
 	if (wib->exit_code == -1) {
 		return -1;
 	}
-	ASSERT (!lock_held_by_current_thread (&wib->l) && 1==1 );
+
 	lock_acquire(&wib->l);
 	/*wait for child process to die*/
 	while(wib->t != NULL) {
@@ -212,7 +212,6 @@ process_exit (void)
 
   /*update wait_info_block if its parent process still exists*/
   if(wib != NULL){
-	  ASSERT (!lock_held_by_current_thread (&wib->l) && 2==2 );
 	  lock_acquire(&wib->l);
 	  wib->exit_code = cur->exit_code;
 	  wib->t = NULL;
@@ -226,7 +225,7 @@ process_exit (void)
   while(!list_empty(child_list)) {
 	  wib = list_entry (list_pop_front(child_list),
 			  struct wait_info_block, elem);
-	  ASSERT (!lock_held_by_current_thread (&wib->l) && 3==3 );
+
 	  lock_acquire(&wib->l);
 	  list_remove(&wib->elem);
 	  if (wib->t != NULL) {
