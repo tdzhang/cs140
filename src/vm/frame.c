@@ -76,7 +76,7 @@ evict_frame(struct supplemental_pte *spte){
 
 	bool already_hold_lock=false;
 	if(fte!=NULL && !fte->pinned){
-		if(lock_held_by_current_thread (&spte->lock)){
+		if(lock_held_by_current_thread (&spte->lock)||lock_held_by_current_thread (&fte->spte->lock)){
 			lock_acquire(&fte->spte->lock);
 			lock_acquire(&spte->lock);
 			already_hold_lock=true;
