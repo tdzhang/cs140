@@ -191,8 +191,8 @@ page_fault (struct intr_frame *f)
 
 		//TODO: the condition maybe esp-4 and esp-32, double check
 		//TODO: handle case that stack and heap meet
-	   /*if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){*/
-	   if((fault_addr==(uint8_t *)esp-32 || fault_addr==(uint8_t *)esp-4 || fault_addr >= esp) && fault_addr>=STACK_LIMIT_BASE){
+	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
+	   /*if((fault_addr==(uint8_t *)esp-32 || fault_addr==(uint8_t *)esp-4 || fault_addr >= esp) && fault_addr>=STACK_LIMIT_BASE){*/
 		   /*need to extend the stack*/
 		   /*create new spte*/
 		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true, SPTE_STACK_INIT)){
