@@ -75,6 +75,8 @@ evict_frame(struct supplemental_pte *spte){
 	}
 
 	if(fte!=NULL && !fte->pinned){
+		lock_acquire(&fte->spte->lock);
+		lock_acquire(&spte->lock);
 		fte->spte->fte=NULL;
 
 		/*pin the fte to avoid IO conflict, need to unpin outside*/
@@ -111,6 +113,8 @@ evict_frame(struct supplemental_pte *spte){
 		fte->t=thread_current();
 		spte->fte=fte;
 
+		lock_release(&fte->spte->lock);
+		lock_release(&spte->lock);
 	}
 	else{
 		/*cannot find a frame to evict*/
