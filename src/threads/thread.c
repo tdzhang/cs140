@@ -18,6 +18,7 @@
 #include "userprog/process.h"
 #endif
 #include "vm/page.h"
+#include "vm/swap.h"
 
 
 /* Random value for struct thread's `magic' member.
@@ -91,7 +92,11 @@ inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 static void mlfqs_update_vars(void);
 inline int clamp_priority(int prior);
 inline int clamp_nice(int nice);
-void process_vm_clean();
+void process_vm_clean(void);
+unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED);
+bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
+		void *aux UNUSED);
+void spt_clean_up_func (struct hash_elem *e, void *aux);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -987,7 +992,7 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 
 
 /*clean up the vm related stuff when process exits*/
-void process_vm_clean(){
+void process_vm_clean(void){
 	struct thread* cur= thread_current();
 	struct list* mmap_list_ptr=&cur->mmap_list;
 	struct hash* supplemental_pt=&cur->supplemental_pt;
