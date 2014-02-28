@@ -46,7 +46,6 @@ struct swap_page_block *get_free_spb() {
 
 /* put the swap_page_block back into the swap pool */
 void put_back_spb(struct swap_page_block *spb) {
-	ASSERT(spb != NULL);
 	lock_acquire(&swap_space_pool_lock);
 	list_push_back(&swap_space_pool, &spb->elem);
 	lock_release(&swap_space_pool_lock);
@@ -55,11 +54,8 @@ void put_back_spb(struct swap_page_block *spb) {
 
 /* swap in */
 void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb) {
-	ASSERT(fte != NULL);
-	ASSERT(spb != NULL);
-
 	struct supplemental_pte *spte = fte->spte;
-	ASSERT(spte != NULL);
+
 	/* indicate the spte is not swapped */
 	spte->spb = NULL;
 
@@ -78,11 +74,9 @@ void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb) {
 
 /* swap out */
 void swap_out(struct frame_table_entry *fte) {
-	ASSERT(fte != NULL);
 	/* retrieve a free swap_page_block from the swap pool*/
 	struct swap_page_block *spb = get_free_spb();
 	struct supplemental_pte *spte = fte->spte;
-	ASSERT(spte != NULL);
 	/* indicate the spte is swapped */
 	spte->spb = spb;
 	uint32_t i;

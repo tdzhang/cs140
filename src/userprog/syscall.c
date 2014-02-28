@@ -206,10 +206,7 @@ static void sys_mmap_handler(struct intr_frame *f){
 		struct thread* cur=thread_current();
 		struct supplemental_pte key;
 		key.uaddr=pg_round_down(addr);
-		ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 2==2 );
 
-
-		/************/
 		lock_acquire(&cur->supplemental_pt_lock);
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
@@ -218,7 +215,6 @@ static void sys_mmap_handler(struct intr_frame *f){
 			return;
 		}
 		lock_release(&cur->supplemental_pt_lock);
-		/*****************/
 
 
 		/*normal case, need to generate spte*/
@@ -315,7 +311,6 @@ static void sys_remove_handler(struct intr_frame *f){
 	}
 
 	/*update the global_file_block*/
-	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 1==1 );
 	lock_acquire(&filesys_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
@@ -362,7 +357,6 @@ static void sys_close_handler(struct intr_frame *f){
 /*close the file given by file_info_block*/
 void close_file_by_fib(struct file_info_block *fib) {
 	ASSERT(fib != NULL);
-	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2 );
 	lock_acquire(&filesys_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			fib->f->inode->sector);
@@ -420,7 +414,6 @@ static void sys_open_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-	 ASSERT (!lock_held_by_current_thread (&filesys_lock) && 3==3);
 	lock_acquire(&filesys_lock);
 
 	struct file *file = filesys_open(file_name);
@@ -541,7 +534,6 @@ static void sys_create_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 4==4 );
 	lock_acquire(&filesys_lock);
 	bool success = filesys_create(file_name, *file_size);
 	lock_release(&filesys_lock);
@@ -611,7 +603,6 @@ static void sys_write_handler(struct intr_frame *f){
 			 user_exit(-1);
 			 return;
 	}
-	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 5==5 );
 	lock_acquire(&filesys_lock);
 	/*handle if fd==1, which is write to console*/
 	if(*fd_ptr==1){
@@ -672,7 +663,6 @@ static void sys_read_handler(struct intr_frame *f){
 
 
 
-	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 2==2);
 	lock_acquire(&filesys_lock);
 	/*handle if fd==0, which is read from console*/
 	if(*fd_ptr==0){
@@ -741,7 +731,6 @@ static bool is_writable_page (void *addr) {
 	/*create key elem for searching*/
 	struct supplemental_pte key;
 	key.uaddr=(uint8_t *)pg_round_down(addr);
-	ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 3==3 );
 	lock_acquire(&cur->supplemental_pt_lock);
 	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 
@@ -833,7 +822,6 @@ static bool is_page_mapped (const void *uaddr_){
 	/*create key elem for searching*/
 	struct supplemental_pte key;
 	key.uaddr=(uint8_t *)pg_round_down(uaddr_);
-	ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 4==4 );
 	lock_acquire(&cur->supplemental_pt_lock);
 	struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 
@@ -1012,7 +1000,6 @@ void mib_clean_up(struct mmap_info_block *mib){
 	{
 	    /*clean up*/
 		key.uaddr=uaddr;
-		ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 5==5 );
 		lock_acquire(&cur->supplemental_pt_lock);
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
@@ -1025,7 +1012,6 @@ void mib_clean_up(struct mmap_info_block *mib){
 				if (is_dirty) {
 					off_t ofs = spte->offset;
 					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
-					ASSERT (!lock_held_by_current_thread (&filesys_lock) && 7==7 );
 					lock_acquire(&filesys_lock);
 					file_seek(file, ofs);
 					//TODO: possibly need sema

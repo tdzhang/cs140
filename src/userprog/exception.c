@@ -191,7 +191,6 @@ page_fault (struct intr_frame *f)
 
    if (not_present)
    {
-	   ASSERT (!lock_held_by_current_thread (&filesys_lock) && 19==19 );
 	   /*try to load the page, if success return*/
 	   if(try_load_page(fault_addr)){
 		   if (holding_filesys_lock) {
@@ -205,8 +204,6 @@ page_fault (struct intr_frame *f)
 		   return;
 	   }
 
-		//TODO: the condition maybe esp-4 and esp-32, double check
-		//TODO: handle case that stack and heap meet
 	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
 		   /*need to extend the stack*/
 		   /*create new spte*/
