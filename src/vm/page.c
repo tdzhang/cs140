@@ -4,6 +4,7 @@
 #include "threads/vaddr.h"
 #include <hash.h>
 #include "filesys/file.h"
+#include "userprog/syscall.h"
 
 bool load_file(struct supplemental_pte *spte);
 bool extend_stack(struct supplemental_pte *spte);

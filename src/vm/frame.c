@@ -4,6 +4,7 @@
 #include "threads/malloc.h"
 #include "threads/vaddr.h"
 #include "vm/swap.h"
+#include "userprog/syscall.h"
 #include <list.h>
 
 /* List of all frame_table_entry. */
