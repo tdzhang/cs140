@@ -218,7 +218,7 @@ page_fault (struct intr_frame *f)
 		if (holding_filesys_lock) {
 			lock_acquire(&filesys_lock);
 		}
-		 kill (f);
+		user_exit(-1);
 	}
 	/* kernel stuff*/
 	else{
