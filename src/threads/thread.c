@@ -979,7 +979,7 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 
 		/*pagedir_clear_page(&fte->t->pagedir,spte->uaddr);*/
 
-		free_fte(fte);
+		/*free_fte(fte);*/
 
 	}
 
