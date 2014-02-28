@@ -74,14 +74,6 @@ evict_frame(struct supplemental_pte *spte){
 		}
 	}
 
-
-	for (e = frame_table.tail.prev; e != &frame_table.head;
-								  e = list_prev (e)) {
-		fte = list_entry (e, struct frame_table_entry, elem);
-		if(!fte->pinned && fte->spte->type_code != SPTE_CODE_SEG)
-			break;
-	}
-
 	if(fte!=NULL && !fte->pinned){
 		fte->spte->fte=NULL;
 
@@ -157,6 +149,14 @@ free_fte (struct frame_table_entry *fte)
 	  /*cannot deallocate when it is pinned*/
 	  lock_release (&frame_table_lock);
 	  return false;
+  }
+
+  /* update clock hand */
+  if (fte->elem == clock_hand) {
+	  clock_hand = list_next (clock_hand);
+	  if (clock_hand == list_end(&frame_table)) {
+		  clock_hand = list_begin(&frame_table);
+	  }
   }
 
   /*clean up*/
