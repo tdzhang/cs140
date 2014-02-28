@@ -539,7 +539,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
-
+  bool success = false;
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
@@ -550,7 +550,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* populate spte in supplemental page table */
-      bool success = populate_spte(file, ofs, upage, page_zero_bytes, writable,SPTE_FILE);
+      if (read_bytes > 0) {
+    	  	  success = populate_spte(file, ofs, upage, page_zero_bytes, writable, SPTE_CODE_SEG);
+      } else {
+    	  	  success = populate_spte(file, ofs, upage, page_zero_bytes, writable, SPTE_DATA_SEG);
+      }
+
       if (!success) {
     	  	  return false;
       }

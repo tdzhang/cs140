@@ -8,8 +8,8 @@
 #include "threads/thread.h"
 #include "filesys/off_t.h"
 
-#define SPTE_FILE 1
-#define SPTE_IN_SWAP 2
+#define SPTE_CODE_SEG 1
+#define SPTE_DATA_SEG 2
 #define SPTE_STACK_INIT 3
 #define SPTE_MMAP 4
 

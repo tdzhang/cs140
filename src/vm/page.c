@@ -52,7 +52,7 @@ bool try_load_page(void* fault_addr){
 		fte->pinned = false;
 		result = true;
 	} else {
-		if (spte->type_code == SPTE_FILE || spte->type_code == SPTE_MMAP) {
+		if (spte->type_code == SPTE_CODE_SEG || spte->type_code == SPTE_DATA_SEG || spte->type_code == SPTE_MMAP) {
 				/* load file from disk into frame */
 				result = load_file(spte);
 		} else if (spte->type_code ==SPTE_STACK_INIT){

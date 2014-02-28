@@ -62,7 +62,7 @@ evict_frame(struct supplemental_pte *spte){
 	for (e = frame_table.tail.prev; e != &frame_table.head;
 								  e = list_prev (e)) {
 		fte = list_entry (e, struct frame_table_entry, elem);
-		if(!fte->pinned)break;
+		if(!fte->pinned && fte->spte->type_code != SPTE_CODE_SEG)break;
 	}
 
 	if(fte!=NULL && !fte->pinned){
@@ -77,7 +77,7 @@ evict_frame(struct supplemental_pte *spte){
 		struct supplemental_pte *old_spte=fte->spte;
 		struct file* file;
 		bool is_dirty = pagedir_is_dirty (fte->t->pagedir, old_spte->uaddr);
-		if (is_dirty&&old_spte->writable&&(old_spte->type_code == SPTE_FILE||old_spte->type_code == SPTE_MMAP)) {
+		if (is_dirty && old_spte->writable && old_spte->type_code == SPTE_MMAP) {
 			file = old_spte->f;
 			off_t ofs = old_spte->offset;
 			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
