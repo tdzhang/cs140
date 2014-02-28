@@ -11,6 +11,7 @@ bool extend_stack(struct supplemental_pte *spte);
 
 bool try_load_page(void* fault_addr){
 	ASSERT (fault_addr < PHYS_BASE);
+	ASSERT(!lock_held_by_current_thread (&frame_table_lock_dummy));
 	lock_acquire (&frame_table_lock_dummy);
 	lock_release (&frame_table_lock_dummy);
 	/* Round down to nearest page boundary. */

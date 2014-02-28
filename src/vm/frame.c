@@ -51,6 +51,7 @@ struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	ASSERT (!lock_held_by_current_thread (&filesys_lock) && 8==8 );
 	lock_acquire (&frame_table_lock);
+	ASSERT(!lock_held_by_current_thread (&frame_table_lock_dummy)&1==1);
 	lock_acquire (&frame_table_lock_dummy);
 	struct list_elem *e;
 	struct frame_table_entry *fte;
