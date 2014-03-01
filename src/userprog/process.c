@@ -552,7 +552,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* populate spte in supplemental page table */
       if (read_bytes > 0) {
     	  	  success = populate_spte(file, ofs, upage,
-    	  			  age_zero_bytes, writable, SPTE_CODE_SEG);
+    	  			  page_zero_bytes, writable, SPTE_CODE_SEG);
       } else {
     	  	  success = populate_spte(file, ofs, upage,
     	  			  page_zero_bytes, writable, SPTE_DATA_SEG);
