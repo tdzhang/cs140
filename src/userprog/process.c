@@ -707,7 +707,7 @@ bool init_wait_info_block(struct thread *t) {
 	return true;
 }
 
-
+/*populate supplemental page table entry*/
 bool populate_spte(struct file *file, off_t ofs, uint8_t *upage,
 		uint32_t zero_bytes, bool writable, uint8_t type) {
 	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));

@@ -140,8 +140,9 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
-  void *esp;  /*get esp address*/
+  void *esp;         /*get esp address*/
 
+  /*retrieve the lock holding status and store it*/
   bool already_hold_lock=false;
   if(!lock_held_by_current_thread (&global_page_fault_lock)){
 	  lock_acquire(&global_page_fault_lock);
@@ -170,7 +171,7 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
-
+  /*release the filesys_lock if acquired in e.g. syscall*/
   bool holding_filesys_lock = lock_held_by_current_thread (&filesys_lock);
   if (holding_filesys_lock) {
 	  lock_release(&filesys_lock);
@@ -212,10 +213,10 @@ page_fault (struct intr_frame *f)
 			   /*try load page*/
 			   if(try_load_page(fault_addr)){
 				   if (holding_filesys_lock) {
-				   		   	  lock_acquire(&filesys_lock);
+					   lock_acquire(&filesys_lock);
 				   }
 				   if(!already_hold_lock){
-				   			   lock_release(&global_page_fault_lock);
+				   	   lock_release(&global_page_fault_lock);
 				   }
 				   return;
 			   }
@@ -230,17 +231,17 @@ page_fault (struct intr_frame *f)
 			lock_acquire(&filesys_lock);
 		}
 		if(!already_hold_lock){
-					   lock_release(&global_page_fault_lock);
+			lock_release(&global_page_fault_lock);
 		}
 		 user_exit(-1);
 	}
-	/*if this is  a user call, terminate it with kill()*/
+	/*if this is  a user call, terminate it with user_exit*/
 	else if (user){
 		if (holding_filesys_lock) {
 			lock_acquire(&filesys_lock);
 		}
 		if(!already_hold_lock){
-					   lock_release(&global_page_fault_lock);
+			lock_release(&global_page_fault_lock);
 		}
 		user_exit(-1);
 	}
@@ -255,10 +256,10 @@ page_fault (struct intr_frame *f)
 			  write ? "writing" : "reading",
 			  user ? "user" : "kernel");
 	  if (holding_filesys_lock) {
-		lock_acquire(&filesys_lock);
+		  lock_acquire(&filesys_lock);
 	  }
 	  if(!already_hold_lock){
-	  		lock_release(&global_page_fault_lock);
+		  lock_release(&global_page_fault_lock);
 	  }
 	  kill (f);
 	}
