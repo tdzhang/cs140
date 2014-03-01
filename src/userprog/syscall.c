@@ -1034,7 +1034,7 @@ void mib_clean_up(struct mmap_info_block *mib){
 					spte->fte->pinned=false;
 				}
 
-				free_fte(spte->fte);
+				free_fte(&spte->fte);
 				/*clear pagedir*/
 				pagedir_clear_page(spte->fte->t->pagedir,uaddr);
 			}

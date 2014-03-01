@@ -5,7 +5,6 @@
 #include "threads/vaddr.h"
 #include "vm/swap.h"
 #include "userprog/syscall.h"
-#include "userprog/pagedir.h"
 #include <list.h>
 
 /* List of all frame_table_entry. */
@@ -24,7 +23,7 @@ evict_frame(struct supplemental_pte *spte);
 
 
 /*init frame table*/
-void frame_table_init(void){
+void frame_table_init(){
 	  clock_hand = NULL;
 	  lock_init (&frame_table_lock);
 	  list_init (&frame_table);
@@ -51,7 +50,9 @@ get_frame (struct supplemental_pte *spte)
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	lock_acquire (&frame_table_lock);
+	struct list_elem *e;
 	struct frame_table_entry *fte;
+	struct thread* cur=thread_current();
 
 	if (clock_hand == NULL) {
 		clock_hand = list_begin (&frame_table);
