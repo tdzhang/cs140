@@ -3,7 +3,7 @@
 #include <debug.h>
 
 
-#define BLOCKS_UNIT_NUMBER 8
+#define BLOCKS_UNIT_NUMBER 8   /*each page corresponds to 8 blocks in disk*/
 
 static struct list swap_space_pool;  /* swap table */
 static struct lock swap_space_pool_lock; /* the lock of swap table */

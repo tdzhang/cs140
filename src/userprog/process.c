@@ -575,11 +575,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
+  /*populate spte for the first page of stack*/
   if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE,
 		  PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
-
+  /*load the first page of stage, not lazy load here*/
   if(!try_load_page((void *)((uint8_t *)PHYS_BASE-PGSIZE))) {
 	  return false;
   }

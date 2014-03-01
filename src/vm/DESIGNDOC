@@ -189,11 +189,14 @@ is in swap.
   };
   
   
-      ->add a structure in page.h
+      ->add a structure in swap.h
       struct swap_page_block {
-          block_sector_t block_sector_head;
-          struct list_elem elem;
+          block_sector_t block_sector_head;  /*starting block sector in disk*/
+          struct list_elem elem;         /*list elem of list swap_space_pool*/
        };
+       
+    ->add define in swap.c
+    #define BLOCKS_UNIT_NUMBER 8 /*each page corresponds to 8 blocks in disk*/
   
   
     -- changes in thread.h--

@@ -9,6 +9,7 @@
 bool load_file(struct supplemental_pte *spte);
 bool extend_stack(struct supplemental_pte *spte);
 
+/*load page based on the spte's type_code*/
 bool try_load_page(void* fault_addr){
 	ASSERT (fault_addr < PHYS_BASE);
 	/* Round down to nearest page boundary. */
@@ -35,6 +36,7 @@ bool try_load_page(void* fault_addr){
 	lock_acquire(&spte->lock);
 	lock_release(&cur->supplemental_pt_lock);
 
+	/*handle the page is in swap*/
 	if (spte->spb != NULL) {
 		/* swap in the frame from swap pool */
 		struct frame_table_entry *fte = get_frame(spte);
@@ -53,6 +55,7 @@ bool try_load_page(void* fault_addr){
 		fte->pinned = false;
 		result = true;
 	} else {
+		/*handle the page not in swap, based on its type_code*/
 		if (spte->type_code == SPTE_CODE_SEG ||
 				spte->type_code == SPTE_DATA_SEG ||
 				spte->type_code == SPTE_MMAP) {
@@ -72,9 +75,11 @@ bool try_load_page(void* fault_addr){
 	return result;
 }
 
+/*load file based on its spte's type_code*/
 bool load_file(struct supplemental_pte *spte) {
 	ASSERT(spte != NULL);
 
+	/*get a frame*/
 	struct frame_table_entry *fte = get_frame(spte);
 	if (fte == NULL) {
 		return false;
@@ -90,6 +95,7 @@ bool load_file(struct supplemental_pte *spte) {
 	lock_acquire(&filesys_lock);
 	file_seek(f, offset);
 	fte->accessed = true;
+	/*load file from file system*/
 	if (file_read (f, fte->frame_addr, read_bytes) != read_bytes) {
 		file_seek (f, old_pos);
 		free_fte (fte);
@@ -112,11 +118,12 @@ bool load_file(struct supplemental_pte *spte) {
 	return true;
 }
 
-
+/*handle stack growth*/
 bool extend_stack(struct supplemental_pte *spte) {
 	ASSERT(spte != NULL);
 	ASSERT(spte->type_code == SPTE_STACK_INIT);
 
+	/*get a frame*/
 	struct frame_table_entry *fte = get_frame(spte);
 	if (fte == NULL) {
 		return false;
@@ -124,6 +131,7 @@ bool extend_stack(struct supplemental_pte *spte) {
 
 	size_t zero_bytes = spte->zero_bytes;
 	fte->accessed = true;
+	/*zero the whole page*/
 	memset(fte->frame_addr, 0, zero_bytes);
 
 	bool success = install_page (spte->uaddr, fte->frame_addr,

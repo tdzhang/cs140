@@ -838,6 +838,7 @@ static bool is_page_mapped (const void *uaddr_){
 	}
 
 	lock_release(&cur->supplemental_pt_lock);
+	/*if found from spt, return true*/
 	return true;
 }
 
@@ -948,7 +949,7 @@ static int write_to_file(struct file *file, char *buffer, size_t size){
 	return file_write (file, buffer, size);
 }
 
-
+/*load mmap file from file system to memory*/
 static bool
 load_mmap (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
@@ -994,7 +995,7 @@ load_mmap (struct file *file, off_t ofs, uint8_t *upage,
   return true;
 }
 
-/*handle sys_mumap*/
+/*clean up mmap_info_block*/
 void mib_clean_up(struct mmap_info_block *mib){
 
 	/*unstall all the related mapped page, clean mmap_info_block,
@@ -1025,7 +1026,6 @@ void mib_clean_up(struct mmap_info_block *mib){
 							file_size : PGSIZE;
 					lock_acquire(&filesys_lock);
 					file_seek(file, ofs);
-					//TODO: possibly need sema
 					spte->fte->pinned=true;
 					spte->fte->accessed = true;
 					file_write(file, spte->fte->frame_addr,

@@ -9,6 +9,7 @@
 
 /* List of all frame_table_entry. */
 static struct list frame_table;
+/*lock for frame_table*/
 static struct lock frame_table_lock;
 struct list_elem *clock_hand;  /*current frame_table_entry the clock
                                 algorithm is pointing to*/
@@ -45,7 +46,7 @@ get_frame (struct supplemental_pte *spte)
   }
 }
 
-
+/*evict a frame and return its frame_table_entry pointer*/
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte){
 	lock_acquire (&frame_table_lock);
@@ -78,6 +79,8 @@ evict_frame(struct supplemental_pte *spte){
 	bool already_hold_lock_old=false;
 	bool already_hold_lock=false;
 	if(fte!=NULL && !fte->pinned){
+
+		/*protect old_spte and current spte*/
 		if(!lock_held_by_current_thread (&fte->spte->lock)){
 			lock_acquire(&fte->spte->lock);
 		}else{
@@ -142,6 +145,7 @@ evict_frame(struct supplemental_pte *spte){
 	return fte;
 }
 
+/*create a new frame_table_entry*/
 struct frame_table_entry *
 create_fte(struct thread* t,uint8_t *frame_addr,
 		struct supplemental_pte* spte){

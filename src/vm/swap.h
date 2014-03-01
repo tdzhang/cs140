@@ -12,8 +12,8 @@ void swap_out(struct frame_table_entry *fte);
 void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb);
 
 struct swap_page_block {
-	block_sector_t block_sector_head;
-	struct list_elem elem;
+	block_sector_t block_sector_head;  /*starting block sector in disk*/
+	struct list_elem elem;             /*list elem of list swap_space_pool*/
 };
 
 
