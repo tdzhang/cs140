@@ -69,9 +69,9 @@
     #ifdef VM
       struct hash supplemental_pt;            /* supplemental page table*/
       struct lock supplemental_pt_lock;  /* lock supplemental page table */
-      ………………..    
+      ...    
     #endif
-    …………….
+    ...
   }
   
   
@@ -120,7 +120,7 @@ We locate the frame by FTE pointer within SPTE, which is setup when swap out
   >> kernel and user virtual addresses that alias a single frame, or
   >> alternatively how do you avoid the issue?
   Answer:
-  Our strategy is access the data only through the user’s virtual address
+  Our strategy is access the data only through the user's virtual address
  with the help of supplemental page table, which will address all the issues
  mentioned above.
   
@@ -134,8 +134,8 @@ We locate the frame by FTE pointer within SPTE, which is setup when swap out
  operate the frame entry table. Second, when palloc_get_page (PAL_USER) can
  not give us a free frame, a evict algorithm ("second chance"/clock
  algorithem) is triggered, which picks currently in memory page to be
-evicted. We used a “pinned” property for frame table entry: when we make a
- decision on which frame to be evict, we set the “pinned” property of
+evicted. We used a 'pinned' property for frame table entry: when we make a
+ decision on which frame to be evict, we set the 'pinned' property of
 the entry, and our clock algorithm will not selected such entry again because
 it is already being used. Therefore, using the pinned property, we avoid the
  possibility that multiple user processes will share the same frame.
@@ -242,11 +242,11 @@ prevent other processes from accessing that frame. Then we try to swap out the
  content of that frame from memory into the swap place. If the frame is
 dirty and writable, and is mmap type, we write it back to the disk to update 
 the information. After that, we use pagedir_clear_page function to update
-process Q’s page table by remove the mapping of that frame(all the operation
+process Q's page table by remove the mapping of that frame(all the operation
 on the supplemental_pt requires the process hold the supplemental_pt_lock, 
 which will handle the possible race conditions). From here, we get a free 
 frame table entry and try to attach it to process P. Using the information 
-from process P’s spte(supplemental page table entry), we operate the related
+from process P's spte(supplemental page table entry), we operate the related
  operations like file read, swap in and so on to load the content back into
  memory. Last, we use install_page to install the new mapping for process
 Q.
@@ -285,7 +285,7 @@ and if it's caused by user, we can retrieve the esp directly from f->esp.
   The synchronization design we  used  is described as follows.
   
   First, to avoid the potential race conditions in the global frame table
-list “frame_table ”, we used a single lock “frame_table_lock”. So at any 
+list 'frame_table', we used a single lock 'frame_table_lock'. So at any 
 given time, only one operation is performed on the frame_table. The deadlock 
 is prevent naturally. No circle around frame_table will ever be formed since 
 the worst case is that one thread is holding the lock and all others is
@@ -300,7 +300,7 @@ previous case: the worst case is that one thread is holding the lock and all
 others is waiting for it.
   
   
-  At last, for each process’s hash table  supplemental_pt (the
+  At last, for each process's hash table  supplemental_pt (the
 supplemental page table), we use a supplemental_pt_lock to constrain that
  the number of access to a supplemental page table of a process is to be 
  less or equal to 1. And for each supplemental page table entry in the hash 
@@ -467,9 +467,9 @@ each
   #ifdef VM
       struct list mmap_list;       /*list of memory mapping*/
       int next_mmap_id;          /*next mmap_id number for this thread*/
-      ………………..    
+      ...    
   #endif
-  …………….
+  ...
   }
   
   
