@@ -18,6 +18,7 @@
 #include "userprog/process.h"
 #endif
 #include "vm/page.h"
+#include "vm/swap.h"
 
 
 /* Random value for struct thread's `magic' member.
@@ -91,7 +92,12 @@ inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 static void mlfqs_update_vars(void);
 inline int clamp_priority(int prior);
 inline int clamp_nice(int nice);
-void process_vm_clean();
+void process_vm_clean(void);
+void spt_clean_up_func (struct hash_elem *e, void *aux UNUSED);
+unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED);
+bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
+		void *aux UNUSED);
+
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -183,7 +189,8 @@ thread_print_stats (void)
 
 /*hash function for supplemental page table (a hash table)*/
 unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED) {
-  struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+  struct supplemental_pte *spte =
+		  hash_entry (e, struct supplemental_pte, elem);
   ASSERT(spte != NULL);
   return hash_int ((int)spte->uaddr);
 }
@@ -970,8 +977,7 @@ inline int clamp_nice(int nice) {
 }
 
 /* action function for clean up supplemental page table*/
-void spt_clean_up_func (struct hash_elem *e, void *aux) {
-	struct thread *cur = thread_current();
+void spt_clean_up_func (struct hash_elem *e, void *aux UNUSED) {
 	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
 	struct swap_page_block *spb = spte->spb;
 	struct frame_table_entry *fte = spte->fte;
@@ -982,7 +988,7 @@ void spt_clean_up_func (struct hash_elem *e, void *aux) {
 
 
 /*clean up the vm related stuff when process exits*/
-void process_vm_clean(){
+void process_vm_clean(void){
 	struct thread* cur= thread_current();
 	struct list* mmap_list_ptr=&cur->mmap_list;
 	struct hash* supplemental_pt=&cur->supplemental_pt;

@@ -3,8 +3,10 @@
 #include "vm/swap.h"
 #include "threads/vaddr.h"
 #include <hash.h>
+#include <string.h>
 #include "filesys/file.h"
 #include "userprog/syscall.h"
+#include "userprog/process.h"
 
 bool load_file(struct supplemental_pte *spte);
 bool extend_stack(struct supplemental_pte *spte);
