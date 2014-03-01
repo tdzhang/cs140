@@ -551,9 +551,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
       /* populate spte in supplemental page table */
       if (read_bytes > 0) {
-    	  	  success = populate_spte(file, ofs, upage, page_zero_bytes, writable, SPTE_CODE_SEG);
+    	  	  success = populate_spte(file, ofs, upage,
+    	  			  age_zero_bytes, writable, SPTE_CODE_SEG);
       } else {
-    	  	  success = populate_spte(file, ofs, upage, page_zero_bytes, writable, SPTE_DATA_SEG);
+    	  	  success = populate_spte(file, ofs, upage,
+    	  			  page_zero_bytes, writable, SPTE_DATA_SEG);
       }
 
       if (!success) {
@@ -573,7 +575,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE, PGSIZE, true, SPTE_STACK_INIT)) {
+  if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE,
+		  PGSIZE, true, SPTE_STACK_INIT)) {
 	  return false;
   }
 
@@ -705,7 +708,8 @@ bool init_wait_info_block(struct thread *t) {
 }
 
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint8_t type) {
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage,
+		uint32_t zero_bytes, bool writable, uint8_t type) {
 	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
 
 	void * vs_addr=pg_round_down((const void *)upage);
@@ -725,7 +729,6 @@ bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_b
 	struct thread * cur=thread_current();
 	ASSERT(cur != NULL);
 #ifdef VM
-	ASSERT (!lock_held_by_current_thread (&cur->supplemental_pt_lock) && 1==1 );
 	lock_acquire(&cur->supplemental_pt_lock);
 	hash_insert(&cur->supplemental_pt, &spte->elem);
 	lock_release(&cur->supplemental_pt_lock);

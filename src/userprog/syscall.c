@@ -171,7 +171,8 @@ static void sys_munmap_handler(struct intr_frame *f){
 	}
 
 
-	/*unstall all the related mapped page, clean mmap_info_block, spte, frame_table_entry*/
+	/*unstall all the related mapped page, clean mmap_info_block,
+	 * spte, frame_table_entry*/
 	mib_clean_up(mib);
 
 }
@@ -198,7 +199,8 @@ static void sys_mmap_handler(struct intr_frame *f){
 
 	/*return -1 if the map if for console, or mapping addr is 0,
 	 * or addr is not page-aligned*/
-	if(*fd_ptr==0 || *fd_ptr==1 || addr==0 || addr>STACK_LIMIT_BASE || (int)addr%PGSIZE!=0){
+	if(*fd_ptr==0 || *fd_ptr==1 || addr==0 || addr>STACK_LIMIT_BASE
+			|| (int)addr%PGSIZE!=0){
 		/*handle return value*/
 		f->eax = -1;
 	} else {
@@ -234,9 +236,11 @@ static void sys_mmap_handler(struct intr_frame *f){
 				return;
 			}
 			/*generate spte for MAP, return mapid*/
-			if(load_mmap (reopened_file, 0, addr, file_size, PGSIZE-file_size%PGSIZE, !fib->f->deny_write)){
+			if(load_mmap (reopened_file, 0, addr, file_size,
+					PGSIZE-file_size%PGSIZE, !fib->f->deny_write)){
 				struct thread *cur = thread_current();
-				struct mmap_info_block *mib = malloc(sizeof(struct mmap_info_block));
+				struct mmap_info_block *mib =
+						malloc(sizeof(struct mmap_info_block));
 				mib->file_size = file_size;
 				mib->mmap_id=cur->next_mmap_id++;
 				mib->uaddr=addr;
@@ -564,7 +568,8 @@ static void sys_seek_handler(struct intr_frame *f){
 
 	/*find the file_info_block corresponding to the input fd*/
 	struct thread *cur=thread_current();
-	struct file_info_block *fib = find_fib(&cur->opened_file_list, *fd_ptr);
+	struct file_info_block *fib =
+			find_fib(&cur->opened_file_list, *fd_ptr);
 	if(fib==NULL){
 		return;
 	}
@@ -745,7 +750,8 @@ static bool is_writable_page (void *addr) {
 	}
 
 	/*get the entry and release lock*/
-	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+	struct supplemental_pte *spte =
+			hash_entry (e, struct supplemental_pte, elem);
 	ASSERT(spte != NULL);
 	lock_release(&cur->supplemental_pt_lock);
 	return spte->writable;
@@ -963,7 +969,8 @@ load_mmap (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /*check if there exist overlapping between the mmap and the code or data segment*/
+      /*check if there exist overlapping between the mmap and the
+       * code or data segment*/
       key.uaddr=upage;
       lock_acquire(&cur->supplemental_pt_lock);
       e = hash_find (&cur->supplemental_pt, &key.elem);
@@ -990,7 +997,8 @@ load_mmap (struct file *file, off_t ofs, uint8_t *upage,
 /*handle sys_mumap*/
 void mib_clean_up(struct mmap_info_block *mib){
 
-	/*unstall all the related mapped page, clean mmap_info_block, spte, frame_table_entry*/
+	/*unstall all the related mapped page, clean mmap_info_block,
+	 * spte, frame_table_entry*/
 	struct thread* cur= thread_current();
 	uint32_t file_size=mib->file_size;
 	uint8_t* uaddr=pg_round_down(mib->uaddr);
@@ -1003,21 +1011,25 @@ void mib_clean_up(struct mmap_info_block *mib){
 		lock_acquire(&cur->supplemental_pt_lock);
 		struct hash_elem *e = hash_find (&cur->supplemental_pt, &key.elem);
 		if(e!=NULL){
-			struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+			struct supplemental_pte *spte = hash_entry (e,
+					struct supplemental_pte, elem);
 			file = spte->f;
 			if(spte->fte!=NULL){
 				/*if the block is dirty, write it back to disk*/
 
-				bool is_dirty = pagedir_is_dirty (spte->fte->t->pagedir, uaddr);
+				bool is_dirty = pagedir_is_dirty (spte->fte->t->pagedir,
+						uaddr);
 				if (is_dirty) {
 					off_t ofs = spte->offset;
-					off_t page_write_bytes = file_size<PGSIZE ? file_size : PGSIZE;
+					off_t page_write_bytes = file_size<PGSIZE ?
+							file_size : PGSIZE;
 					lock_acquire(&filesys_lock);
 					file_seek(file, ofs);
 					//TODO: possibly need sema
 					spte->fte->pinned=true;
 					spte->fte->accessed = true;
-					file_write(file, spte->fte->frame_addr, page_write_bytes);
+					file_write(file, spte->fte->frame_addr,
+							page_write_bytes);
 					lock_release(&filesys_lock);
 					spte->fte->pinned=false;
 				}

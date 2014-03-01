@@ -207,7 +207,8 @@ page_fault (struct intr_frame *f)
 	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
 		   /*need to extend the stack*/
 		   /*create new spte*/
-		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true, SPTE_STACK_INIT)){
+		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true,
+				   SPTE_STACK_INIT)){
 			   /*try load page*/
 			   if(try_load_page(fault_addr)){
 				   if (holding_filesys_lock) {
@@ -222,7 +223,8 @@ page_fault (struct intr_frame *f)
 	   }
    }
 
-    /*if this is a system_call from a user thread, terminate it with kernel intact*/
+    /*if this is a system_call from a user thread, terminate it with
+     * kernel intact*/
 	if(cur->is_user && !user){
 		if (holding_filesys_lock) {
 			lock_acquire(&filesys_lock);

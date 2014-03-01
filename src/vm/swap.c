@@ -39,7 +39,9 @@ struct swap_page_block *get_free_spb() {
 		lock_release(&swap_space_pool_lock);
 		PANIC("NO FREE SWAP BLOCK");
 	}
-	struct swap_page_block *result = list_entry(list_pop_front(&swap_space_pool), struct swap_page_block, elem);
+	struct swap_page_block *result =
+			list_entry(list_pop_front(&swap_space_pool),
+					struct swap_page_block, elem);
 	lock_release(&swap_space_pool_lock);
 	return result;
 }
@@ -62,7 +64,8 @@ void swap_in(struct frame_table_entry *fte, struct swap_page_block *spb) {
 	uint32_t i;
 	fte->accessed = true;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
-		block_read(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
+		block_read(swap_block, i+spb->block_sector_head,
+				(void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}
 	/* put the swap_page_block back into the swap pool */
 	put_back_spb(spb);
@@ -82,7 +85,8 @@ void swap_out(struct frame_table_entry *fte) {
 	uint32_t i;
 	fte->accessed = true;
 	for (i = 0; i < BLOCKS_UNIT_NUMBER; i++) {
-		block_write(swap_block, i+spb->block_sector_head, (void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
+		block_write(swap_block, i+spb->block_sector_head,
+				(void *)(fte->frame_addr+i*BLOCK_SECTOR_SIZE));
 	}
 }
 

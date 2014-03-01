@@ -35,6 +35,7 @@ bool init_wait_info_block(struct thread *t);
 /* load() helpers. */
 bool install_page (void *upage, void *kpage, bool writable);
 
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage, uint32_t zero_bytes, bool writable, uint8_t type);
+bool populate_spte(struct file *file, off_t ofs, uint8_t *upage,
+		uint32_t zero_bytes, bool writable, uint8_t type);
 
 #endif /* userprog/process.h */

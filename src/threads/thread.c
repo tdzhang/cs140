@@ -191,8 +191,10 @@ unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED) {
 /*hash less function for supplemental page table (a hash table)*/
 bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
 		void *aux UNUSED) {
-  struct supplemental_pte *spte1 = hash_entry (a, struct supplemental_pte, elem);
-  struct supplemental_pte *spte2 = hash_entry (b, struct supplemental_pte, elem);
+  struct supplemental_pte *spte1 = hash_entry (a,
+		  struct supplemental_pte, elem);
+  struct supplemental_pte *spte2 = hash_entry (b,
+		  struct supplemental_pte, elem);
   ASSERT(spte1 != NULL);
   ASSERT(spte2 != NULL);
   return (spte1->uaddr < spte2->uaddr);
@@ -461,7 +463,8 @@ thread_set_priority (int new_priority)
 
   /* if current thread is not with the highest priority, yield immediately */
   if (!is_ready_list_empty()) {
-	  if (find_max_priority_thread()->actual_priority > cur->actual_priority){
+	  if (find_max_priority_thread()->actual_priority >
+	  cur->actual_priority){
 		  thread_yield();
 	  }
   }
@@ -730,7 +733,8 @@ thread_schedule_tail (struct thread *prev)
      pull out the rug under itself.  (We don't free
      initial_thread because its memory was not obtained via
      palloc().) */
-  if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
+  if (prev != NULL && prev->status == THREAD_DYING &&
+		  prev != initial_thread)
     {
       ASSERT (prev != cur);
       palloc_free_page (prev);
@@ -834,7 +838,8 @@ int find_max_actual_priority(struct list* lock_list){
 	ASSERT (intr_get_level () == INTR_OFF);
 
 	/*go through the lock_list*/
-	for (lock_elem = list_begin(lock_list); lock_elem != list_end (lock_list);
+	for (lock_elem = list_begin(lock_list);
+			lock_elem != list_end (lock_list);
 			lock_elem = list_next (lock_elem))
 	{
 	  l = list_entry (lock_elem, struct lock, lock_elem);

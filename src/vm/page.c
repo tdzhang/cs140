@@ -29,7 +29,8 @@ bool try_load_page(void* fault_addr){
 	}
 
 	/*get the entry and release lock*/
-	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
+	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte,
+			elem);
 	ASSERT(spte != NULL);
 	lock_acquire(&spte->lock);
 	lock_release(&cur->supplemental_pt_lock);
@@ -42,7 +43,8 @@ bool try_load_page(void* fault_addr){
 			return false;
 		}
 		swap_in(fte, spte->spb);
-		bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+		bool success = install_page (spte->uaddr, fte->frame_addr,
+				spte->writable);
 		if (!success) {
 			free_fte(fte);
 			lock_release(&spte->lock);
@@ -51,7 +53,9 @@ bool try_load_page(void* fault_addr){
 		fte->pinned = false;
 		result = true;
 	} else {
-		if (spte->type_code == SPTE_CODE_SEG || spte->type_code == SPTE_DATA_SEG || spte->type_code == SPTE_MMAP) {
+		if (spte->type_code == SPTE_CODE_SEG ||
+				spte->type_code == SPTE_DATA_SEG ||
+				spte->type_code == SPTE_MMAP) {
 				/* load file from disk into frame */
 				result = load_file(spte);
 		} else if (spte->type_code ==SPTE_STACK_INIT){
@@ -96,7 +100,8 @@ bool load_file(struct supplemental_pte *spte) {
 	lock_release(&filesys_lock);
 	memset(fte->frame_addr+read_bytes, 0, zero_bytes);
 
-	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+	bool success = install_page (spte->uaddr, fte->frame_addr,
+			spte->writable);
 
 	/*finished the memset, unpin the frame*/
 	fte->pinned=false;
@@ -121,7 +126,8 @@ bool extend_stack(struct supplemental_pte *spte) {
 	fte->accessed = true;
 	memset(fte->frame_addr, 0, zero_bytes);
 
-	bool success = install_page (spte->uaddr, fte->frame_addr, spte->writable);
+	bool success = install_page (spte->uaddr, fte->frame_addr,
+			spte->writable);
 	/*finished the memset, unpin the frame*/
 	fte->pinned=false;
 	if (!success) {

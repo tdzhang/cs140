@@ -20,7 +20,7 @@ bool try_load_page(void* fault_addr);
 
 struct supplemental_pte {
 	  uint8_t type_code;		/* type of this spte entry to find the content */
-	  //TODO: load_segment need to set type code to file_type(which need to be defined)
+
 	  uint8_t *uaddr;		/* virtual address of the page */
 	  bool writable;		    /* if the page is writable */
 

@@ -10,11 +10,13 @@
 /* List of all frame_table_entry. */
 static struct list frame_table;
 static struct lock frame_table_lock;
-struct list_elem *clock_hand;  /*current frame_table_entry the clock algorithm is pointing to*/
+struct list_elem *clock_hand;  /*current frame_table_entry the clock
+                                algorithm is pointing to*/
 
 
 struct frame_table_entry *
-create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte);
+create_fte(struct thread* t,uint8_t *frame_addr,
+		struct supplemental_pte* spte);
 struct frame_table_entry *
 evict_frame(struct supplemental_pte *spte);
 
@@ -61,7 +63,8 @@ evict_frame(struct supplemental_pte *spte){
 			clock_hand = list_begin (&frame_table);
 		}
 		fte = list_entry (clock_hand, struct frame_table_entry, elem);
-		if(fte->accessed || fte->pinned || fte->spte->type_code == SPTE_CODE_SEG) {
+		if(fte->accessed || fte->pinned ||
+				fte->spte->type_code == SPTE_CODE_SEG) {
 			fte->accessed = false;
 			clock_hand = list_next (clock_hand);
 		} else {
@@ -101,7 +104,8 @@ evict_frame(struct supplemental_pte *spte){
 		struct supplemental_pte *old_spte=fte->spte;
 		struct file* file;
 		bool is_dirty = pagedir_is_dirty (fte->t->pagedir, old_spte->uaddr);
-		if (is_dirty && old_spte->writable && old_spte->type_code == SPTE_MMAP) {
+		if (is_dirty && old_spte->writable &&
+				old_spte->type_code == SPTE_MMAP) {
 			file = old_spte->f;
 			off_t ofs = old_spte->offset;
 			off_t page_write_bytes = PGSIZE-old_spte->zero_bytes;
@@ -139,7 +143,8 @@ evict_frame(struct supplemental_pte *spte){
 }
 
 struct frame_table_entry *
-create_fte(struct thread* t,uint8_t *frame_addr,struct supplemental_pte* spte){
+create_fte(struct thread* t,uint8_t *frame_addr,
+		struct supplemental_pte* spte){
 	struct frame_table_entry *fte=malloc(sizeof(struct frame_table_entry));
 	fte->t=t;
 	fte->frame_addr=frame_addr;
