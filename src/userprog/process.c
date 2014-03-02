@@ -19,7 +19,6 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
-#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (void *lib_, void (**eip) (void), void **esp);
@@ -27,8 +26,6 @@ static bool load (void *lib_, void (**eip) (void), void **esp);
 /*self defined*/
 static void push_args2stack(void **esp, char *full_line);
 static void push_stack(void **esp, void *arg, int size,int esp_limit_);
-
-
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -234,7 +231,6 @@ process_exit (void)
 	  lock_release(&wib->l);
 	  free(wib);
   }
-
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -472,6 +468,9 @@ load (void *lib_, void (**eip) (void), void **esp)
   return success;
 }
 
+/* load() helpers. */
+
+static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
@@ -539,7 +538,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
-  bool success = false;
+
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
@@ -549,20 +548,27 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* populate spte in supplemental page table */
-      if (read_bytes > 0) {
-    	  	  success = populate_spte(file, ofs, upage,
-    	  			  page_zero_bytes, writable, SPTE_CODE_SEG);
-      } else {
-    	  	  success = populate_spte(file, ofs, upage,
-    	  			  page_zero_bytes, writable, SPTE_DATA_SEG);
-      }
+      /* Get a page of memory. */
+      uint8_t *kpage = palloc_get_page (PAL_USER);
+      if (kpage == NULL)
+        return false;
 
-      if (!success) {
-    	  	  return false;
-      }
+      /* Load this page. */
+      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+        {
+          palloc_free_page (kpage);
+          return false; 
+        }
+      memset (kpage + page_read_bytes, 0, page_zero_bytes);
+
+      /* Add the page to the process's address space. */
+      if (!install_page (upage, kpage, writable)) 
+        {
+          palloc_free_page (kpage);
+          return false; 
+        }
+
       /* Advance. */
-      ofs += page_read_bytes;
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -575,17 +581,19 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  /*populate spte for the first page of stack*/
-  if(!populate_spte(NULL, NULL, (uint8_t *)PHYS_BASE-PGSIZE,
-		  PGSIZE, true, SPTE_STACK_INIT)) {
-	  return false;
-  }
-  /*load the first page of stage, not lazy load here*/
-  if(!try_load_page((void *)((uint8_t *)PHYS_BASE-PGSIZE))) {
-	  return false;
-  }
-  *esp = PHYS_BASE;
-  return true;
+  uint8_t *kpage;
+  bool success = false;
+
+  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  if (kpage != NULL) 
+    {
+      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+      if (success)
+        *esp = PHYS_BASE;
+      else
+        palloc_free_page (kpage);
+    }
+  return success;
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
@@ -597,7 +605,7 @@ setup_stack (void **esp)
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-bool
+static bool
 install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
@@ -707,36 +715,3 @@ bool init_wait_info_block(struct thread *t) {
 	}
 	return true;
 }
-
-/*populate supplemental page table entry*/
-bool populate_spte(struct file *file, off_t ofs, uint8_t *upage,
-		uint32_t zero_bytes, bool writable, uint8_t type) {
-	struct supplemental_pte *spte = malloc(sizeof(struct supplemental_pte));
-
-	void * vs_addr=pg_round_down((const void *)upage);
-	if (spte == NULL) {
-		return false;
-	}
-
-	spte->type_code = type;
-	spte->uaddr = (uint8_t*)vs_addr;
-	spte->writable = writable;
-	spte->f = file;
-	spte->offset = ofs;
-	spte->zero_bytes = zero_bytes;
-	lock_init(&spte->lock);
-	spte->spb = NULL;
-
-	struct thread * cur=thread_current();
-	ASSERT(cur != NULL);
-#ifdef VM
-	lock_acquire(&cur->supplemental_pt_lock);
-	hash_insert(&cur->supplemental_pt, &spte->elem);
-	lock_release(&cur->supplemental_pt_lock);
-#endif
-	return true;
-}
-
-
-
-

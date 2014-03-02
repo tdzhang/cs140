@@ -61,7 +61,6 @@ sort_chunks (const char *subprocess, int exit_status)
       snprintf (cmd, sizeof cmd, "%s %s", subprocess, fn);
       CHECK ((children[i] = exec (cmd)) != -1, "exec \"%s\"", cmd);
       quiet = false;
-
     }
 
   for (i = 0; i < CHUNK_CNT; i++) 

@@ -5,20 +5,12 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/syscall.h"
-#include "vm/frame.h"
-#include "vm/page.h"
-#include "threads/vaddr.h"
-#include <stdint.h>
-#include "userprog/process.h"
-
-
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
-static struct lock global_page_fault_lock;
 
 /* Registers handlers for interrupts that can be caused by user
    programs.
@@ -67,8 +59,6 @@ exception_init (void)
      We need to disable interrupts for page faults because the
      fault address is stored in CR2 and needs to be preserved. */
   intr_register_int (14, 0, INTR_OFF, page_fault, "#PF Page-Fault Exception");
-
-  lock_init(&global_page_fault_lock);
 }
 
 /* Prints exception statistics. */
@@ -140,16 +130,6 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
-  void *esp;         /*get esp address*/
-
-  /*retrieve the lock holding status and store it*/
-  bool already_hold_lock=false;
-  if(!lock_held_by_current_thread (&global_page_fault_lock)){
-	  lock_acquire(&global_page_fault_lock);
-  }else{
-	  already_hold_lock=true;
-  }
-
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -171,97 +151,21 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
-  /*release the filesys_lock if acquired in e.g. syscall*/
-  bool holding_filesys_lock = lock_held_by_current_thread (&filesys_lock);
-  if (holding_filesys_lock) {
-	  lock_release(&filesys_lock);
+
+  /*if current thread is a user thread, terminate it with kernel intact*/
+  struct thread *cur=thread_current();
+  if(cur->is_user){
+	  user_exit(-1);
   }
 
-
-   struct thread *cur=thread_current();
-   ASSERT(cur != NULL);
-
-   /*get the esp*/
-    if(user){
-  	  esp=f->esp;
-    }
-    else{
-  	  esp=cur->esp;
-    }
-
-
-   if (not_present)
-   {
-	   /*try to load the page, if success return*/
-	   if(try_load_page(fault_addr)){
-		   if (holding_filesys_lock) {
-		   	  lock_acquire(&filesys_lock);
-		   }
-
-		   if(!already_hold_lock){
-			   lock_release(&global_page_fault_lock);
-		   }
-
-		   return;
-	   }
-
-	   if(fault_addr>=(uint8_t *)esp-32 && fault_addr>STACK_LIMIT_BASE){
-		   /*need to extend the stack*/
-		   /*create new spte*/
-		   if(populate_spte(NULL, NULL, fault_addr, PGSIZE, true,
-				   SPTE_STACK_INIT)){
-			   /*try load page*/
-			   if(try_load_page(fault_addr)){
-				   if (holding_filesys_lock) {
-					   lock_acquire(&filesys_lock);
-				   }
-				   if(!already_hold_lock){
-				   	   lock_release(&global_page_fault_lock);
-				   }
-				   return;
-			   }
-		   }
-	   }
-   }
-
-    /*if this is a system_call from a user thread, terminate it with
-     * kernel intact*/
-	if(cur->is_user && !user){
-		if (holding_filesys_lock) {
-			lock_acquire(&filesys_lock);
-		}
-		if(!already_hold_lock){
-			lock_release(&global_page_fault_lock);
-		}
-		 user_exit(-1);
-	}
-	/*if this is  a user call, terminate it with user_exit*/
-	else if (user){
-		if (holding_filesys_lock) {
-			lock_acquire(&filesys_lock);
-		}
-		if(!already_hold_lock){
-			lock_release(&global_page_fault_lock);
-		}
-		user_exit(-1);
-	}
-	/* kernel stuff*/
-	else{
-	 /* To implement virtual memory, delete the rest of the function
-		 body, and replace it with code that brings in the page to
-		 which fault_addr refers. */
-	  printf ("Page fault at %p: %s error %s page in %s context.\n",
-			  fault_addr,
-			  not_present ? "not present" : "rights violation",
-			  write ? "writing" : "reading",
-			  user ? "user" : "kernel");
-	  if (holding_filesys_lock) {
-		  lock_acquire(&filesys_lock);
-	  }
-	  if(!already_hold_lock){
-		  lock_release(&global_page_fault_lock);
-	  }
-	  kill (f);
-	}
+  /* To implement virtual memory, delete the rest of the function
+     body, and replace it with code that brings in the page to
+     which fault_addr refers. */
+  printf ("Page fault at %p: %s error %s page in %s context.\n",
+          fault_addr,
+          not_present ? "not present" : "rights violation",
+          write ? "writing" : "reading",
+          user ? "user" : "kernel");
+  kill (f);
 }
 

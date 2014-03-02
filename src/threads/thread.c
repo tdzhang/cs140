@@ -13,12 +13,9 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #include "threads/fixed_point.h"
-#include "userprog/syscall.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
-#include "vm/page.h"
-
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -91,7 +88,6 @@ inline int mlfqs_calculate_priority(int recent_cpu, int nice);
 static void mlfqs_update_vars(void);
 inline int clamp_priority(int prior);
 inline int clamp_nice(int nice);
-void process_vm_clean();
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -180,28 +176,6 @@ thread_print_stats (void)
           idle_ticks, kernel_ticks, user_ticks);
 }
 
-
-/*hash function for supplemental page table (a hash table)*/
-unsigned hash_spte (const struct hash_elem *e, void *aux UNUSED) {
-  struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
-  ASSERT(spte != NULL);
-  return hash_int ((int)spte->uaddr);
-}
-
-/*hash less function for supplemental page table (a hash table)*/
-bool hash_less_spte (const struct hash_elem *a, const struct hash_elem *b,
-		void *aux UNUSED) {
-  struct supplemental_pte *spte1 = hash_entry (a,
-		  struct supplemental_pte, elem);
-  struct supplemental_pte *spte2 = hash_entry (b,
-		  struct supplemental_pte, elem);
-  ASSERT(spte1 != NULL);
-  ASSERT(spte2 != NULL);
-  return (spte1->uaddr < spte2->uaddr);
-}
-
-
-
 /* Creates a new kernel thread named NAME with the given initial
    PRIORITY, which executes FUNCTION passing AUX as the argument,
    and adds it to the ready queue.  Returns the thread identifier
@@ -284,15 +258,6 @@ thread_create (const char *name, int priority,
     }
 #endif
 
-#ifdef VM
-  /*init thread's supplemental_pt*/
-  hash_init (&t->supplemental_pt, &hash_spte, &hash_less_spte, NULL);
-  lock_init(&t->supplemental_pt_lock);
-  list_init(&t->mmap_list);
-  t->next_mmap_id = 0;
-  t->esp=NULL;
-#endif
-
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -304,7 +269,6 @@ thread_create (const char *name, int priority,
   }
   return tid;
 }
-
 
 /* Puts the current thread to sleep.  It will not be scheduled
    again until awoken by thread_unblock().
@@ -384,17 +348,9 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-#ifdef VM
-  process_vm_clean();
-#endif
-
 #ifdef USERPROG
   process_exit ();
 #endif
-
-
-
-
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
@@ -463,8 +419,7 @@ thread_set_priority (int new_priority)
 
   /* if current thread is not with the highest priority, yield immediately */
   if (!is_ready_list_empty()) {
-	  if (find_max_priority_thread()->actual_priority >
-	  cur->actual_priority){
+	  if (find_max_priority_thread()->actual_priority > cur->actual_priority){
 		  thread_yield();
 	  }
   }
@@ -733,8 +688,7 @@ thread_schedule_tail (struct thread *prev)
      pull out the rug under itself.  (We don't free
      initial_thread because its memory was not obtained via
      palloc().) */
-  if (prev != NULL && prev->status == THREAD_DYING &&
-		  prev != initial_thread)
+  if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
     {
       ASSERT (prev != cur);
       palloc_free_page (prev);
@@ -838,8 +792,7 @@ int find_max_actual_priority(struct list* lock_list){
 	ASSERT (intr_get_level () == INTR_OFF);
 
 	/*go through the lock_list*/
-	for (lock_elem = list_begin(lock_list);
-			lock_elem != list_end (lock_list);
+	for (lock_elem = list_begin(lock_list); lock_elem != list_end (lock_list);
 			lock_elem = list_next (lock_elem))
 	{
 	  l = list_entry (lock_elem, struct lock, lock_elem);
@@ -968,42 +921,3 @@ inline int clamp_nice(int nice) {
 	if (nice < NICE_MIN) return NICE_MIN;
 	return nice;
 }
-
-/* action function for clean up supplemental page table*/
-void spt_clean_up_func (struct hash_elem *e, void *aux) {
-	struct thread *cur = thread_current();
-	struct supplemental_pte *spte = hash_entry (e, struct supplemental_pte, elem);
-	struct swap_page_block *spb = spte->spb;
-	struct frame_table_entry *fte = spte->fte;
-	if (spb != NULL) {
-		put_back_spb(spb);
-	}
-}
-
-
-/*clean up the vm related stuff when process exits*/
-void process_vm_clean(){
-	struct thread* cur= thread_current();
-	struct list* mmap_list_ptr=&cur->mmap_list;
-	struct hash* supplemental_pt=&cur->supplemental_pt;
-
-
-
-	 /*close all opened files of this thread*/
-	  struct list_elem *e = list_begin (mmap_list_ptr);
-	  struct list_elem *temp = NULL;
-	  struct mmap_info_block *mib;
-
-	  while (e != list_end (mmap_list_ptr)){
-		  temp = list_next (e);
-		  mib = list_entry (e, struct mmap_info_block, elem);
-		  mib_clean_up(mib);
-		  e = temp;
-	  }
-
-	  /* clean up supplemental page table and swap */
-	  hash_destroy (supplemental_pt, spt_clean_up_func);
-}
-
-
-
