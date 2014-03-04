@@ -6,7 +6,7 @@
 
 #define CACHE_SIZE 64          /* the buffer cache size */
 #define WRITE_BEHIND_CYCLE 30 * 1000    /* write-behind happens every 30 sec */
-#define INVALID_SECTOR_ID (block_sector_t)-1
+#define INVALID_SECTOR_ID (block_sector_t)(-1)
 #define INVALID_ENTRY_INDEX -1
 
 /* structure for cache entry */
@@ -81,9 +81,10 @@ void buffer_cache_init(void) {
 }
 
 /*search a given sector_id in buffer cache,
- * return the index in the buffer cache if found*/
+ * return the index in the buffer cache if found
+ * must holding buffer_cache_lock before calling it*/
 int get_entry_index(block_sector_t searching_sector_id) {
-
+	ASSERT(lock_held_by_current_thread(&buffer_cache_lock));
 	int i;
 	for (i = 0; i < CACHE_SIZE; i++) {
 		/*find a cache entry's sector_id matching the searching_sector_id*/
@@ -108,7 +109,7 @@ int get_entry_index(block_sector_t searching_sector_id) {
 			while (buffer_cache[i].flushing_out || buffer_cache[i].loading_in) {
 				cond_wait(&buffer_cache[i].ready, &buffer_cache[i].lock);
 			}
-			if (buffer_cache[i].next_sector_id == searching_sector_id) {
+			if (buffer_cache[i].sector_id == searching_sector_id) {
 				lock_release(&buffer_cache[i].lock);
 				return i;
 			} else {
@@ -129,31 +130,44 @@ void flush_cache_entry(int entry_index, bool need_wait) {
 
 	ASSERT(buffer_cache[entry_index].dirty);
 	/*if some process is writing or waiting to write into this entry
-	 * or the entry is being loaded or flushed,
 	 * and no need to wait, return immediately*/
 	if ((buffer_cache[entry_index].wait_writing_num
-			+buffer_cache[entry_index].writing_num > 0
-			|| buffer_cache[entry_index].flushing_out
-			|| buffer_cache[entry_index].loading_in) && !need_wait) {
+			+buffer_cache[entry_index].writing_num > 0) && !need_wait) {
 		lock_release(&buffer_cache[entry_index].lock);
 		return;
 	}
 
-	/* if no process is writing or waiting to write and not in loading or
-	 * flushing, call block_write and return*/
+	/* if no process is writing or waiting to write call block_write and return*/
 	if (buffer_cache[entry_index].wait_writing_num
-			+buffer_cache[entry_index].writing_num == 0
-			&& !buffer_cache[entry_index].flushing_out
-			&& !buffer_cache[entry_index].loading_in) {
+			+buffer_cache[entry_index].writing_num == 0) {
+		/*release all locks it's holding in I/O period*/
 		if (lock_held_by_current_thread(&buffer_cache_lock)) {
 			holding_global_lock = true;
 			lock_release(&buffer_cache_lock);
 		}
+		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
 		block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
----------------->
+		lock_acquire(&buffer_cache[entry_index].lock);
+		buffer_cache[entry_index].dirty = false;
+		buffer_cache[entry_index].flushing_out = false;
+		lock_release(&buffer_cache[entry_index].lock);
+		if (holding_global_lock) {
+			lock_acquire(&buffer_cache_lock);
+		}
+		return;
 	}
 
+	/*if some process is writing or waiting to write into this entry
+	 * and need to wait, wait until ready */
+	if (buffer_cache[entry_index].wait_writing_num
+				+buffer_cache[entry_index].writing_num > 0 || need_wait) {
+		while(buffer_cache[entry_index].wait_writing_num
+				+buffer_cache[entry_index].writing_num > 0) {
+			cond_wait(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+		}
+
+	}
 
 }
 
