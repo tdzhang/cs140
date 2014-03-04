@@ -7,6 +7,16 @@
 #include <list.h>
 
 struct bitmap;
+
+#define DIRECT_INDEX_NUM 122    /* 122 direct indices in one sector*/
+#define INDEX_PER_SECTOR 128    /* 128 indices stored in one sector */
+
+/* structure for indirect index block */
+struct indirect_block {
+    block_sector_t sectors[INDEX_PER_SECTOR];
+};
+
+
 /* On-disk inode.
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
 struct inode_disk
@@ -27,6 +37,9 @@ struct inode
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
   };
+
+
+
 
 void inode_init (void);
 bool inode_create (block_sector_t, off_t);
