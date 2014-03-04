@@ -69,7 +69,6 @@ void buffer_cache_init(void) {
 		lock_init(&buffer_cache[i].lock);
 		cond_init(&buffer_cache[i].ready);
 		//TODO: init sector_data ?
-		//TODO: palloc_get_page in physical memory ?
 	}
 
 
@@ -123,7 +122,9 @@ int get_entry_index(block_sector_t searching_sector_id) {
 
 /* flush the data in the cache entry to disk */
 void flush_cache_entry(int entry_index, bool need_wait) {
+	bool holding_global_lock = false;
 
+	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
 	lock_acquire(&buffer_cache[entry_index].lock);
 
 	ASSERT(buffer_cache[entry_index].dirty);
@@ -138,8 +139,22 @@ void flush_cache_entry(int entry_index, bool need_wait) {
 		return;
 	}
 
+	/* if no process is writing or waiting to write and not in loading or
+	 * flushing, call block_write and return*/
+	if (buffer_cache[entry_index].wait_writing_num
+			+buffer_cache[entry_index].writing_num == 0
+			&& !buffer_cache[entry_index].flushing_out
+			&& !buffer_cache[entry_index].loading_in) {
+		if (lock_held_by_current_thread(&buffer_cache_lock)) {
+			holding_global_lock = true;
+			lock_release(&buffer_cache_lock);
+		}
+		lock_release(&buffer_cache[entry_index].lock);
+		block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+---------------->
+	}
 
-	block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+
 }
 
 
