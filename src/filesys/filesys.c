@@ -31,7 +31,9 @@ filesys_init (bool format)
   free_map_open ();
 
   /*init buffer cache*/
-  buffer_cache_init();
+  if(!buffer_cache_init()) {
+	  PANIC ("fail to init buffer cache, can't initialize file system.");
+  }
 }
 
 /* Shuts down the file system module, writing any unwritten data
