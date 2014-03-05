@@ -8,7 +8,7 @@
 #include "devices/timer.h"
 #include <debug.h>
 
-#define CACHE_SIZE 64          /* the buffer cache size */
+#define CACHE_SIZE 184          /* the buffer cache size */
 #define WRITE_BEHIND_CYCLE (int64_t)(30 * 1000)    /* write-behind happens every 30 sec */
 #define INVALID_ENTRY_INDEX -1
 
