@@ -8,7 +8,7 @@
 #include "devices/timer.h"
 #include <debug.h>
 
-#define CACHE_SIZE 184          /* the buffer cache size */
+#define CACHE_SIZE 64          /* the buffer cache size */
 #define WRITE_BEHIND_CYCLE (int64_t)(30 * 1000)    /* write-behind happens every 30 sec */
 #define INVALID_ENTRY_INDEX -1
 
@@ -488,6 +488,7 @@ off_t cache_write(block_sector_t sector, void *buffer,
 	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].writing_num --;
 	buffer_cache[slot].accessed = true;
+	buffer_cache[slot].dirty = true;
 	cond_broadcast(&buffer_cache[slot].ready, &buffer_cache[slot].lock);
 	lock_release(&buffer_cache[slot].lock);
 
