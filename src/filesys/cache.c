@@ -255,7 +255,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_read(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
+		block_read(fs_device, buffer_cache[entry_index].next_sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
@@ -291,7 +291,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].next_sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
