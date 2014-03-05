@@ -217,7 +217,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		return true;
 	}
-
+	return false;
 }
 
 /* load data from disk to cache entry */
@@ -302,6 +302,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		return true;
 	}
+	return false;
 }
 
 /* switch cache entry */
@@ -525,7 +526,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 
 		/* try to load sector into cache */
 		lock_acquire(&buffer_cache_lock);
-		slot = get_entry_index(e.sector_id);
+		slot = get_entry_index(e->sector_id);
 		if (slot != INVALID_ENTRY_INDEX) {
 			/* the next sector is already in cache, no need to load again */
 			ASSERT (slot >= 0 && slot < CACHE_SIZE);
@@ -537,7 +538,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 		}
 
 		/* try to flush and load */
-		slot = switch_cache_entry(e.sector_id, false);
+		slot = switch_cache_entry(e->sector_id, false);
 		if (slot == INVALID_ENTRY_INDEX) {
 			/*flush-load is not really done*/
 			/*push back to the list to read-ahead later*/
