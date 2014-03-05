@@ -2,6 +2,7 @@
 #define FILESYS_CACHE_H
 
 #include "filesys/filesys.h"
+#include "devices/block.h"
 
 bool buffer_cache_init(void);
 off_t cache_read(block_sector_t sector, block_sector_t next_sector,

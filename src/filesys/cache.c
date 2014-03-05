@@ -1,9 +1,11 @@
 #include "filesys/cache.h"
 #include <stdbool.h>
-#include "devices/block.h"
 #include <list.h>
+#include <string.h>
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/malloc.h"
+#include "devices/timer.h"
 #include <debug.h>
 
 #define CACHE_SIZE 64          /* the buffer cache size */
@@ -167,7 +169,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
@@ -194,7 +196,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		/* after waiting period, it is possible that the entry is not dirty at more */
 		if (!buffer_cache[entry_index].dirty) {
 			lock_release(&buffer_cache[entry_index].lock);
-			return;
+			return true;
 		}
 
 		/*release all locks it's holding in I/O period*/
@@ -204,7 +206,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
@@ -253,7 +255,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_read(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+		block_read(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
@@ -289,7 +291,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index]->sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
@@ -523,7 +525,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 
 		/* try to load sector into cache */
 		lock_acquire(&buffer_cache_lock);
-		int slot = get_entry_index(e.sector_id);
+		slot = get_entry_index(e.sector_id);
 		if (slot != INVALID_ENTRY_INDEX) {
 			/* the next sector is already in cache, no need to load again */
 			ASSERT (slot >= 0 && slot < CACHE_SIZE);
@@ -539,7 +541,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 		if (slot == INVALID_ENTRY_INDEX) {
 			/*flush-load is not really done*/
 			/*push back to the list to read-ahead later*/
-			list_push_back(&read_ahead_list, e);
+			list_push_back(&read_ahead_list, e->elem);
 			//TODO: no need to singal?
 			lock_release(&buffer_cache_lock);
 			continue;
