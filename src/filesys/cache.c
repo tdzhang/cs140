@@ -10,6 +10,7 @@
 
 #define CACHE_SIZE 64          /* the buffer cache size */
 #define WRITE_BEHIND_CYCLE (int64_t)(30 * 1000)    /* write-behind happens every 30 sec */
+#define INVALID_SECTOR_ID (block_sector_t)(-1)
 #define INVALID_ENTRY_INDEX -1
 
 /* structure for cache entry */
@@ -90,11 +91,10 @@ bool buffer_cache_init(void) {
 	list_init(&read_ahead_list);
 	cond_init(&read_ahead_list_ready);
 	/*create read-ahead daemon thread*/
-	/*
 	tid_t reader_t = thread_create ("read_ahead_daemon", PRI_DEFAULT,
             read_ahead_daemon, NULL);
 	if (reader_t == TID_ERROR) return false;
-	*/
+
 	return true;
 }
 
@@ -441,12 +441,10 @@ off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 
 	/* trigger read-ahead, next_sector cannot be INVALID_SECTOR_ID
 	 * or 0 (freemap sector) */
-	/*
 	if (next_sector != INVALID_SECTOR_ID
 			&& next_sector != 0) {
 		trigger_read_ahead(next_sector);
 	}
-	*/
 	return read_bytes;
 }
 
@@ -545,6 +543,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 			/*flush-load is not really done*/
 			/*push back to the list to read-ahead later*/
 			list_push_back(&read_ahead_list, &e->elem);
+			//TODO: no need to singal?
 			lock_release(&buffer_cache_lock);
 			continue;
 		}
