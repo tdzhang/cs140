@@ -542,7 +542,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 		if (slot == INVALID_ENTRY_INDEX) {
 			/*flush-load is not really done*/
 			/*push back to the list to read-ahead later*/
-			list_push_back(&read_ahead_list, e->elem);
+			list_push_back(&read_ahead_list, &e->elem);
 			//TODO: no need to singal?
 			lock_release(&buffer_cache_lock);
 			continue;
