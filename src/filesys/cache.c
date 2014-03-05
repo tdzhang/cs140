@@ -140,6 +140,7 @@ int get_entry_index(block_sector_t searching_sector_id) {
 
 /* flush the data in the cache entry to disk, return whether really flushed */
 bool flush_cache_entry(int entry_index, bool need_wait) {
+	ASSERT(buffer_cache[entry_index].sector_id != INVALID_SECTOR_ID);
 	bool holding_global_lock = false;
 
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
