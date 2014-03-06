@@ -39,31 +39,26 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	struct inode_disk id;
 	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
 
+	/*sector_pos in the range of direct index*/
 	if (sector_pos < DIRECT_INDEX_NUM) {
 		return id.direct_idx[sector_pos];
 	}
 
+	/*sector_pos in the range of single indirect index*/
 	if (sector_pos < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
 		struct indirect_block ib;
 		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
 	}
 
-	//TODO: for double indirect
-	return INVALID_SECTOR_ID;
-	/*
-	struct inode_disk id;
-	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-	int direct_sector_index = pos/BLOCK_SECTOR_SIZE < DIRECT_INDEX_NUM ? pos/BLOCK_SECTOR_SIZE : DIRECT_INDEX_NUM-1;
-	int indirect_sector_index = (pos-DIRECT_INDEX_NUM*BLOCK_SECTOR_SIZE)/BLOCK_SECTOR_SIZE;
-	if (pos-DIRECT_INDEX_NUM*BLOCK_SECTOR_SIZE > 0) {
-		struct indirect_block ib;
-		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
-		return ib.sectors[indirect_sector_index];
-	} else {
-		return id.direct_idx[direct_sector_index];
-	}
-	*/
+	/*sector_pos in the range of double indirect index*/
+	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR))/INDEX_PER_SECTOR;
+	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR))%INDEX_PER_SECTOR;
+	struct indirect_block db;
+	cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+	struct indirect_block ib;
+	cache_read(db.sectors[double_level_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+	return ib.sectors[single_level_idx];
   }
   else
     return INVALID_SECTOR_ID;
