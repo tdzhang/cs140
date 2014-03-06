@@ -29,8 +29,11 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t pos) 
 {
   ASSERT (inode != NULL);
-  if (pos < inode->data.length)
-    return inode->data.start + pos / BLOCK_SECTOR_SIZE;
+  if (pos < inode->readable_length) {
+	struct inode_disk id;
+	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+    return id.direct_idx[pos/BLOCK_SECTOR_SIZE];
+  }
   else
     return -1;
 }
@@ -134,7 +137,13 @@ inode_open (block_sector_t sector)
   inode->open_cnt = 1;
   inode->deny_write_cnt = 0;
   inode->removed = false;
-  cache_read(inode->sector, INVALID_SECTOR_ID, &inode->data, 0, BLOCK_SECTOR_SIZE);
+  lock_init(&inode->dir_lock);
+  lock_init(&inode->inode_lock);
+  //TODO: inode->is_dir = ?
+  /* retrieve inode_disk from sector */
+  struct inode_disk id;
+  cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+  inode->readable_length = id.length;
   return inode;
 }
 
@@ -170,12 +179,22 @@ inode_close (struct inode *inode)
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
  
+
       /* Deallocate blocks if removed. */
       if (inode->removed) 
         {
+    	  	  /* retrieve inode_disk from sector */
+          struct inode_disk id;
+          cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+          /* release metadata sector */
+          //TODO: release indirect sectors
           free_map_release (inode->sector, 1);
-          free_map_release (inode->data.start,
-                            bytes_to_sectors (inode->data.length)); 
+          int i;
+          size_t sectors = bytes_to_sectors (id.length);
+          /* release data sectors */
+          for (i = 0; i < sectors; i++) {
+        	  	  free_map_release (id.direct_idx[i], 1);
+          }
         }
 
       free (inode); 
@@ -293,5 +312,5 @@ inode_allow_write (struct inode *inode)
 off_t
 inode_length (const struct inode *inode)
 {
-  return inode->data.length;
+  return inode->readable_length;
 }

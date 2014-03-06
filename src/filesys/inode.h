@@ -34,7 +34,7 @@ struct inode_disk
 
 /* In-memory inode. */
 struct inode {
-     block_sector_t sector_id;           /* sector id */
+     block_sector_t sector;           /* sector id */
      int open_cnt;                       /* Number of openers. */
      bool removed;                 		/* True if deleted, false otherwise. */
      int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
