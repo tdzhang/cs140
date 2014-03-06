@@ -77,7 +77,7 @@ inode_create (block_sector_t sector, off_t length)
       static char zeros[BLOCK_SECTOR_SIZE];
       bool allocate_failed = false;
 
-      //TODO: handle indirect index
+      //TODO: handle double indirect index
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
       int indirect_sector_num = sectors - direct_sector_num;
@@ -124,7 +124,7 @@ inode_create (block_sector_t sector, off_t length)
 		  free_map_release(disk_inode->single_idx, 1);
 
 		  for (j = 0; j < i; j++) {
-			  free_map_release(disk_inode->direct_idx[j], 1);
+			  free_map_release(ib->sectors[j], 1);
 		  }
 
 		  return false;
