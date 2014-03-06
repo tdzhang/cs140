@@ -32,7 +32,16 @@ byte_to_sector (const struct inode *inode, off_t pos)
   if (pos < inode->readable_length) {
 	struct inode_disk id;
 	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-    return id.direct_idx[pos/BLOCK_SECTOR_SIZE];
+	size_t sectors = bytes_to_sectors (id.length);
+	int direct_sector_index = pos/BLOCK_SECTOR_SIZE < DIRECT_INDEX_NUM ? pos/BLOCK_SECTOR_SIZE : DIRECT_INDEX_NUM;
+	int indirect_sector_index = sectors - direct_sector_index;
+	if (indirect_sector_index > 0) {
+		struct indirect_block ib;
+		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+		return ib.sectors[indirect_sector_index];
+	} else {
+		return id.direct_idx[direct_sector_index];
+	}
   }
   else
     return -1;
@@ -81,6 +90,7 @@ inode_create (block_sector_t sector, off_t length)
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
       int indirect_sector_num = sectors - direct_sector_num;
+      /* allocate direct sectors */
       for (i = 0; i < direct_sector_num; i++) {
     	  	  if (free_map_allocate (1, &sector_idx)) {
     	  		  disk_inode->direct_idx[i] = sector_idx;
@@ -90,7 +100,7 @@ inode_create (block_sector_t sector, off_t length)
     	  		  break;
     	  	  }
       }
-
+      /* release allocated direct sectors when failed to allocate */
       if (allocate_failed) {
     	  	  int j;
     	  	  for (j = 0; j < i; j++) {
@@ -99,6 +109,7 @@ inode_create (block_sector_t sector, off_t length)
     	  	  return false;
       }
 
+      /* allocate single indirect sectors */
       struct indirect_block ib;
       if (!free_map_allocate (1, &disk_inode->single_idx)) {
     	  	  allocate_failed = true;
@@ -114,7 +125,8 @@ inode_create (block_sector_t sector, off_t length)
 		  }
 		  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
       }
-
+      /* release all direct sectors and allocated single indirect sectors
+       * when failed to allocate */
       if (allocate_failed) {
 		  int j;
 		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
@@ -128,9 +140,7 @@ inode_create (block_sector_t sector, off_t length)
 		  }
 
 		  return false;
-	}
-
-
+      }
 
       /* write inode_disk(metadata) to sector */
       cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
@@ -223,13 +233,28 @@ inode_close (struct inode *inode)
           cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
           /* release metadata sector */
           //TODO: release indirect sectors
+          size_t sectors = bytes_to_sectors (id.length);
+          int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
+          int indirect_sector_num = sectors - direct_sector_num;
+          /* release inode_disk(metadata) sector */
           free_map_release (inode->sector, 1);
           int i;
-          size_t sectors = bytes_to_sectors (id.length);
           /* release data sectors */
-          for (i = 0; i < sectors; i++) {
+          for (i = 0; i < direct_sector_num; i++) {
         	  	  free_map_release (id.direct_idx[i], 1);
           }
+
+          struct indirect_block ib;
+          cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+
+          for (i = 0; i < indirect_sector_num; i++) {
+        	  	  free_map_release (ib.sectors[i], 1);
+          }
+
+          if (indirect_sector_num > 0) {
+        	  	  free_map_release (id.single_idx, 1);
+          }
+
         }
 
       free (inode); 
