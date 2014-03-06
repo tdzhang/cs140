@@ -260,7 +260,10 @@ inode_close (struct inode *inode)
           }
 
           struct indirect_block ib;
-          cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+          if(indirect_sector_num > 0){
+        	  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+          }
+
 
           for (i = 0; i < indirect_sector_num; i++) {
         	  	  free_map_release (ib.sectors[i], 1);
