@@ -230,7 +230,7 @@ static void free_map_release_direct(struct inode_disk *disk_inode, int end_idx) 
 static void free_map_release_single_indirect(struct indirect_block *ib, int end_idx){
 	int i;
 	for (i = 0; i < end_idx; i++) {
-		free_map_release (ib.sectors[i], 1);
+		free_map_release (ib->sectors[i], 1);
 	}
 }
 
