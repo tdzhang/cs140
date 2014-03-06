@@ -116,7 +116,7 @@ inode_create (block_sector_t sector, off_t length)
       } else {
 		  for (i = 0; i < indirect_sector_num; i++) {
 			  if (free_map_allocate (1, &sector_idx)) {
-				  ib->sectors[i] = sector_idx;
+				  ib.sectors[i] = sector_idx;
 				  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
 			  } else {
 				  allocate_failed = true;
@@ -136,7 +136,7 @@ inode_create (block_sector_t sector, off_t length)
 		  free_map_release(disk_inode->single_idx, 1);
 
 		  for (j = 0; j < i; j++) {
-			  free_map_release(ib->sectors[j], 1);
+			  free_map_release(ib.sectors[j], 1);
 		  }
 
 		  return false;
@@ -337,7 +337,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       if (chunk_size <= 0)
         break;
 
-      cache_write(sector_idx, buffer+bytes_written, sector_ofs, chunk_size);
+      cache_write(sector_idx, (void *)(buffer+bytes_written), sector_ofs, chunk_size);
 
       /* Advance. */
       size -= chunk_size;
