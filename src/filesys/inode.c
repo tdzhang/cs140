@@ -32,9 +32,8 @@ byte_to_sector (const struct inode *inode, off_t pos)
   if (pos < inode->readable_length) {
 	struct inode_disk id;
 	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-	size_t sectors = bytes_to_sectors (id.length);
 	int direct_sector_index = pos/BLOCK_SECTOR_SIZE < DIRECT_INDEX_NUM ? pos/BLOCK_SECTOR_SIZE : DIRECT_INDEX_NUM;
-	int indirect_sector_index = sectors - direct_sector_index;
+	int indirect_sector_index = pos/BLOCK_SECTOR_SIZE - direct_sector_index;
 	if (indirect_sector_index > 0) {
 		struct indirect_block ib;
 		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
