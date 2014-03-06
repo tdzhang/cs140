@@ -29,29 +29,7 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t pos) 
 {
   ASSERT (inode != NULL);
-  //TODO: remove assert after double indirect implemented
-  ASSERT (pos >= 0 && pos < 512*251-1);
-
   if (pos < inode->readable_length) {
-	/* sector_pos starts from 0 */
-	off_t sector_pos = pos/BLOCK_SECTOR_SIZE;
-
-	struct inode_disk id;
-	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-
-	if (sector_pos < DIRECT_INDEX_NUM) {
-		return id.direct_idx[sector_pos];
-	}
-
-	if (sector_pos < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
-		struct indirect_block ib;
-		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
-		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
-	}
-
-	//TODO: for double indirect
-
-	/*
 	struct inode_disk id;
 	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
 	int direct_sector_index = pos/BLOCK_SECTOR_SIZE < DIRECT_INDEX_NUM ? pos/BLOCK_SECTOR_SIZE : DIRECT_INDEX_NUM-1;
@@ -63,10 +41,9 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	} else {
 		return id.direct_idx[direct_sector_index];
 	}
-	*/
   }
   else
-    return INVALID_SECTOR_ID;
+    return -1;
 }
 
 /* List of open inodes, so that opening a single inode twice
@@ -111,8 +88,8 @@ inode_create (block_sector_t sector, off_t length)
       //TODO: handle double indirect index
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-      int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
-      int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+      int indirect_sector_num = (sectors - direct_sector_num)<INDEX_PER_SECTOR?(sectors - direct_sector_num):INDEX_PER_SECTOR;
+      int double_indirect_sector_num=sectors-direct_sector_num-indirect_sector_num;
 
       /* allocate direct sectors */
       for (i = 0; i < direct_sector_num; i++) {
@@ -324,8 +301,6 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
     {
       /* Disk sector to read, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
-      ASSERT (sector_idx != INVALID_SECTOR_ID);
-
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
       /* Bytes left in inode, bytes left in sector, lesser of the two. */
@@ -358,8 +333,6 @@ off_t
 inode_write_at (struct inode *inode, const void *buffer_, off_t size,
                 off_t offset) 
 {
-	//TODO: remove the assert after file growth implemented
-	ASSERT(offset < inode->readable_length);
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
 
@@ -370,9 +343,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     {
       /* Sector to write, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
-      //TODO: remove the assert after file growth implemented
-      ASSERT (sector_idx != INVALID_SECTOR_ID);
-
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
       /* Bytes left in inode, bytes left in sector, lesser of the two. */
