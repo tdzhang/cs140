@@ -11,7 +11,10 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
-
+static void free_map_release_all_direct(struct inode_disk *disk_inode);
+static void free_map_release_all_single_indirect(struct indirect_block *ib);
+static void free_map_release_direct(struct inode_disk *disk_inode, int end_idx);
+static void free_map_release_single_indirect(struct indirect_block *ib, int end_idx);
 
 /* Returns the number of sectors to allocate for an inode SIZE
    bytes long. */
@@ -106,8 +109,8 @@ inode_create (block_sector_t sector, off_t length)
       //TODO: handle double indirect index
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-      int indirect_sector_num = (sectors - direct_sector_num)<INDEX_PER_SECTOR?(sectors - direct_sector_num):INDEX_PER_SECTOR;
-      int double_indirect_sector_num=sectors-direct_sector_num-indirect_sector_num;
+      int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
+      int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
 
       /* allocate direct sectors */
       for (i = 0; i < direct_sector_num; i++) {
@@ -121,57 +124,76 @@ inode_create (block_sector_t sector, off_t length)
       }
       /* release allocated direct sectors when failed to allocate */
       if (allocate_failed) {
-    	  	  int j;
-    	  	  for (j = 0; j < i; j++) {
-    	  		  free_map_release(disk_inode->direct_idx[j], 1);
-    	  	  }
-    	  	 free (disk_inode);
+    	  	  free_map_release_direct(disk_inode, i);
+    	  	  free (disk_inode);
     	  	  return false;
       }
 
       /* allocate single indirect sectors */
-      if(indirect_sector_num>0){
-    	  	  struct indirect_block ib;
-    	        if (!free_map_allocate (1, &disk_inode->single_idx)) {
-    	      	  	  int j;
-    	  		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
-    	  			  free_map_release(disk_inode->direct_idx[j], 1);
-    	  		  }
-    	  		 free (disk_inode);
-    	      	 return false;
-    	        }
+      if(indirect_sector_num > 0){
+			struct indirect_block ib;
+			if (!free_map_allocate (1, &disk_inode->single_idx)) {
+				free_map_release_all_direct(disk_inode);
+				free (disk_inode);
+				return false;
+			}
 
-    	  	  for (i = 0; i < indirect_sector_num; i++) {
-    	  		  if (free_map_allocate (1, &sector_idx)) {
-    	  			  ib.sectors[i] = sector_idx;
-    	  			  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
-    	  		  } else {
-    	  			  allocate_failed = true;
-    	  			  break;
-    	  		  }
-    	  	  }
-    	  	  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+			for (i = 0; i < indirect_sector_num; i++) {
+			  if (free_map_allocate (1, &sector_idx)) {
+				  ib.sectors[i] = sector_idx;
+				  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
+			  } else {
+				  allocate_failed = true;
+				  break;
+			  }
+			}
 
-    	        /* release all direct sectors and allocated single indirect sectors
-    	         * when failed to allocate */
-    	        if (allocate_failed) {
-    	  		  int j;
-    	  		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
-    	  			  free_map_release(disk_inode->direct_idx[j], 1);
-    	  		  }
+			/* release all direct sectors and allocated single indirect sectors
+			 * when failed to allocate */
+			if (allocate_failed) {
+				free_map_release_all_direct(disk_inode);
+				free_map_release_single_indirect(&ib, i);
+				free_map_release(disk_inode->single_idx, 1);
+				free (disk_inode);
+				return false;
+			}
 
-    	  		  free_map_release(disk_inode->single_idx, 1);
-
-    	  		  for (j = 0; j < i; j++) {
-    	  			  free_map_release(ib.sectors[j], 1);
-    	  		  }
-    	  		 free (disk_inode);
-    	  		  return false;
-    	        }
+			cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
       }
 
 
       /*----------------------------*/
+      /* allocate double indirect sectors */
+      /*
+      if(double_indirect_sector_num > 0){
+    	  	  if (!free_map_allocate (1, &disk_inode->double_idx)) {
+    	  		  free_map_release_all_direct();
+
+    	  		  free_map_release_all_single_indirect();
+			  int j;
+			  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
+				  free_map_release(disk_inode->direct_idx[j], 1);
+			  }
+			 free (disk_inode);
+			 return false;
+		  }
+    	  	  off_t double_level_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
+    	      off_t single_level_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
+    	      int i;
+    	      for (i = 0; i < double_level_idx; i++) {
+
+    	      }
+      }
+
+
+      	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR))/INDEX_PER_SECTOR;
+      	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR))%INDEX_PER_SECTOR;
+      	struct indirect_block db;
+      	cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+      	struct indirect_block ib;
+      	cache_read(db.sectors[double_level_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+      	return ib.sectors[single_level_idx];
+		*/
 
       /*----------------------------*/
 
@@ -181,6 +203,35 @@ inode_create (block_sector_t sector, off_t length)
       return true;
     }
   return false;
+}
+
+
+/* help to free_map_release all direct index sectors */
+static void free_map_release_all_direct(struct inode_disk *disk_inode) {
+	free_map_release_direct(disk_inode, DIRECT_INDEX_NUM);
+}
+
+/* help to free_map_release all single indirect index sectors */
+static void free_map_release_all_single_indirect(struct indirect_block *ib) {
+	free_map_release_single_indirect(ib, INDEX_PER_SECTOR);
+}
+
+
+
+/* help to free_map_release direct index sectors from beginning to end_idx (exclusively) */
+static void free_map_release_direct(struct inode_disk *disk_inode, int end_idx) {
+	int i;
+	for (i = 0; i < end_idx; i++) {
+		free_map_release(disk_inode->direct_idx[i], 1);
+	}
+}
+
+/* help to free_map_release single indirect index sectors from beginning to end_idx (exclusively) */
+static void free_map_release_single_indirect(struct indirect_block *ib, int end_idx){
+	int i;
+	for (i = 0; i < end_idx; i++) {
+		free_map_release (ib.sectors[i], 1);
+	}
 }
 
 /* Reads an inode from SECTOR
