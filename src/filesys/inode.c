@@ -304,48 +304,46 @@ inode_close (struct inode *inode)
 
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
-    {
+  {
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
  
 
       /* Deallocate blocks if removed. */
       if (inode->removed) 
-        {
-    	  	  /* retrieve inode_disk from sector */
+      {
+    	  	  /* retrieve inode_disk(metadata) from sector */
           struct inode_disk id;
           cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-          /* release metadata sector */
-          //TODO: release indirect sectors
+
           size_t sectors = bytes_to_sectors (id.length);
+
           int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-          int indirect_sector_num = sectors - direct_sector_num;
-          /* release inode_disk(metadata) sector */
-          free_map_release (inode->sector, 1);
+          int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
+          int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+
           int i;
           /* release data sectors */
-          for (i = 0; i < direct_sector_num; i++) {
-        	  	  free_map_release (id.direct_idx[i], 1);
-          }
+          free_map_release_direct(id, direct_sector_num);
 
-          struct indirect_block ib;
-          if(indirect_sector_num > 0){
+          if (indirect_sector_num > 0){
+        	  	  struct indirect_block ib;
         	  	  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
-          }
-
-
-          for (i = 0; i < indirect_sector_num; i++) {
-        	  	  free_map_release (ib.sectors[i], 1);
-          }
-
-          if (indirect_sector_num > 0) {
+        	  	  free_map_release_single_indirect(&ib, indirect_sector_num);
         	  	  free_map_release (id.single_idx, 1);
           }
 
-        }
+          if (double_indirect_sector_num > 0) {
+        	  	  //TODO: free_map_release_double_indirect();
+          }
+
+
+          /* release inode_disk(metadata) sector */
+          free_map_release (inode->sector, 1);
+      }
 
       free (inode); 
-    }
+  }
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
