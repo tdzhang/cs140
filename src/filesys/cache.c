@@ -101,6 +101,7 @@ bool buffer_cache_init(void) {
  * return the index in the buffer cache if found
  * must holding buffer_cache_lock before calling it*/
 int get_entry_index(block_sector_t searching_sector_id) {
+	ASSERT (searching_sector_id != INVALID_SECTOR_ID);
 	ASSERT(lock_held_by_current_thread(&buffer_cache_lock));
 	int i;
 	for (i = 0; i < CACHE_SIZE; i++) {
