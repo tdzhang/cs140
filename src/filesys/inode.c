@@ -68,7 +68,7 @@ inode_create (block_sector_t sector, off_t length)
   struct inode_disk *disk_inode = NULL;
 
   ASSERT (length >= 0);
-  ASSERT (length <= 251);
+  ASSERT (length <= 251*512);
   /* If this assertion fails, the inode structure is not exactly
      one sector in size, and you should fix that. */
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
