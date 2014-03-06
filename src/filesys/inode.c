@@ -29,7 +29,29 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t pos) 
 {
   ASSERT (inode != NULL);
+  //TODO: remove assert after double indirect implemented
+  ASSERT (pos >= 0 && pos < 512*251-1);
+
   if (pos < inode->readable_length) {
+	/* sector_pos starts from 0 */
+	off_t sector_pos = pos/BLOCK_SECTOR_SIZE;
+
+	struct inode_disk id;
+	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+
+	if (sector_pos < DIRECT_INDEX_NUM) {
+		return id.direct_idx[sector_pos];
+	}
+
+	if (sector_pos < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
+		struct indirect_block ib;
+		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
+	}
+
+	//TODO: for double indirect
+	return INVALID_SECTOR_ID;
+	/*
 	struct inode_disk id;
 	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
 	int direct_sector_index = pos/BLOCK_SECTOR_SIZE < DIRECT_INDEX_NUM ? pos/BLOCK_SECTOR_SIZE : DIRECT_INDEX_NUM-1;
@@ -41,9 +63,10 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	} else {
 		return id.direct_idx[direct_sector_index];
 	}
+	*/
   }
   else
-	  return INVALID_SECTOR_ID;
+    return INVALID_SECTOR_ID;
 }
 
 /* List of open inodes, so that opening a single inode twice
