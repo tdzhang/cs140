@@ -24,19 +24,28 @@ struct inode_disk
     block_sector_t start;               /* First data sector. */
     off_t length;                       /* File size in bytes. */
     unsigned magic;                     /* Magic number. */
-    uint32_t unused[125];               /* Not used. */
+    int is_dir;                         /* 1 if this inode is a dir,
+                                                   0 otherwise. */
+	block_sector_t direct_idx [DIRECT_INDEX_NUM];/* Direct index. */
+	block_sector_t single_idx;                   /* Single indirect index. */
+	block_sector_t double_idx;                   /* Double indirect index. */
   };
 
+
+
 /* In-memory inode. */
-struct inode
-  {
-    struct list_elem elem;              /* Element in inode list. */
-    block_sector_t sector;              /* Sector number of disk location. */
-    int open_cnt;                       /* Number of openers. */
-    bool removed;                       /* True if deleted, false otherwise. */
-    int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
-    struct inode_disk data;             /* Inode content. */
-  };
+struct inode {
+     block_sector_t sector_id;           /* sector id */
+     int open_cnt;                       /* Number of openers. */
+     bool removed;                 		/* True if deleted, false otherwise. */
+     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
+     off_t readable_length;              /* file size in bytes */
+     bool is_dir;                        /* whether the inode is for a dir */
+     struct lock inode_lock;             /* lock for the inode */
+     struct lock dir_lock;               /* lock for the corresponding dir */
+     struct list_elem elem;              /* Element in inode list. */
+};
+
 
 
 
