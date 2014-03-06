@@ -88,7 +88,9 @@ inode_create (block_sector_t sector, off_t length)
       //TODO: handle double indirect index
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-      int indirect_sector_num = sectors - direct_sector_num;
+      int indirect_sector_num = (sectors - direct_sector_num)<INDEX_PER_SECTOR?(sectors - direct_sector_num):INDEX_PER_SECTOR;
+      int double_indirect_sector_num=sectors-direct_sector_num-indirect_sector_num;
+
       /* allocate direct sectors */
       for (i = 0; i < direct_sector_num; i++) {
     	  	  if (free_map_allocate (1, &sector_idx)) {
@@ -105,46 +107,55 @@ inode_create (block_sector_t sector, off_t length)
     	  	  for (j = 0; j < i; j++) {
     	  		  free_map_release(disk_inode->direct_idx[j], 1);
     	  	  }
+    	  	 free (disk_inode);
     	  	  return false;
       }
 
       /* allocate single indirect sectors */
-      struct indirect_block ib;
-      if (!free_map_allocate (1, &disk_inode->single_idx)) {
-    	  	  int j;
-		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
-			  free_map_release(disk_inode->direct_idx[j], 1);
-		  }
-    	  	  return false;
+      if(indirect_sector_num>0){
+    	  	  struct indirect_block ib;
+    	        if (!free_map_allocate (1, &disk_inode->single_idx)) {
+    	      	  	  int j;
+    	  		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
+    	  			  free_map_release(disk_inode->direct_idx[j], 1);
+    	  		  }
+    	  		 free (disk_inode);
+    	      	 return false;
+    	        }
+
+    	  	  for (i = 0; i < indirect_sector_num; i++) {
+    	  		  if (free_map_allocate (1, &sector_idx)) {
+    	  			  ib.sectors[i] = sector_idx;
+    	  			  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
+    	  		  } else {
+    	  			  allocate_failed = true;
+    	  			  break;
+    	  		  }
+    	  	  }
+    	  	  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+
+    	        /* release all direct sectors and allocated single indirect sectors
+    	         * when failed to allocate */
+    	        if (allocate_failed) {
+    	  		  int j;
+    	  		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
+    	  			  free_map_release(disk_inode->direct_idx[j], 1);
+    	  		  }
+
+    	  		  free_map_release(disk_inode->single_idx, 1);
+
+    	  		  for (j = 0; j < i; j++) {
+    	  			  free_map_release(ib.sectors[j], 1);
+    	  		  }
+    	  		 free (disk_inode);
+    	  		  return false;
+    	        }
       }
 
-	  for (i = 0; i < indirect_sector_num; i++) {
-		  if (free_map_allocate (1, &sector_idx)) {
-			  ib.sectors[i] = sector_idx;
-			  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
-		  } else {
-			  allocate_failed = true;
-			  break;
-		  }
-	  }
-	  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
 
-      /* release all direct sectors and allocated single indirect sectors
-       * when failed to allocate */
-      if (allocate_failed) {
-		  int j;
-		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
-			  free_map_release(disk_inode->direct_idx[j], 1);
-		  }
+      /*----------------------------*/
 
-		  free_map_release(disk_inode->single_idx, 1);
-
-		  for (j = 0; j < i; j++) {
-			  free_map_release(ib.sectors[j], 1);
-		  }
-
-		  return false;
-      }
+      /*----------------------------*/
 
       /* write inode_disk(metadata) to sector */
       cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
