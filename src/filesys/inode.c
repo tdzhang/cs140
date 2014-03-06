@@ -79,7 +79,9 @@ inode_create (block_sector_t sector, off_t length)
 
       //TODO: handle indirect index
       /* allocate sectors for data and write all zeros to sectors*/
-      for (i = 0; i < sectors; i++) {
+      int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
+      int indirect_sector_num = sectors - direct_sector_num;
+      for (i = 0; i < direct_sector_num; i++) {
     	  	  if (free_map_allocate (1, &sector_idx)) {
     	  		  disk_inode->direct_idx[i] = sector_idx;
     	  		  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
@@ -96,6 +98,39 @@ inode_create (block_sector_t sector, off_t length)
     	  	  }
     	  	  return false;
       }
+
+      struct indirect_block ib;
+      if (!free_map_allocate (1, &disk_inode->single_idx)) {
+    	  	  allocate_failed = true;
+      } else {
+		  for (i = 0; i < indirect_sector_num; i++) {
+			  if (free_map_allocate (1, &sector_idx)) {
+				  ib->sectors[i] = sector_idx;
+				  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
+			  } else {
+				  allocate_failed = true;
+				  break;
+			  }
+		  }
+		  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+      }
+
+      if (allocate_failed) {
+		  int j;
+		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
+			  free_map_release(disk_inode->direct_idx[j], 1);
+		  }
+
+		  free_map_release(disk_inode->single_idx, 1);
+
+		  for (j = 0; j < i; j++) {
+			  free_map_release(disk_inode->direct_idx[j], 1);
+		  }
+
+		  return false;
+	}
+
+
 
       /* write inode_disk(metadata) to sector */
       cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
@@ -234,7 +269,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       int chunk_size = size < min_left ? size : min_left;
       if (chunk_size <= 0)
         break;
-
+      //TODO: pass next_sector_id
       cache_read(sector_idx, INVALID_SECTOR_ID, buffer+bytes_read, sector_ofs, chunk_size);
       
       /* Advance. */
