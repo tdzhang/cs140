@@ -43,7 +43,7 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	}
   }
   else
-    return -1;
+	  return INVALID_SECTOR_ID;
 }
 
 /* List of open inodes, so that opening a single inode twice
@@ -301,7 +301,6 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
     {
       /* Disk sector to read, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
-      /*ASSERT (sector_idx != INVALID_SECTOR_ID);*/
 
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
@@ -335,6 +334,8 @@ off_t
 inode_write_at (struct inode *inode, const void *buffer_, off_t size,
                 off_t offset) 
 {
+	//TODO: remove the assert after file growth implemented
+	ASSERT(offset < inode->readable_length);
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
 

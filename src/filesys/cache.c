@@ -404,7 +404,7 @@ static inline void clock_next(void) {
 /* cache read */
 off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 		void *buffer, off_t sector_offset, off_t read_bytes) {
-
+	ASSERT (sector != INVALID_SECTOR_ID);
 	lock_acquire(&buffer_cache_lock);
 
 	int slot = get_entry_index(sector);
@@ -455,7 +455,7 @@ off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 /* cache write */
 off_t cache_write(block_sector_t sector, void *buffer,
 		off_t sector_offset, off_t write_bytes) {
-
+	ASSERT (sector != INVALID_SECTOR_ID);
 	lock_acquire(&buffer_cache_lock);
 
 	int slot = get_entry_index(sector);
