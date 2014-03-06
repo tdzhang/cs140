@@ -324,7 +324,7 @@ inode_close (struct inode *inode)
 
           int i;
           /* release data sectors */
-          free_map_release_direct(id, direct_sector_num);
+          free_map_release_direct(&id, direct_sector_num);
 
           if (indirect_sector_num > 0){
         	  	  struct indirect_block ib;
