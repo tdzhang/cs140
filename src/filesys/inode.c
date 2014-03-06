@@ -112,19 +112,24 @@ inode_create (block_sector_t sector, off_t length)
       /* allocate single indirect sectors */
       struct indirect_block ib;
       if (!free_map_allocate (1, &disk_inode->single_idx)) {
-    	  	  allocate_failed = true;
-      } else {
-		  for (i = 0; i < indirect_sector_num; i++) {
-			  if (free_map_allocate (1, &sector_idx)) {
-				  ib.sectors[i] = sector_idx;
-				  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
-			  } else {
-				  allocate_failed = true;
-				  break;
-			  }
+    	  	  int j;
+		  for (j = 0; j < DIRECT_INDEX_NUM; j++) {
+			  free_map_release(disk_inode->direct_idx[j], 1);
 		  }
-		  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+    	  	  return false;
       }
+
+	  for (i = 0; i < indirect_sector_num; i++) {
+		  if (free_map_allocate (1, &sector_idx)) {
+			  ib.sectors[i] = sector_idx;
+			  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
+		  } else {
+			  allocate_failed = true;
+			  break;
+		  }
+	  }
+	  cache_write(disk_inode->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+
       /* release all direct sectors and allocated single indirect sectors
        * when failed to allocate */
       if (allocate_failed) {
