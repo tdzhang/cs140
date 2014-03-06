@@ -55,7 +55,6 @@ bool
 inode_create (block_sector_t sector, off_t length)
 {
   struct inode_disk *disk_inode = NULL;
-  bool success = false;
 
   ASSERT (length >= 0);
 
@@ -69,22 +68,38 @@ inode_create (block_sector_t sector, off_t length)
       size_t sectors = bytes_to_sectors (length);
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
-      if (free_map_allocate (sectors, &disk_inode->start)) 
-        {
-    	      cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
-          if (sectors > 0) 
-            {
-              static char zeros[BLOCK_SECTOR_SIZE];
-              size_t i;
-              
-              for (i = 0; i < sectors; i++)
-            	    cache_write(disk_inode->start + i, zeros, 0, BLOCK_SECTOR_SIZE);
-            }
-          success = true; 
-        } 
+
+      int i;
+      block_sector_t sector_idx = 0;
+      static char zeros[BLOCK_SECTOR_SIZE];
+      bool allocate_failed = false;
+
+      //TODO: handle indirect index
+      /* allocate sectors for data and write all zeros to sectors*/
+      for (i = 0; i < sectors; i++) {
+    	  	  if (free_map_allocate (1, &sector_idx)) {
+    	  		  disk_inode->direct_idx[i] = sector_idx;
+    	  		  cache_write(sector_idx, zeros, 0, BLOCK_SECTOR_SIZE);
+    	  	  } else {
+    	  		  allocate_failed = true;
+    	  		  break;
+    	  	  }
+      }
+
+      if (allocate_failed) {
+    	  	  int j;
+    	  	  for (j = 0; j < i; j++) {
+    	  		  free_map_release(disk_inode->direct_idx[j], 1);
+    	  	  }
+    	  	  return false;
+      }
+
+      /* write inode_disk(metadata) to sector */
+      cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
       free (disk_inode);
+      return true;
     }
-  return success;
+  return false;
 }
 
 /* Reads an inode from SECTOR

@@ -8,7 +8,7 @@
 
 struct bitmap;
 
-#define DIRECT_INDEX_NUM 122    /* 122 direct indices in one sector*/
+#define DIRECT_INDEX_NUM 123    /* 122 direct indices in one sector*/
 #define INDEX_PER_SECTOR 128    /* 128 indices stored in one sector */
 
 /* structure for indirect index block */
@@ -21,7 +21,6 @@ struct indirect_block {
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
 struct inode_disk
   {
-    block_sector_t start;               /* First data sector. */
     off_t length;                       /* File size in bytes. */
     unsigned magic;                     /* Magic number. */
     int is_dir;                         /* 1 if this inode is a dir,
