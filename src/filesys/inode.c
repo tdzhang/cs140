@@ -546,24 +546,30 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 
 	/* padding full sectors until end_pos-1 */
 	off_t extra_sectors = bytes_to_sectors(end_pos)-bytes_to_sectors(start_pos);
-	off_t i;
+	off_t* record_sectors=malloc(sizeof(off_t) * extra_sectors);
+	off_t i,j;
 	block_sector_t new_sector=-1;
 	for(i=0;i<extra_sectors;i++){
 		if (!free_map_allocate (1, &new_sector)) {
-			//TODO: free all the new sectors;
+			for(j=0;j<i;j++){
+				free_map_release(record_sectors[i],1);
+			}
+			free(record_sectors);
 			return false;
 		}
 		if(!append_sector_to_inode(id,new_sector)){
-			//TODO: free all the new sectors;
+			for(j=0;j<i;j++){
+				free_map_release(record_sectors[i],1);
+			}
+			free(record_sectors);
 			return false;
 		}
 		cache_write(new_sector, zeros, 0, BLOCK_SECTOR_SIZE);
-		//TODO: add new sectors to a temp list;
+		record_sectors[i]=new_sector;
 	}
 	/*update the physical length info*/
 	id->length=end_pos;
-
-
+	free(record_sectors);
 	return true;
 
 }
