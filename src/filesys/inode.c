@@ -109,7 +109,7 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 				free_map_release (id->double_idx, 1);
 				return false;
 			}
-			single_ib[0] = new_sector;
+			single_ib.sectors[0] = new_sector;
 			cache_write(db.sectors[0], &single_ib, 0, BLOCK_SECTOR_SIZE);
 			cache_write(id->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
 		}
