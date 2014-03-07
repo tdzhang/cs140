@@ -484,15 +484,20 @@ off_t
 inode_write_at (struct inode *inode, const void *buffer_, off_t size,
                 off_t offset) 
 {
-	//TODO: remove the assert after file growth implemented
-	ASSERT(offset < inode->readable_length);
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
 
   if (inode->deny_write_cnt)
     return 0;
 
-  while (size > 0) 
+  off_t len_within, len_extend;
+  lock_acquire(&inode->inode_lock);
+  len_extend = offset+size - inode->readable_length;
+  len_extend = (len_extend>0)?len_extend:0;
+  len_within = size - len_extend;
+
+
+  while (len_within > 0)
     {
       /* Sector to write, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
@@ -504,18 +509,23 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       int min_left = inode_left < sector_left ? inode_left : sector_left;
 
       /* Number of bytes to actually write into this sector. */
-      int chunk_size = size < min_left ? size : min_left;
+      int chunk_size = len_within < min_left ? len_within : min_left;
       if (chunk_size <= 0)
         break;
 
       cache_write(sector_idx, (void *)(buffer+bytes_written), sector_ofs, chunk_size);
 
       /* Advance. */
-      size -= chunk_size;
+      len_within -= chunk_size;
       offset += chunk_size;
       bytes_written += chunk_size;
     }
 
+  if (len_extend > 0) {
+  	  //TODO: allocate new sector
+    }
+
+  lock_release(&inode->inode_lock);
   return bytes_written;
 }
 
