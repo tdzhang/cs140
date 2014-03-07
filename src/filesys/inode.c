@@ -84,6 +84,7 @@ inode_init (void)
 bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	size_t sectors = bytes_to_sectors(id->length);
 	static struct indirect_block ib;
+	static struct indirect_block db;
 	if (sectors <= DIRECT_INDEX_NUM) {
 		if (sectors < DIRECT_INDEX_NUM) {
 			id->direct_idx[sectors] = new_sector;
@@ -100,7 +101,6 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 			ib.sectors[sectors-DIRECT_INDEX_NUM] = new_sector;
 			cache_write(id->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
 		} else {
-			static struct indirect_block db;
 			if (!free_map_allocate (1, &id->double_idx)) {
 				return false;
 			}
@@ -114,6 +114,21 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 			cache_write(id->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
 		}
 	} else {
+		size_t sectors_left=sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+		if(sectors_left%INDEX_PER_SECTOR ==0){
+			/*on the edge*/
+			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+			if (!free_map_allocate (1, &db.sectors[sectors_left/INDEX_PER_SECTOR])) {
+				return false;
+			}
+			ib.sectors[0]=new_sector;
+			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR], &ib, 0, BLOCK_SECTOR_SIZE);
+		}else{
+			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+			cache_read(db.sectors[sectors_left/INDEX_PER_SECTOR],INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			ib.sectors[sectors_left%INDEX_PER_SECTOR]=new_sector;
+			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR], &ib, 0, BLOCK_SECTOR_SIZE);
+		}
 
 	}
 	return true;
