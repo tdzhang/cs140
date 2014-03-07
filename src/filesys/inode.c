@@ -265,6 +265,7 @@ inode_create (block_sector_t sector, off_t length)
 }
 
 
+
 /* help to free_map_release double indirect index sectors, from the beginning
  * to db[double_level_idx][single_level_idx] (exclusive) */
 static void free_map_release_double_indirect (struct indirect_block *db, int double_level_end_idx, int single_level_end_idx) {
