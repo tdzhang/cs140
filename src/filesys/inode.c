@@ -534,17 +534,37 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 
 
 /* padding zeros from start_pos (inclusive) to end_pos (exclusive) */
-void zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, off_t end_pos) {
+bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, off_t end_pos) {
+	static char zeros[BLOCK_SECTOR_SIZE];
 	/* padding the first partial sector */
 	if (start_pos % BLOCK_SECTOR_SIZE != 0) {
 		block_sector_t eof_sector = bytes_to_sector(inode, start_pos-1);
 		off_t sector_ofs = start_pos % BLOCK_SECTOR_SIZE;
 		size_t zero_bytes = BLOCK_SECTOR_SIZE - sector_ofs;
-		static char zeros[BLOCK_SECTOR_SIZE];
 		cache_write(eof_sector, zeros, sector_ofs, zero_bytes);
 	}
 
 	/* padding full sectors until end_pos-1 */
+	off_t extra_sectors = bytes_to_sectors(end_pos)-bytes_to_sectors(start_pos);
+	off_t i;
+	block_sector_t new_sector=-1;
+	for(i=0;i<extra_sectors;i++){
+		if (!free_map_allocate (1, &new_sector)) {
+			//TODO: free all the new sectors;
+			return false;
+		}
+		if(!append_sector_to_inode(id,new_sector)){
+			//TODO: free all the new sectors;
+			return false;
+		}
+		cache_write(new_sector, zeros, 0, BLOCK_SECTOR_SIZE);
+		//TODO: add new sectors to a temp list;
+	}
+	/*update the physical length info*/
+	id->length=end_pos;
+
+
+	return true;
 
 }
 
@@ -571,14 +591,15 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   lock_acquire(&inode->inode_lock);
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
   off_t phy_length = id.length;
-  if (offset+size - phy_length) {
-	  zero_padding(inode, &id, phy_length, offset+size);
+  if (offset + size - phy_length >0) {
+	  if(!zero_padding(inode, &id, phy_length, offset+size)){
+		  lock_release(&inode->inode_lock);
+		  return 0;
+	  }
   }
-  len_extend = (len_extend>0)?len_extend:0;
-  len_within = size - len_extend;
 
 
-  while (len_within > 0)
+  while (size > 0)
     {
       /* Sector to write, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
@@ -590,22 +611,19 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       int min_left = inode_left < sector_left ? inode_left : sector_left;
 
       /* Number of bytes to actually write into this sector. */
-      int chunk_size = len_within < min_left ? len_within : min_left;
+      int chunk_size = size < min_left ? size : min_left;
       if (chunk_size <= 0)
         break;
 
       cache_write(sector_idx, (void *)(buffer+bytes_written), sector_ofs, chunk_size);
 
       /* Advance. */
-      len_within -= chunk_size;
+      size -= chunk_size;
       offset += chunk_size;
       bytes_written += chunk_size;
     }
 
-  if (len_extend > 0) {
-  	  //TODO: allocate new sector
-  }
-
+  inode->readable_length=id.length;
   lock_release(&inode->inode_lock);
   return bytes_written;
 }
