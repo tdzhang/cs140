@@ -250,8 +250,8 @@ process_exit (void)
     }
 
   /*if this about to exit process is holding the filesys_lock, release it*/
-  if(lock_held_by_current_thread (&filesys_lock)){
-	  lock_release(&filesys_lock);
+  if(lock_held_by_current_thread (&global_file_list_lock)){
+	  lock_release(&global_file_list_lock);
   }
 
 }

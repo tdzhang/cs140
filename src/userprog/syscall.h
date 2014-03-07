@@ -5,7 +5,7 @@
 #include "filesys/file.h"
 #include "threads/synch.h"
 
-struct lock filesys_lock;          /*global lock for the file system*/
+struct lock global_file_list_lock; /*lock just for global_file_list, not for the entire filesys*/
 
 /*store opened files info*/
 struct file_info_block {

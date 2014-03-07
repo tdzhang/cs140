@@ -27,6 +27,7 @@ struct global_file_block {
 	int ref_num;                   /*the number of threads holding this file*/
 	bool is_deleted;               /*indicates the file is to be removed*/
 	struct list_elem elem;         /*list elem for global_file_list*/
+	struct lock lock;
 };
 
 struct list global_file_list;      /*List of all opened files*/
@@ -59,7 +60,7 @@ void
 syscall_init (void) 
 {
   /*init the global file list and filesys locl*/
-  lock_init(&filesys_lock);
+  lock_init(&global_file_list_lock);
   list_init(&global_file_list);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -178,20 +179,24 @@ static void sys_remove_handler(struct intr_frame *f){
 	}
 
 	/*update the global_file_block*/
-	lock_acquire(&filesys_lock);
+	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
+	if (gfb != NULL) {
+		lock_acquire(&gfb->lock);
+	}
+
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
 		filesys_remove(file_name);
-
 	} else {
 		/*mark as deleted*/
 		gfb->is_deleted=true;
+		lock_release(&gfb->lock);
 	}
 	f->eax = true;
-	lock_release(&filesys_lock);
+	lock_release(&global_file_list_lock);
 }
 
 /*handle sys_close*/
@@ -223,13 +228,16 @@ static void sys_close_handler(struct intr_frame *f){
 /*close the file given by file_info_block*/
 void close_file_by_fib(struct file_info_block *fib) {
 	ASSERT(fib != NULL);
-	lock_acquire(&filesys_lock);
+	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			fib->f->inode->sector);
+	if (gfb != NULL) {
+		lock_acquire(&gfb->lock);
+	}
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
-		lock_release(&filesys_lock);
+		lock_release(&global_file_list_lock);
 		file_close(fib->f);
 		return;
 	} else {
@@ -238,6 +246,7 @@ void close_file_by_fib(struct file_info_block *fib) {
 			/*if reference number>1, other thread also holding the file
 			 * keep the file, but marked it as is_delete*/
 			gfb->ref_num--;
+			lock_release(&gfb->lock);
 		}
 		else{
 			if(gfb->is_deleted){
@@ -246,11 +255,12 @@ void close_file_by_fib(struct file_info_block *fib) {
 
 			/*remove it from the global_file_list*/
 			list_remove(&gfb->elem);
+			lock_release(&gfb->lock);
 			/*free the memory*/
 			free(gfb);
 
 		}
-		lock_release(&filesys_lock);
+		lock_release(&global_file_list_lock);
 
 		/*close the file*/
 		file_close(fib->f);
@@ -306,9 +316,12 @@ static void sys_open_handler(struct intr_frame *f){
 	list_push_back(&cur->opened_file_list, &fib->elem);
 
 	/*update global_file_block*/
-	lock_acquire(&filesys_lock);
+	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
+	if (gfb != NULL) {
+		lock_acquire(&gfb->lock);
+	}
 
 	if (gfb == NULL) {
 		/*open a new file*/
@@ -316,19 +329,22 @@ static void sys_open_handler(struct intr_frame *f){
 		gfb->inode_block_num = file->inode->sector;
 		gfb->is_deleted = false;
 		gfb->ref_num = 1;
+		lock_init(&gfb->lock);
 		list_push_back(&global_file_list, &gfb->elem);
 	} else {
 		/*the file is opened already*/
 		if (gfb->is_deleted) {
 			f->eax = -1;
-			lock_release(&filesys_lock);
+			lock_release(&gfb->lock);
+			lock_release(&global_file_list_lock);
 			file_close(file);
 			return;
 		}
 		/*increase file reference number*/
 		gfb->ref_num++;
+		lock_release(&gfb->lock);
 	}
-	lock_release(&filesys_lock);
+	lock_release(&global_file_list_lock);
 
 	f->eax=fib->fd;
 }
