@@ -79,6 +79,47 @@ inode_init (void)
   list_init (&open_inodes);
 }
 
+
+/* set the new_sector to the first non-allocated sector in the inode */
+bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
+	size_t sectors = bytes_to_sectors(id->length);
+	static struct indirect_block ib;
+	if (sectors <= DIRECT_INDEX_NUM) {
+		if (sectors < DIRECT_INDEX_NUM) {
+			id->direct_idx[sectors] = new_sector;
+		} else {
+			if (!free_map_allocate (1, &id->single_idx)) {
+				return false;
+			}
+			ib.sectors[0] = new_sector;
+			cache_write(id->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+		}
+	} else if (sectors <= DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
+		if (sectors < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
+			cache_read(id->single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			ib.sectors[sectors-DIRECT_INDEX_NUM] = new_sector;
+			cache_write(id->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+		} else {
+			static struct indirect_block db;
+			if (!free_map_allocate (1, &id->double_idx)) {
+				return false;
+			}
+			static struct indirect_block single_ib;
+			if (!free_map_allocate (1, &db.sectors[0])) {
+				free_map_release (id->double_idx, 1);
+				return false;
+			}
+			single_ib[0] = new_sector;
+			cache_write(db.sectors[0], &single_ib, 0, BLOCK_SECTOR_SIZE);
+			cache_write(id->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
+		}
+	} else {
+
+	}
+	return true;
+}
+
+
 /* Initializes an inode with LENGTH bytes of data and
    writes the new inode to sector SECTOR on the file system
    device.
@@ -476,6 +517,25 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
   return bytes_read;
 }
 
+
+/* padding zeros from start_pos (inclusive) to end_pos (exclusive) */
+void zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, off_t end_pos) {
+	/* padding the first partial sector */
+	if (start_pos % BLOCK_SECTOR_SIZE != 0) {
+		block_sector_t eof_sector = bytes_to_sector(inode, start_pos-1);
+		off_t sector_ofs = start_pos % BLOCK_SECTOR_SIZE;
+		size_t zero_bytes = BLOCK_SECTOR_SIZE - sector_ofs;
+		static char zeros[BLOCK_SECTOR_SIZE];
+		cache_write(eof_sector, zeros, sector_ofs, zero_bytes);
+	}
+
+	/* padding full sectors until end_pos-1 */
+
+}
+
+
+
+
 /* Writes SIZE bytes from BUFFER into INODE, starting at OFFSET.
    Returns the number of bytes actually written, which may be
    less than SIZE if end of file is reached or an error occurs.
@@ -492,8 +552,13 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     return 0;
 
   off_t len_within, len_extend;
+  static struct inode_disk id;
   lock_acquire(&inode->inode_lock);
-  len_extend = offset+size - inode->readable_length;
+  cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+  off_t phy_length = id.length;
+  if (offset+size - phy_length) {
+	  zero_padding(inode, &id, phy_length, offset+size);
+  }
   len_extend = (len_extend>0)?len_extend:0;
   len_within = size - len_extend;
 
@@ -524,7 +589,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 
   if (len_extend > 0) {
   	  //TODO: allocate new sector
-    }
+  }
 
   lock_release(&inode->inode_lock);
   return bytes_written;
