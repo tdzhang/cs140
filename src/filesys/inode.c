@@ -538,7 +538,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 	static char zeros[BLOCK_SECTOR_SIZE];
 	/* padding the first partial sector */
 	if (start_pos % BLOCK_SECTOR_SIZE != 0) {
-		block_sector_t eof_sector = bytes_to_sectors(inode, start_pos-1);
+		block_sector_t eof_sector = byte_to_sector(inode, start_pos-1);
 		off_t sector_ofs = start_pos % BLOCK_SECTOR_SIZE;
 		size_t zero_bytes = BLOCK_SECTOR_SIZE - sector_ofs;
 		cache_write(eof_sector, zeros, sector_ofs, zero_bytes);
