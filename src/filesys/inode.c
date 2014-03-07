@@ -50,7 +50,7 @@ byte_to_sector (const struct inode *inode, off_t pos)
 
 	/*sector_pos in the range of single indirect index*/
 	if (sector_pos < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
-		struct indirect_block ib;
+		static struct indirect_block ib;
 		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
 	}
@@ -58,9 +58,9 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	/*sector_pos in the range of double indirect index*/
 	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) / INDEX_PER_SECTOR;
 	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) % INDEX_PER_SECTOR;
-	struct indirect_block db;
+	static struct indirect_block db;
 	cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
-	struct indirect_block ib;
+	static struct indirect_block ib;
 	cache_read(db.sectors[double_level_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 	return ib.sectors[single_level_idx];
   }
@@ -130,7 +130,7 @@ inode_create (block_sector_t sector, off_t length)
     	  	  return false;
       }
 
-      struct indirect_block ib;
+      static struct indirect_block ib;
       /* allocate single indirect sectors */
       if(indirect_sector_num > 0){
 			if (!free_map_allocate (1, &disk_inode->single_idx)) {
@@ -178,9 +178,9 @@ inode_create (block_sector_t sector, off_t length)
     	      off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
     	      int i, j;
     	      /*double indirect index block*/
-    	      struct indirect_block db;
+    	      static struct indirect_block db;
     	      /*buffer the single indirect index block in double indirect index block*/
-    	      struct indirect_block single_ib;
+    	      static struct indirect_block single_ib;
     	      /* allocate all full single indirect block */
     	      for (i = 0; i < double_level_end_idx; i++) {
 			  if (!free_map_allocate (1, &db.sectors[i])){
@@ -269,7 +269,7 @@ inode_create (block_sector_t sector, off_t length)
  * to db[double_level_idx][single_level_idx] (exclusive) */
 static void free_map_release_double_indirect (struct indirect_block *db, int double_level_end_idx, int single_level_end_idx) {
 	int i;
-	struct indirect_block ib;
+	static struct indirect_block ib;
 
 	for (i = 0; i < double_level_end_idx; i++) {
 		cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
@@ -403,7 +403,7 @@ inode_close (struct inode *inode)
           free_map_release_direct(&id, direct_sector_num);
 
           if (indirect_sector_num > 0){
-        	  	  struct indirect_block ib;
+        	  	  static struct indirect_block ib;
         	  	  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
         	  	  free_map_release_single_indirect(&ib, indirect_sector_num);
         	  	  free_map_release (id.single_idx, 1);
