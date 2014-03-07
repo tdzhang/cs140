@@ -280,6 +280,8 @@ static void free_map_release_double_indirect (struct indirect_block *db, int dou
 		cache_read(db->sectors[double_level_end_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 		free_map_release_single_indirect(&ib, single_level_end_idx);
 	}
+
+	free_map_release_single_indirect(db, (single_level_end_idx>0)?(double_level_end_idx+1):double_level_end_idx);
 }
 
 /* help to free_map_release all direct index sectors */
@@ -410,7 +412,12 @@ inode_close (struct inode *inode)
           }
 
           if (double_indirect_sector_num > 0) {
-        	  	  //TODO: free_map_release_double_indirect();
+        	  	  static struct indirect_block db;
+        	  	  cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+        	  	  off_t double_level_end_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
+        	  	  off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
+        	  	  free_map_release_double_indirect(&db, double_level_end_idx, single_level_end_idx+1);
+        	  	  free_map_release (id.double_idx, 1);
           }
 
 
