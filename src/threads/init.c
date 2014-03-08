@@ -81,8 +81,8 @@ main (void)
 
 	static char path[MAX_DIR_PATH];
 		int cat_len;
-		char cwd[100]="/ab/c/d/";
-		char relative_path[100]="../f/./k";
+		char cwd[100]="/";
+		char relative_path[100]="./../../f/./k/g/h/..";
 		static char result_path[200];
 		strlcpy(path, cwd, strlen(cwd)+1);
 		ASSERT (strlen(path)+strlen(relative_path) < MAX_DIR_PATH);
