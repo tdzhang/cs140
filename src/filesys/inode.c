@@ -30,13 +30,10 @@ bytes_to_sectors (off_t size)
    Returns -1 if INODE does not contain data for a byte at offset
    POS. */
 static block_sector_t
-byte_to_sector (const struct inode *inode, off_t pos) 
+byte_to_sector_no_check (const struct inode *inode, off_t pos)
 {
   ASSERT (inode != NULL);
-  //TODO: remove assert after double indirect implemented
-  ASSERT (pos >= 0 && pos < 512*251-1);
 
-  if (pos < inode->readable_length) {
 	/* sector_pos starts from 0 */
 	off_t sector_pos = pos/BLOCK_SECTOR_SIZE;
 
@@ -63,6 +60,17 @@ byte_to_sector (const struct inode *inode, off_t pos)
 	static struct indirect_block ib;
 	cache_read(db.sectors[double_level_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 	return ib.sectors[single_level_idx];
+}
+
+static block_sector_t
+byte_to_sector (const struct inode *inode, off_t pos)
+{
+  ASSERT (inode != NULL);
+  //TODO: remove assert after double indirect implemented
+  ASSERT (pos >= 0 && pos < 512*251-1);
+
+  if (pos < inode->readable_length) {
+	  return byte_to_sector_no_check (inode, pos);
   }
   else
     return INVALID_SECTOR_ID;
@@ -634,7 +642,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   while (size > 0)
     {
       /* Sector to write, starting byte offset within sector. */
-      block_sector_t sector_idx = byte_to_sector (inode, offset);
+      block_sector_t sector_idx = byte_to_sector_no_check (inode, offset);
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
       /* Bytes left in inode, bytes left in sector, lesser of the two. */
