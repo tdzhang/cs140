@@ -179,10 +179,12 @@ static void sys_remove_handler(struct intr_frame *f){
 	}
 
 	/*update the global_file_block*/
+	ASSERT(!lock_held_by_current_thread (&global_file_list_lock));
 	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
 	if (gfb != NULL) {
+		ASSERT (!lock_held_by_current_thread (&gfb->lock));
 		lock_acquire(&gfb->lock);
 	}
 	lock_release(&global_file_list_lock);
@@ -229,10 +231,12 @@ static void sys_close_handler(struct intr_frame *f){
 /*close the file given by file_info_block*/
 void close_file_by_fib(struct file_info_block *fib) {
 	ASSERT(fib != NULL);
+	ASSERT(!lock_held_by_current_thread (&global_file_list_lock));
 	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			fib->f->inode->sector);
 	if (gfb != NULL) {
+		ASSERT (!lock_held_by_current_thread (&gfb->lock));
 		lock_acquire(&gfb->lock);
 		/*remove it from the global_file_list if it's the last opener*/
 		if (gfb->ref_num <= 1) {
@@ -320,10 +324,12 @@ static void sys_open_handler(struct intr_frame *f){
 	list_push_back(&cur->opened_file_list, &fib->elem);
 
 	/*update global_file_block*/
+	ASSERT(!lock_held_by_current_thread (&global_file_list_lock));
 	lock_acquire(&global_file_list_lock);
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
 	if (gfb != NULL) {
+		ASSERT (!lock_held_by_current_thread (&gfb->lock));
 		lock_acquire(&gfb->lock);
 	}
 	lock_release(&global_file_list_lock);
