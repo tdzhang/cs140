@@ -78,7 +78,7 @@ main (void)
 {
 
 	/*parse path*/
-	char* path_ = "/a/b/";
+	char* path_ = "/a/b/hasder/";
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
@@ -93,7 +93,7 @@ main (void)
 		token = strtok_r (NULL, "/", &save_ptr)){
 		count++;
 	}
-
+	printf(">count=>>>>>>>>>>>>>>>>>>\n",count);
 	/*updates dirs according to count*/
 	char* dirs[count];
 	for(i=0;i<count;i++){
