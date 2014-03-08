@@ -321,7 +321,7 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 	}
 
 	int k=0;
-	int pointer=-1; /**/
+	int pointer=-1;
 	char c1,c2;
 	for(i=0;i<count;i++){
 		c1=dirs[i][0];
@@ -338,7 +338,7 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 			dirs_abs[pointer]=dirs[i];
 		}
 	}
-	/*-1 dao pointer*/
+
 	result_path[0]='/';
 	result_path[1]='\0';
 	for(i=0;i<=pointer;i++){
