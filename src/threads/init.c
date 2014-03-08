@@ -78,7 +78,7 @@ main (void)
 {
 
 	/*parse path*/
-	char* path_ = "/a/b/hasder";
+	char* path_ = "/a/b//hasder";
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
