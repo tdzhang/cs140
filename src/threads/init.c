@@ -116,7 +116,6 @@ main (void)
 	}
 
 	/*updates dirs according to count*/
-	char* dirs[count];
 	for(i=0;i<count;i++){
 		while(path[j]=='\0'||path[j]=='/'){j++;}
 		dirs[i]=&path[j];
