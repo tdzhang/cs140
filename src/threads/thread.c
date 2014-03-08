@@ -257,6 +257,8 @@ thread_create (const char *name, int priority,
     		return TID_ERROR;
     }
 #endif
+    /*init the current working directory to root*/
+    strlcpy(t->cwd, "/", 2);
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -615,6 +617,7 @@ init_thread (struct thread *t, const char *name, int priority)
 #endif
 
   t->magic = THREAD_MAGIC;
+  strlcpy(t->cwd, "/", 2);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

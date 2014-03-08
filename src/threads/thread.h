@@ -27,6 +27,8 @@ typedef int tid_t;
 #define NICE_MAX 20   /*the highest nice value*/
 #define NICE_MIN -20  /*the lowest nice value*/
 
+#define MAX_DIR_PATH 200  /*the upper limit of the length of a path*/
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -130,6 +132,10 @@ struct thread
     struct file *exec_file_ptr;         /*the file which is the excutable
                                           file for this thread*/
 #endif
+
+    /*file sys*/
+    char cwd[MAX_DIR_PATH];
+
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
