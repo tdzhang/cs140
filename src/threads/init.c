@@ -86,9 +86,10 @@ main (void)
 		static char result_path[200];
 		strlcpy(path, cwd, strlen(cwd)+1);
 		ASSERT (strlen(path)+strlen(relative_path) < MAX_DIR_PATH);
+		printf("strlen(path)=%d\n",strlen(path));
+		printf("strlen(relative_path)=%d\n",strlen(relative_path));
 		cat_len = strlcat(path, relative_path, MAX_DIR_PATH-strlen(cwd));
-		ASSERT (strlen(path)+strlen(relative_path) == cat_len);
-
+		printf("cat_len=%d\n",cat_len);
 		char *token, *save_ptr;
 		int count=0;
 		int i=0;
@@ -137,9 +138,9 @@ main (void)
 		for(i=0;i<=pointer;i++){
 			ASSERT (strlen(result_path)+strlen(dirs_abs[i]) < MAX_DIR_PATH);
 			cat_len = strlcat(result_path, dirs_abs[i], MAX_DIR_PATH-strlen(result_path));
-			ASSERT (strlen(result_path)+strlen(dirs_abs[i]) == cat_len);
+
 			cat_len = strlcat(result_path, "/", 2);
-			ASSERT (strlen(result_path)+strlen("/") == cat_len);
+
 		}
 
 		printf(">>final=%s\n",result_path);
