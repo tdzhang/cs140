@@ -7,7 +7,6 @@
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
 #include "filesys/cache.h"
-#include "filesys/directory.h"
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
@@ -144,30 +143,6 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 
 	}
 	return true;
-}
-
-/* Initializes an inode with count number of dir entry
-   Returns true if successful.
-   Returns false if memory or disk allocation fails. */
-bool
-inode_create_dir (block_sector_t sector, off_t count)
-{
-  ASSERT (count >= 0);
-  //TODO: to be deleted or defined
-  ASSERT (count <= 24);
-  /* If this assertion fails, the inode structure is not exactly
-     one sector in size, and you should fix that. */
-  struct dir_entry e;
-  e.inode_sector=INVALID_SECTOR_ID;
-  e.is_dir=false;
-  e.in_use=false;
-  off_t off=0;
-  while(count>0){
-	  cache_write(sector, &e, off, sizeof(struct dir_entry));
-	  off+=sizeof(struct dir_entry);
-	  count--;
-  }
-  return true;
 }
 
 
