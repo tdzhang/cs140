@@ -76,6 +76,82 @@ int main (void) NO_RETURN;
 int
 main (void)
 {
+
+
+
+	static char path[MAX_DIR_PATH];
+		int cat_len;
+		char cwd[100]="/ab/c/d/";
+		char relative_path[100]="../f/./k";
+		static char result_path[200];
+		strlcpy(path, cwd, strlen(cwd)+1);
+		ASSERT (strlen(path)+strlen(relative_path) < MAX_DIR_PATH);
+		cat_len = strlcat(path, relative_path, MAX_DIR_PATH-strlen(cwd));
+		ASSERT (strlen(path)+strlen(relative_path) == cat_len);
+
+		char *token, *save_ptr;
+		int count=0;
+		int i=0;
+		int j=0;
+
+
+		/*find out how many args are there*/
+		for (token = strtok_r (path, "/", &save_ptr); token != NULL;
+			token = strtok_r (NULL, "/", &save_ptr)){
+			count++;
+		}
+		printf(">count=>>>>>>>>>>>>>>>>>>%d\n",count);
+		/*updates dirs according to count*/
+		char* dirs[count];
+		char* dirs_abs[count];
+
+		for(i=0;i<count;i++){
+			while(path[j]=='\0'||path[j]=='/'){j++;}
+			dirs[i]=&path[j];
+			printf(">%d>>>>>>>>>>>>>>>>>>%s\n",i,dirs[i]);
+			while(path[j]!='\0'){j++;}
+		}
+
+		int k=0;
+		int pointer=-1; /**/
+		char c1,c2;
+		for(i=0;i<count;i++){
+			ASSERT (strlen(dirs[i]) >= 1);
+			c1=dirs[i][0];
+			c2=dirs[i][1];
+			if(c1=='.'&&c2!='.'){
+				/*case: . */
+			}else if(c1=='.'&&c2=='.'){
+				/*case .. */
+				pointer--;
+				if(pointer<-1)pointer=-1;
+			}else{
+				/*normal case*/
+				pointer++;
+				dirs_abs[pointer]=dirs[i];
+			}
+		}
+		/*-1 dao pointer*/
+		result_path[0]='/';
+		result_path[1]='\0';
+		for(i=0;i<=pointer;i++){
+			ASSERT (strlen(result_path)+strlen(dirs_abs[i]) < MAX_DIR_PATH);
+			cat_len = strlcat(result_path, dirs_abs[i], MAX_DIR_PATH-strlen(result_path));
+			ASSERT (strlen(result_path)+strlen(dirs_abs[i]) == cat_len);
+			cat_len = strlcat(result_path, "/", 2);
+			ASSERT (strlen(result_path)+strlen("/") == cat_len);
+		}
+
+		printf(">>final=%s\n",result_path);
+
+
+
+
+
+
+
+
+
   char **argv;
 
   /* Clear BSS. */  
