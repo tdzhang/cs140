@@ -90,7 +90,8 @@ inode_init (void)
 }
 
 
-/* set the new_sector to the first non-allocated sector in the inode */
+/* set the new_sector to the first non-allocated sector in the inode
+ * must acquire inode lock before calling it */
 bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	size_t sectors = bytes_to_sectors(id->length);
 	static struct indirect_block ib;
@@ -173,7 +174,6 @@ inode_create (block_sector_t sector, off_t length)
       static char zeros[BLOCK_SECTOR_SIZE];
       bool allocate_failed = false;
 
-      //TODO: handle double indirect index
       /* allocate sectors for data and write all zeros to sectors*/
       int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
       int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
@@ -460,7 +460,6 @@ inode_close (struct inode *inode)
   ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
   lock_acquire(&open_inodes_lock);
   ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
-  //TODO: one thread is blocking by the acquire
   lock_acquire(&inode->inode_lock);
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
@@ -526,7 +525,10 @@ void
 inode_remove (struct inode *inode) 
 {
   ASSERT (inode != NULL);
+  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
+  lock_acquire(&inode->inode_lock);
   inode->removed = true;
+  lock_release(&inode->inode_lock);
 }
 
 /* Reads SIZE bytes from INODE into BUFFER, starting at position OFFSET.
@@ -535,6 +537,9 @@ inode_remove (struct inode *inode)
 off_t
 inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset) 
 {
+  if (size+offset > inode->readable_length) {
+    	  return 0;
+  }
   uint8_t *buffer = buffer_;
   off_t bytes_read = 0;
 
@@ -569,6 +574,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 
 /* padding zeros from start_pos (inclusive) to end_pos (exclusive) */
 bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, off_t end_pos) {
+	ASSERT(lock_held_by_current_thread (&inode->inode_lock));
 	static char zeros[BLOCK_SECTOR_SIZE];
 	/* padding the first partial sector */
 	if (start_pos % BLOCK_SECTOR_SIZE != 0) {
@@ -673,8 +679,11 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 void
 inode_deny_write (struct inode *inode) 
 {
+  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
+  lock_acquire(&inode->inode_lock);
   inode->deny_write_cnt++;
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
+  lock_release(&inode->inode_lock);
 }
 
 /* Re-enables writes to INODE.
@@ -683,9 +692,12 @@ inode_deny_write (struct inode *inode)
 void
 inode_allow_write (struct inode *inode) 
 {
+  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
+  lock_acquire(&inode->inode_lock);
   ASSERT (inode->deny_write_cnt > 0);
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
   inode->deny_write_cnt--;
+  lock_release(&inode->inode_lock);
 }
 
 /* Returns the length, in bytes, of INODE's data. */
