@@ -89,6 +89,7 @@ main (void)
 	printf("path=%s\n",path);
 	for(i=strlen(path)-1;i>=0;i++){
 		if(path[i]=='/'){
+			printf("find last=%d\n",i);
 			path[i]='\0';
 			break;
 		}
