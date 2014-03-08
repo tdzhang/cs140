@@ -85,7 +85,15 @@ main (void)
 	int j=0;
 	char path[MAX_DIR_PATH];
 	strlcpy(path, path_,strlen(path_));
-	*strrchr(path,'/')=0;
+
+	for(i=strlen(path)-1;i>=0;i++){
+		if(path[i]=='/'){
+			path[i]=0;
+			break;
+		}
+	}
+
+
 
 	//TODO: need to verify
 	/*find out how many args are there*/
