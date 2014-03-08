@@ -348,7 +348,7 @@ inode_create (block_sector_t sector, off_t length)
 
 
       /* write inode_disk(metadata) to sector */
-      sectorcache_write(, disk_inode, 0, BLOCK_SECTOR_SIZE);
+      cache_write(sector, disk_inode, 0, BLOCK_SECTOR_SIZE);
       free (disk_inode);
       return true;
     }
