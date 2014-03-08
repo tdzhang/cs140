@@ -286,17 +286,20 @@ struct dir* path_to_dir(char* path_){
 }
 
 //TODO: function translate relative dir path to absolute dir path
-void relative_path_to_absolute(char* relative_path,char* result_path){
+void relative_path_to_absolute(char* relative_path, char* result_path){
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
+	int cat_len;
 	strlcpy(path, t->cwd,strlen(t->cwd)+1);
-	strlcat(path, relative_path, MAX_DIR_PATH-strlen(t->cwd));
-
+	ASSERT (strlen(path)+strlen(relative_path) < MAX_DIR_PATH);
+	cat_len = strlcat(path, relative_path, MAX_DIR_PATH-strlen(t->cwd));
+	ASSERT (strlen(path)+strlen(relative_path) == cat_len);
 
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
 	int j=0;
+
 
 	/*find out how many args are there*/
 	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
@@ -319,6 +322,7 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 	int pointer=-1; /**/
 	char c1,c2;
 	for(i=0;i<count;i++){
+		ASSERT (strlen(dirs[i]) >= 1);
 		c1=dirs[i][0];
 		c2=dirs[i][1];
 		if(c1=='.'&&c2!='.'){
@@ -337,7 +341,10 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 	result_path[0]='/';
 	result_path[1]='\0';
 	for(i=0;i<=pointer;i++){
-		strlcat(result_path, dirs_abs[i], MAX_DIR_PATH-strlen(result_path));
-		strlcat(result_path, "/", 2);
+		ASSERT (strlen(result_path)+strlen(dirs_abs[i]) < MAX_DIR_PATH);
+		cat_len = strlcat(result_path, dirs_abs[i], MAX_DIR_PATH-strlen(result_path));
+		ASSERT (strlen(result_path)+strlen(dirs_abs[i]) == cat_len);
+		cat_len = strlcat(result_path, "/", 2);
+		ASSERT (strlen(result_path)+strlen("/") == cat_len);
 	}
 }
