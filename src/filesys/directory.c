@@ -249,10 +249,14 @@ struct dir* path_to_dir(char* path_){
 	int i=0;
 	int j=0;
 	char path[MAX_DIR_PATH];
-	strlcpy(path, path_,strlen(path_));
-	*strrchr(path,'/')=0;
+	strlcpy(path, path_,strlen(path_)+1);
+	for(i=strlen(path)-1;i>=0;i--){
+		if(path[i]=='/'){
+			path[i]='\0';
+			break;
+		}
+	}
 
-	//TODO: need to verify
 	/*find out how many args are there*/
 	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
 		token = strtok_r (NULL, "/", &save_ptr)){
@@ -280,6 +284,5 @@ struct dir* path_to_dir(char* path_){
 	}
 	return dir;
 }
-
 
 //TODO: function translate relative dir path to absolute dir path
