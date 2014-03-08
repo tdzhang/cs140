@@ -87,7 +87,8 @@ main (void)
 	printf("strlen(path_)=%d\n",strlen(path_));
 	strlcpy(path, path_,strlen(path_)+1);
 	printf("path=%s\n",path);
-	for(i=strlen(path)-1;i>=0;i++){
+	printf("strlen(path)=%d\n",strlen(path));
+	for(i=strlen(path)-1;i>=0;i--){
 		if(path[i]=='/'){
 			printf("find last=%d\n",i);
 			path[i]='\0';
