@@ -93,7 +93,7 @@ main (void)
 		token = strtok_r (NULL, "/", &save_ptr)){
 		count++;
 	}
-	printf(">count=>>>>>>>>>>>>>>>>>>\n",count);
+	printf(">count=>>>>>>>>>>>>>>>>>>%d\n",count);
 	/*updates dirs according to count*/
 	char* dirs[count];
 	for(i=0;i<count;i++){
