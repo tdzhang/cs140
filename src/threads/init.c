@@ -85,11 +85,11 @@ main (void)
 	int j=0;
 	char path[MAX_DIR_PATH];
 	printf("strlen(path_)=%d\n",strlen(path_));
-	strlcpy(path, path_,strlen(path_));
+	strlcpy(path, path_,strlen(path_)+1);
 	printf("path=%s\n",path);
 	for(i=strlen(path)-1;i>=0;i++){
 		if(path[i]=='/'){
-			path[i]=0;
+			path[i]='\0';
 			break;
 		}
 	}
