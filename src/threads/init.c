@@ -84,15 +84,16 @@ main (void)
 	int i=0;
 	int j=0;
 	char path[MAX_DIR_PATH];
+	printf("strlen(path_)=%d\n",strlen(path_));
 	strlcpy(path, path_,strlen(path_));
-
+	printf("path=%s\n",path);
 	for(i=strlen(path)-1;i>=0;i++){
 		if(path[i]=='/'){
 			path[i]=0;
 			break;
 		}
 	}
-
+	printf("path=%s\n",path);
 
 
 	//TODO: need to verify
