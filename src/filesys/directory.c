@@ -5,6 +5,8 @@
 #include "filesys/filesys.h"
 #include "filesys/inode.h"
 #include "threads/malloc.h"
+#include "filesys/cache.h"
+#include "threads/thread.h"
 
 /* A directory. */
 struct dir 
@@ -234,3 +236,49 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
     }
   return false;
 }
+
+/*self defined function*/
+
+/*absolute path to dir*/
+/* /a/b/c  -> return dir struct dirctory b */
+/* /a/b/  -> return dir struct dirctory b  */
+struct dir* path_to_dir(char* path_){
+	/*parse path*/
+	char *token, *save_ptr;
+	int count=0;
+	int i=0;
+	int j=0;
+	char path[MAX_DIR_PATH];
+	strlcpy(path, path_,strlen(path_));
+	*strrchr(path,'/')=0;
+
+	//TODO: need to verify
+	/*find out how many args are there*/
+	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
+		token = strtok_r (NULL, "/", &save_ptr)){
+		count++;
+	}
+
+	/*updates dirs according to count*/
+	char* dirs[count];
+	for(i=0;i<count;i++){
+		while(path[j]=='\0'||path[j]=='/'){j++;}
+		dirs[i]=&path[j];
+		while(path[j]!='\0'){j++;}
+	}
+
+	/*using dirs to get the directory inode sector*/
+	struct dir *dir = dir_open_root ();
+	struct inode *inode = NULL;
+	for(i=0;i<count;i++){
+		if (dir == NULL) return NULL;
+		if(!dir_lookup (dir, dirs[i], &inode)) return NULL;
+		/*if the intermiate path elem is not dir, return false*/
+		if(!inode->is_dir)return NULL;
+		dir_close (dir);
+		dir = dir_open (inode);
+	}
+	return dir;
+}
+
+//TODO: function translate relative dir path to absolute dir path
