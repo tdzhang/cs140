@@ -286,27 +286,30 @@ struct dir* path_to_dir(char* path_){
 }
 
 //TODO: function translate relative dir path to absolute dir path
-void relative_path_to_absolute(char* relative_path, char* result_path){
+void relative_path_to_absolute(char* relative_path,char* result_path){
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
-	int cat_len;
-	strlcpy(path, t->cwd,strlen(t->cwd)+1);
-	ASSERT (strlen(path)+strlen(relative_path) < MAX_DIR_PATH);
-	cat_len = strlcat(path, relative_path, MAX_DIR_PATH-strlen(t->cwd));
-	ASSERT (strlen(path)+strlen(relative_path) == cat_len);
+
+	/*if the relative_path is abs, do not cat*/
+	if(relative_path[0]=='/'){
+		strlcpy(path, relative_path,strlen(relative_path)+1);
+	}else{
+		strlcpy(path, t->cwd,strlen(t->cwd)+1);
+		strlcat(path, relative_path, MAX_DIR_PATH);
+	}
+
+
 
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
 	int j=0;
 
-
 	/*find out how many args are there*/
 	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
 		token = strtok_r (NULL, "/", &save_ptr)){
 		count++;
 	}
-	printf(">count=>>>>>>>>>>>>>>>>>>%d\n",count);
 	/*updates dirs according to count*/
 	char* dirs[count];
 	char* dirs_abs[count];
@@ -314,7 +317,6 @@ void relative_path_to_absolute(char* relative_path, char* result_path){
 	for(i=0;i<count;i++){
 		while(path[j]=='\0'||path[j]=='/'){j++;}
 		dirs[i]=&path[j];
-		printf(">%d>>>>>>>>>>>>>>>>>>%s\n",i,dirs[i]);
 		while(path[j]!='\0'){j++;}
 	}
 
@@ -322,7 +324,6 @@ void relative_path_to_absolute(char* relative_path, char* result_path){
 	int pointer=-1; /**/
 	char c1,c2;
 	for(i=0;i<count;i++){
-		ASSERT (strlen(dirs[i]) >= 1);
 		c1=dirs[i][0];
 		c2=dirs[i][1];
 		if(c1=='.'&&c2!='.'){
@@ -341,10 +342,7 @@ void relative_path_to_absolute(char* relative_path, char* result_path){
 	result_path[0]='/';
 	result_path[1]='\0';
 	for(i=0;i<=pointer;i++){
-		ASSERT (strlen(result_path)+strlen(dirs_abs[i]) < MAX_DIR_PATH);
-		cat_len = strlcat(result_path, dirs_abs[i], MAX_DIR_PATH-strlen(result_path));
-		ASSERT (strlen(result_path)+strlen(dirs_abs[i]) == cat_len);
-		cat_len = strlcat(result_path, "/", 2);
-		ASSERT (strlen(result_path)+strlen("/") == cat_len);
+		strlcat(result_path, dirs_abs[i], MAX_DIR_PATH);
+		strlcat(result_path, "/", MAX_DIR_PATH);
 	}
 }
