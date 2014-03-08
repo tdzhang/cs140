@@ -71,11 +71,13 @@ byte_to_sector (const struct inode *inode, off_t pos)
 /* List of open inodes, so that opening a single inode twice
    returns the same `struct inode'. */
 static struct list open_inodes;
+static struct lock open_inodes_lock; /*lock for open_inodes*/
 
 /* Initializes the inode module. */
 void
 inode_init (void) 
 {
+  lock_init (&open_inodes_lock);
   list_init (&open_inodes);
 }
 
@@ -379,6 +381,8 @@ inode_open (block_sector_t sector)
   struct inode *inode;
 
   /* Check whether this inode is already open. */
+  ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
+  lock_acquire(&open_inodes_lock);
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e)) 
     {
@@ -386,17 +390,21 @@ inode_open (block_sector_t sector)
       if (inode->sector == sector) 
         {
           inode_reopen (inode);
+          lock_release(&open_inodes_lock);
           return inode; 
         }
     }
-
+  lock_release(&open_inodes_lock);
   /* Allocate memory. */
   inode = malloc (sizeof *inode);
   if (inode == NULL)
     return NULL;
 
   /* Initialize. */
+  ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
+  lock_acquire(&open_inodes_lock);
   list_push_front (&open_inodes, &inode->elem);
+  lock_release(&open_inodes_lock);
   inode->sector = sector;
   inode->open_cnt = 1;
   inode->deny_write_cnt = 0;
@@ -415,8 +423,12 @@ inode_open (block_sector_t sector)
 struct inode *
 inode_reopen (struct inode *inode)
 {
-  if (inode != NULL)
-    inode->open_cnt++;
+  if (inode != NULL) {
+	  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
+	  lock_acquire(&inode->inode_lock);
+	  inode->open_cnt++;
+	  lock_release(&inode->inode_lock);
+  }
   return inode;
 }
 
@@ -437,12 +449,17 @@ inode_close (struct inode *inode)
   if (inode == NULL)
     return;
 
+  ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
+  lock_acquire(&open_inodes_lock);
+  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
+  //TODO: one thread is blocking by the acquire
+  lock_acquire(&inode->inode_lock);
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
   {
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
- 
+      lock_release(&open_inodes_lock);
 
       /* Deallocate blocks if removed. */
       if (inode->removed) 
@@ -483,6 +500,15 @@ inode_close (struct inode *inode)
       }
 
       free (inode); 
+  }
+
+  if (lock_held_by_current_thread (&open_inodes_lock)) {
+  	  lock_release(&open_inodes_lock);
+  }
+  if (inode != NULL) {
+	  if (lock_held_by_current_thread (&inode->inode_lock)) {
+		  lock_release(&inode->inode_lock);
+	  }
   }
 }
 
