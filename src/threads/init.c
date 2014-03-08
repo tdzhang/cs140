@@ -78,7 +78,7 @@ main (void)
 {
 
 	/*parse path*/
-	char* path_ = "/a/b/c";
+	char* path_ = "/a/b/";
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
@@ -99,29 +99,11 @@ main (void)
 	for(i=0;i<count;i++){
 		while(path[j]=='\0'||path[j]=='/'){j++;}
 		dirs[i]=&path[j];
-		printf(">%d>>>>>>>>>>>>>>>>>>%s",i,dirs[i]);
+		printf(">%d>>>>>>>>>>>>>>>>>>%s\n",i,dirs[i]);
 		while(path[j]!='\0'){j++;}
 	}
 
-	path_ = "/a/b/";
-	strlcpy(path, path_,strlen(path_));
-	*strrchr(path,'/')=0;
-	count=0;
 
-	//TODO: need to verify
-	/*find out how many args are there*/
-	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
-		token = strtok_r (NULL, "/", &save_ptr)){
-		count++;
-	}
-
-	/*updates dirs according to count*/
-	for(i=0;i<count;i++){
-		while(path[j]=='\0'||path[j]=='/'){j++;}
-		dirs[i]=&path[j];
-		printf(">%d>>>>>>>>>>>>>>>>>>%s",i,dirs[i]);
-		while(path[j]!='\0'){j++;}
-	}
 
 
 
