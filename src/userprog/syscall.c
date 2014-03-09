@@ -9,6 +9,7 @@
 #include "threads/vaddr.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
+#include "filesys/directory.h"
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "filesys/inode.h"
@@ -503,7 +504,9 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
-	fib->file_name = file_name_copy;
+	 char name_to_open[NAME_MAX + 1];
+	  get_file_name_from_path(file_name_copy, name_to_open);
+	fib->file_name = name_to_open;
 	/*add file_info_block of the opened file into current thread's
 	  opened_file_list*/
 	list_push_back(&cur->opened_file_list, &fib->elem);
