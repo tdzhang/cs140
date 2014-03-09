@@ -1,7 +1,6 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
-#include <syscall.h>
 #include "lib/user/syscall.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
