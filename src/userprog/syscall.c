@@ -227,7 +227,6 @@ static void sys_mkdir_handler(struct intr_frame *f){
 	}
 
 	f->eax = filesys_mkdir(dir);
-	//TODO: no need to modify cwd?
 }
 
 
