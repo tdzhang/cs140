@@ -96,7 +96,7 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   printf(">>>>>>>>>>name=%s\n",name);
   printf(">>>>>>>>>>temp=%s\n",tmp);
   struct dir *dir = path_to_dir(tmp);
-  printf(">>>>>>>>>>dir=%d\n",dir->inode->sector);
+ /* printf(">>>>>>>>>>dir=%d\n",dir->inode->sector);*/
   char name_to_create[NAME_MAX + 1];
   get_file_name_from_path(tmp, name_to_create);
   printf(">>>>>>>>>>name_to_create=%s\n",name_to_create);
