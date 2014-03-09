@@ -191,7 +191,6 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
 bool
 dir_remove (struct dir *dir, const char *name) 
 {
-	//TODO: only remove empty dir if name is a dir
   struct dir_entry e;
   struct inode *inode = NULL;
   bool success = false;
@@ -206,8 +205,26 @@ dir_remove (struct dir *dir, const char *name)
 
   /* Open inode. */
   inode = inode_open (e.inode_sector);
+
   if (inode == NULL)
     goto done;
+
+  /* cannot remove root dir */
+  if (inode->sector == ROOT_DIR_SECTOR) {
+	  goto done;
+  }
+
+  if (inode->is_dir) {
+	  /* check if the dir is empty, if not, goto done */
+	  off_t offset;
+	  struct dir_entry entry;
+	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset) == sizeof entry;
+			  offset += sizeof entry) {
+	      if (entry.in_use){
+	          goto done;
+	      }
+	  }
+  }
 
   /* Erase directory entry. */
   e.in_use = false;
