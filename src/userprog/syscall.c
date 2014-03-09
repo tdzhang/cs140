@@ -423,7 +423,7 @@ static void sys_create_handler(struct intr_frame *f){
 		return;
 	}
 
-	bool success = filesys_create(file_name, *file_size);
+	bool success = filesys_create(file_name, *file_size, false);
 	/*return the value returned by filesys_create*/
 	f->eax=success;
 }

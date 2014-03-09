@@ -21,6 +21,7 @@ struct dir_entry
     block_sector_t inode_sector;        /* Sector number of header. */
     char name[NAME_MAX + 1];            /* Null terminated file name. */
     bool in_use;                        /* In use or free? */
+    bool is_dir;                        /* whether the entry is a dir*/
   };
 
 /* Creates a directory with space for ENTRY_CNT entries in the
@@ -28,7 +29,7 @@ struct dir_entry
 bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
-  return inode_create (sector, entry_cnt * sizeof (struct dir_entry));
+  return inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
 }
 
 /* Opens and returns the directory for the given INODE, of which
@@ -36,6 +37,7 @@ dir_create (block_sector_t sector, size_t entry_cnt)
 struct dir *
 dir_open (struct inode *inode) 
 {
+	ASSERT (inode->is_dir);
   struct dir *dir = calloc (1, sizeof *dir);
   if (inode != NULL && dir != NULL)
     {
@@ -141,7 +143,7 @@ dir_lookup (const struct dir *dir, const char *name,
    Fails if NAME is invalid (i.e. too long) or a disk or memory
    error occurs. */
 bool
-dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
+dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is_dir)
 {
   struct dir_entry e;
   off_t ofs;
@@ -172,6 +174,7 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 
   /* Write slot. */
   e.in_use = true;
+  e.is_dir = is_dir;
   strlcpy (e.name, name, sizeof e.name);
   e.inode_sector = inode_sector;
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
@@ -186,6 +189,7 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 bool
 dir_remove (struct dir *dir, const char *name) 
 {
+	//TODO: only remove empty dir if name is a dir
   struct dir_entry e;
   struct inode *inode = NULL;
   bool success = false;
@@ -239,7 +243,7 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 
 /*self defined function*/
 
-/*absolute path to dir*/
+/*search absolute path to get a dir, open it, and return*/
 /* /a/b/c  -> return dir struct dirctory b */
 /* /a/b/  -> return dir struct dirctory b  */
 struct dir* path_to_dir(char* path_){
@@ -285,7 +289,7 @@ struct dir* path_to_dir(char* path_){
 	return dir;
 }
 
-//TODO: function translate relative dir path to absolute dir path
+/*function translate relative dir path to absolute dir path*/
 void relative_path_to_absolute(char* relative_path,char* result_path){
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
