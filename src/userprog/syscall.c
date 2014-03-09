@@ -1,6 +1,7 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include <syscall.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/process.h"
@@ -203,6 +204,50 @@ static void sys_isdir_handler(struct intr_frame *f){
 
 /*handle sys_readdir*/
 static void sys_readdir_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	int *fd_ptr=(int *)(esp+1);
+
+	/*validate the 2nd argument*/
+	if(!is_user_address(esp+1, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the dir name*/
+	char *dir=*(char **)(esp+1);
+
+	/*verify string address*/
+	if(!is_string_address_valid(dir)){
+		user_exit(-1);
+		return;
+	}
+
+	if(*fd_ptr==0 || *fd_ptr==1){
+		/*return invalid inumber value in case of console*/
+		f->eax = false;
+	} else {
+		/*read from regular file*/
+		struct file_info_block *fib =
+				find_fib(&thread_current()->opened_file_list, *fd_ptr);
+		if (fib == NULL) {
+			f->eax = false;
+		} else {
+			if (!fib->f->inode->is_dir) {
+				f->eax = false;
+			} else {
+				strlcpy(dir, fib->file_name, READDIR_MAX_LEN + 1);
+			}
+		}
+	}
+
 
 }
 

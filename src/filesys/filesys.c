@@ -71,11 +71,15 @@ bool filesys_mkdir (const char* dir) {
 }
 
 
-/* get file name from a given path, i.e. the substring after the last '/'*/
+/* get file name from a given path, i.e. the substring after the last '/'
+ * if no slash in path, copy path into file_name directly*/
 void get_file_name_from_path(char *path, char *file_name) {
 	char *last_slash = strrchr(path, '/');
-	ASSERT (last_slash != NULL);
-	strlcpy(file_name, (last_slash+1), NAME_MAX + 1);
+	if (last_slash == NULL) {
+		strlcpy(file_name, path, NAME_MAX + 1);
+	} else {
+		strlcpy(file_name, (last_slash+1), NAME_MAX + 1);
+	}
 }
 
 
