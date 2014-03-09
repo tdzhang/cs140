@@ -55,9 +55,15 @@ bool filesys_mkdir (const char* dir) {
 	block_sector_t inode_sector = 0;
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(dir, tmp);
+
+	printf("mkdir: absolute tmp=%s\n",tmp);
+
 	struct dir *d = path_to_dir(tmp);
 	char name_to_create[NAME_MAX + 1];
 	get_file_name_from_path(tmp, name_to_create);
+
+	printf("mkdir: create name name_to_create=%s\n",name_to_create);
+
 	bool success = (d != NULL
 	                  && free_map_allocate (1, &inode_sector)
 	                  && dir_create (inode_sector, MAX_ENTRIES_PER_DIR)
@@ -93,6 +99,8 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   block_sector_t inode_sector = 0;
   static char tmp[MAX_DIR_PATH];
   relative_path_to_absolute(name, tmp);
+  printf("filesys_create  name=%s\n",name);
+  printf("filesys_create  tmp=%s\n",tmp);
   struct dir *dir = path_to_dir(tmp);
   char name_to_create[NAME_MAX + 1];
 
@@ -101,6 +109,7 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   if(strlen(last_slash+1)>NAME_MAX)return false;
 
   get_file_name_from_path(tmp, name_to_create);
+  printf("filesys_create  name_to_create=%s\n",name_to_create);
 
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)

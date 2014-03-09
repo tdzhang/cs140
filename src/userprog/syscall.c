@@ -298,9 +298,12 @@ static void sys_chdir_handler(struct intr_frame *f){
 
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(dir, tmp);
+	printf("chdir dir=%s\n",dir);
+	printf("chdir tmp=%s\n",tmp);
 	struct dir *d = path_to_dir(tmp);
 	if (d != NULL) {
 		strlcpy(thread_current()->cwd, tmp, strlen(tmp)+1);
+		printf("chdir thread_current=%s\n",thread_current()->cwd);
 		dir_close(d);
 		f->eax = true;
 		return;
