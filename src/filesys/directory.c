@@ -37,7 +37,9 @@ dir_create (block_sector_t sector, size_t entry_cnt)
 struct dir *
 dir_open (struct inode *inode) 
 {
-	ASSERT (inode->is_dir);
+  if (inode != NULL) {
+	  ASSERT (inode->is_dir);
+  }
   struct dir *dir = calloc (1, sizeof *dir);
   if (inode != NULL && dir != NULL)
     {

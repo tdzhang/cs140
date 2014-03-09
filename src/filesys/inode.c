@@ -420,11 +420,11 @@ inode_open (block_sector_t sector)
   inode->removed = false;
   lock_init(&inode->dir_lock);
   lock_init(&inode->inode_lock);
-  //TODO: inode->is_dir = ?
   /* retrieve inode_disk from sector */
   struct inode_disk id;
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
   inode->readable_length = id.length;
+  inode->is_dir = id.is_dir;
   return inode;
 }
 
