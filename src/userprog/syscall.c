@@ -14,6 +14,7 @@
 #include "lib/string.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include "filesys/cache.h"
 
 
 
@@ -55,6 +56,10 @@ static void sys_filesize_handler(struct intr_frame *f);
 static void sys_seek_handler(struct intr_frame *f);
 static void sys_tell_handler(struct intr_frame *f);
 static void sys_chdir_handler(struct intr_frame *f);
+static void sys_mkdir_handler(struct intr_frame *f);
+static void sys_readdir_handler(struct intr_frame *f);
+static void sys_isdir_handler(struct intr_frame *f);
+static void sys_inumber_handler(struct intr_frame *f);
 
 
 void
@@ -122,18 +127,110 @@ syscall_handler (struct intr_frame *f UNUSED)
 		sys_chdir_handler(f);
 		break;
 	case SYS_MKDIR:
+		sys_mkdir_handler(f);
 		break;
 	case SYS_READDIR:
+		sys_readdir_handler(f);
 		break;
 	case SYS_ISDIR:
+		sys_isdir_handler(f);
 		break;
 	case SYS_INUMBER:
+		sys_inumber_handler(f);
 		break;
-
 	default:break;
  }
 
 }
+
+
+/*handle sys_inumber*/
+static void sys_inumber_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *fd_ptr=(int *)(esp+1);
+
+	if(*fd_ptr==0 || *fd_ptr==1){
+		/*return invalid inumber value in case of console*/
+		f->eax = INVALID_SECTOR_ID;
+	} else {
+		/*read from regular file*/
+		struct file_info_block *fib =
+				find_fib(&thread_current()->opened_file_list, *fd_ptr);
+		if (fib == NULL) {
+			f->eax = INVALID_SECTOR_ID;
+		} else {
+			f->eax = fib->f->inode->sector;
+		}
+	}
+}
+
+
+
+/*handle sys_isdir*/
+static void sys_isdir_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(int))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	 }
+
+	int *fd_ptr=(int *)(esp+1);
+
+	if(*fd_ptr==0 || *fd_ptr==1){
+		/*return invalid inumber value in case of console*/
+		f->eax = false;
+	} else {
+		/*read from regular file*/
+		struct file_info_block *fib =
+				find_fib(&thread_current()->opened_file_list, *fd_ptr);
+		if (fib == NULL) {
+			f->eax = false;
+		} else {
+			f->eax = fib->f->inode->is_dir;
+		}
+	}
+}
+
+
+/*handle sys_readdir*/
+static void sys_readdir_handler(struct intr_frame *f){
+
+}
+
+
+/*handle sys_mkdir*/
+static void sys_mkdir_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the dir name*/
+	char *dir=*(char **)(esp+1);
+
+	/*verify string address*/
+	if(!is_string_address_valid(dir)){
+		user_exit(-1);
+		return;
+	}
+
+	f->eax = filesys_mkdir(dir);
+	//TODO: no need to modify cwd?
+}
+
+
 
 /*handle sys_chdir*/
 static void sys_chdir_handler(struct intr_frame *f){
@@ -145,7 +242,7 @@ static void sys_chdir_handler(struct intr_frame *f){
 		 return;
 	}
 
-	/*get the full_line command*/
+	/*get the dir name*/
 	char *dir=*(char **)(esp+1);
 
 	/*verify string address*/

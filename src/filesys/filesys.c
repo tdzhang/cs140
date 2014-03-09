@@ -7,6 +7,10 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 #include "filesys/cache.h"
+#include "threads/thread.h"
+
+
+#define MAX_ENTRIES_PER_DIR 16
 
 /* Partition that contains the file system. */
 struct block *fs_device;
@@ -46,6 +50,35 @@ filesys_done (void)
   free_map_close ();
 }
 
+bool
+filesys_mkdir (const char* dir) {
+	block_sector_t inode_sector = 0;
+	static char tmp[MAX_DIR_PATH];
+	relative_path_to_absolute(dir, tmp);
+	struct dir *d = path_to_dir(tmp);
+	char name_to_create[NAME_MAX + 1];
+	get_file_name_from_path(tmp, name_to_create);
+	bool success = (d != NULL
+	                  && free_map_allocate (1, &inode_sector)
+	                  && inode_create (inode_sector, MAX_ENTRIES_PER_DIR * sizeof (struct dir_entry), true)
+	                  && dir_add (d, name_to_create, inode_sector, true));
+	if (!success && inode_sector != 0) {
+	    free_map_release (inode_sector, 1);
+	}
+	dir_close (d);
+
+	return success;
+}
+
+
+/* get file name from a given path, i.e. the substring after the last '/'*/
+void get_file_name_from_path(char *path, char *file_name) {
+	char *last_slash = strrchr(path, '/');
+	ASSERT (last_slash != NULL);
+	strlcpy(file_name, (last_slash+1), NAME_MAX + 1);
+}
+
+
 /* Creates a file named NAME with the given INITIAL_SIZE.
    Returns true if successful, false otherwise.
    Fails if a file named NAME already exists,
@@ -104,8 +137,10 @@ do_format (void)
 {
   printf ("Formatting file system...");
   free_map_create ();
-  if (!dir_create (ROOT_DIR_SECTOR, 16))
+  if (!dir_create (ROOT_DIR_SECTOR, MAX_ENTRIES_PER_DIR))
     PANIC ("root directory creation failed");
   free_map_close ();
   printf ("done.\n");
 }
+
+
