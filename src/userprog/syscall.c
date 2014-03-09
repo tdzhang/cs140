@@ -54,6 +54,7 @@ static void sys_read_handler(struct intr_frame *f);
 static void sys_filesize_handler(struct intr_frame *f);
 static void sys_seek_handler(struct intr_frame *f);
 static void sys_tell_handler(struct intr_frame *f);
+static void sys_chdir_handler(struct intr_frame *f);
 
 
 void
@@ -135,7 +136,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 /*handle sys_chdir*/
-static void sys_exec_handler(struct intr_frame *f){
+static void sys_chdir_handler(struct intr_frame *f){
 	uint32_t* esp=f->esp;
 	/*validate the 1st argument*/
 	if(!is_user_address(esp+1, sizeof(void **))){
