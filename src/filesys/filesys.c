@@ -50,8 +50,8 @@ filesys_done (void)
   free_map_close ();
 }
 
-bool
-filesys_mkdir (const char* dir) {
+/* mkdir a directory for a given dir. */
+bool filesys_mkdir (const char* dir) {
 	block_sector_t inode_sector = 0;
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(dir, tmp);
@@ -60,7 +60,7 @@ filesys_mkdir (const char* dir) {
 	get_file_name_from_path(tmp, name_to_create);
 	bool success = (d != NULL
 	                  && free_map_allocate (1, &inode_sector)
-	                  && inode_create (inode_sector, MAX_ENTRIES_PER_DIR * sizeof (struct dir_entry), true)
+	                  && dir_create (inode_sector, MAX_ENTRIES_PER_DIR)
 	                  && dir_add (d, name_to_create, inode_sector, true));
 	if (!success && inode_sector != 0) {
 	    free_map_release (inode_sector, 1);
