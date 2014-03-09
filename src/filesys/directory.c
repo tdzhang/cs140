@@ -317,6 +317,10 @@ struct dir* path_to_dir(char* path_){
 void relative_path_to_absolute(char* relative_path,char* result_path){
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
+	bool is_end_slash=false;
+	if(strlen(relative_path)>0 && relative_path[strlen(relative_path)-1]=='/'){
+		is_end_slash=true;
+	}
 
 	/*if the relative_path is abs, do not cat*/
 	if(relative_path[0]=='/'){
@@ -372,5 +376,12 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 	for(i=0;i<=pointer;i++){
 		strlcat(result_path, dirs_abs[i], MAX_DIR_PATH);
 		strlcat(result_path, "/", MAX_DIR_PATH);
+	}
+
+	/*handle the last char*/
+	if(!is_end_slash){
+		if(strlen(result_path)>1){
+			result_path[strlen(result_path)-1]=0;
+		}
 	}
 }
