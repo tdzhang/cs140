@@ -95,7 +95,13 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   relative_path_to_absolute(name, tmp);
   struct dir *dir = path_to_dir(tmp);
   char name_to_create[NAME_MAX + 1];
+
+  /*if the file name is longer than the supported*/
+  char *last_slash = strrchr(tmp, '/');
+  if(strlen(last_slash+1)>NAME_MAX)return false;
+
   get_file_name_from_path(tmp, name_to_create);
+
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, is_dir)
