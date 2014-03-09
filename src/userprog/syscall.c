@@ -496,17 +496,16 @@ static void sys_open_handler(struct intr_frame *f){
 	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
 	fib->f = file;
 	fib->fd = cur->next_fd_num++;
-	char *file_name_copy = malloc(strlen(file_name)+1);
+	char *file_name_copy = malloc(NAME_MAX + 1);
 	if (file_name_copy == NULL) {
 		f->eax = -1;
 		free(fib);
 		file_close(file);
 		return;
 	}
-	strlcpy (file_name_copy, file_name, strlen(file_name)+1);
-	 char name_to_open[NAME_MAX + 1];
-	  get_file_name_from_path(file_name_copy, name_to_open);
-	fib->file_name = name_to_open;
+
+	get_file_name_from_path(file_name, file_name_copy);
+	fib->file_name = file_name_copy;
 	/*add file_info_block of the opened file into current thread's
 	  opened_file_list*/
 	list_push_back(&cur->opened_file_list, &fib->elem);
