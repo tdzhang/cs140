@@ -117,9 +117,52 @@ syscall_handler (struct intr_frame *f UNUSED)
 	case SYS_CLOSE:
 		sys_close_handler(f);
 		break;
+	case SYS_CHDIR:
+		sys_chdir_handler(f);
+		break;
+	case SYS_MKDIR:
+		break;
+	case SYS_READDIR:
+		break;
+	case SYS_ISDIR:
+		break;
+	case SYS_INUMBER:
+		break;
+
 	default:break;
  }
 
+}
+
+/*handle sys_chdir*/
+static void sys_exec_handler(struct intr_frame *f){
+	uint32_t* esp=f->esp;
+	/*validate the 1st argument*/
+	if(!is_user_address(esp+1, sizeof(void **))){
+		 /* exit with -1*/
+		 user_exit(-1);
+		 return;
+	}
+
+	/*get the full_line command*/
+	char *dir=*(char **)(esp+1);
+
+	/*verify string address*/
+	if(!is_string_address_valid(dir)){
+		user_exit(-1);
+		return;
+	}
+
+	static char tmp[MAX_DIR_PATH];
+	relative_path_to_absolute(dir, tmp);
+	struct dir *d = path_to_dir(tmp);
+	if (d != NULL) {
+		strlcpy(thread_current()->cwd, tmp, strlen(tmp)+1);
+		dir_close(d);
+		f->eax = true;
+		return;
+	}
+	f->eax = false;
 }
 
 /*handle sys_exec*/
