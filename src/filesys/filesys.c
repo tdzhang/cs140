@@ -135,7 +135,9 @@ filesys_open (const char *name)
   struct dir *dir = path_to_dir(tmp);
   char name_to_open[NAME_MAX + 1];
   get_file_name_from_path(tmp, name_to_open);
-
+  printf("filesysopen: name=%s\n",name);
+  printf("filesysopen: tmp=%s\n",tmp);
+  printf("filesysopen: name_to_open=%s\n",name_to_open);
   struct inode *inode = NULL;
 
   if (dir != NULL)
