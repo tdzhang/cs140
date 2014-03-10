@@ -151,7 +151,7 @@ filesys_open (const char *name)
 	  }
 	  dir_close (dir);
 	  if (inode != NULL) {
-		  inode = inode_close (inode);
+		  inode_close (inode);
 	  }
   }
 
