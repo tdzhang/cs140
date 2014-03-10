@@ -214,15 +214,12 @@ dir_remove (struct dir *dir, const char *name)
 	  goto done;
   }
 
-  printf("dir_remove before inode->is_dir\n");
   if (inode->is_dir) {
 	  /* check if the dir is empty, if not, goto done */
-	  printf("dir_remove in inode->is_dir\n");
 	  off_t offset;
 	  struct dir_entry entry;
 	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset) == sizeof entry;
 			  offset += sizeof entry) {
-		  printf("dir_remove entryname=%s, in_use=%d\n",entry.name,entry.in_use);
 	      if (entry.in_use){
 	          goto done;
 	      }

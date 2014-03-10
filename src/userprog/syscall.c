@@ -383,15 +383,14 @@ static void sys_remove_handler(struct intr_frame *f){
 
 	/*if not find, return, since this file is not opened*/
 	if (gfb == NULL) {
-		filesys_remove(file_name);
+		f->eax =filesys_remove(file_name);
 	} else {
 		ASSERT (lock_held_by_current_thread (&gfb->lock));
 		/*mark as deleted*/
 		gfb->is_deleted=true;
 		lock_release(&gfb->lock);
+		f->eax = true;
 	}
-	f->eax = true;
-
 }
 
 /*handle sys_close*/

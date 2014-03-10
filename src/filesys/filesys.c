@@ -148,17 +148,16 @@ filesys_remove (const char *name)
 {
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(name, tmp);
-	printf("filesysremove tmp=%s\n",tmp);
 	struct dir *dir = path_to_dir(tmp);
 	char name_to_remove[NAME_MAX + 1];
 	get_file_name_from_path(tmp, name_to_remove);
-	printf("filesysremove name_to_remove=%s\n",name_to_remove);
 
-	bool success = (dir != NULL) && dir_remove (dir, name_to_remove);
+	bool success = dir != NULL && dir_remove (dir, name_to_remove);
 	dir_close (dir);
 
 	return success;
 }
+
 
 /* Formats the file system. */
 static void
