@@ -125,6 +125,9 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
 struct file *
 filesys_open (const char *name)
 {
+  if (name == NULL || strlen(name) == 0) {
+	  return NULL;
+  }
   static char tmp[MAX_DIR_PATH];
   struct inode *inode = NULL;
   relative_path_to_absolute(name, tmp);
