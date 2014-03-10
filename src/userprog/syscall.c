@@ -512,6 +512,32 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
+
+	/* get the actual file_name to open, need to store it in fib */
+	if (file_name == NULL || strlen(file_name) == 0) {
+		f->eax = -1;
+		return;
+	}
+	char *name_to_open = malloc(NAME_MAX + 1);
+	if (name_to_open == NULL) {
+		f->eax = -1;
+		return;
+	}
+	static char tmp[MAX_DIR_PATH];
+	struct inode *inode = NULL;
+	struct dir *dir = NULL;
+	relative_path_to_absolute(name, tmp);
+
+	if (is_root_dir(tmp)) {
+	  /* set name_to_open to "/" */
+	  name_to_open[0] = '/';
+	  name_to_open[0] = '\0';
+	} else {
+	  ASSERT (!has_end_slash(tmp));
+	  get_file_name_from_path(tmp, name_to_open);
+	  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
+	}
+
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
 	if (file == NULL) {
@@ -558,10 +584,8 @@ static void sys_open_handler(struct intr_frame *f){
 	/*update current thread's opened_file_list*/
 	struct thread *cur = thread_current();
 	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
-	fib->f = file;
-	fib->fd = cur->next_fd_num++;
-	char *file_name_copy = malloc(NAME_MAX + 1);
-	if (file_name_copy == NULL) {
+
+	if (fib == NULL) {
 		f->eax = -1;
 		/* rollback gfb and global_file_list if necessary */
 		lock_acquire(&global_file_list_lock);
@@ -579,8 +603,10 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
-	get_file_name_from_path(file_name, file_name_copy);
-	fib->file_name = file_name_copy;
+	fib->f = file;
+	fib->fd = cur->next_fd_num++;
+
+	fib->file_name = name_to_open;
 	/*add file_info_block of the opened file into current thread's
 	  opened_file_list*/
 	list_push_back(&cur->opened_file_list, &fib->elem);
