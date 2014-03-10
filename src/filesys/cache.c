@@ -562,12 +562,18 @@ static void read_ahead_daemon(void *aux UNUSED) {
 /* write behind daemon for asynchronously flush dirty cache to disk */
 static void write_behind_daemon(void *aux UNUSED) {
 	int i;
+	bool holding_lock;
 	while(true) {
 		timer_msleep(WRITE_BEHIND_CYCLE);
 		for (i = 0; i < CACHE_SIZE; i++) {
-			lock_acquire (&buffer_cache[i].lock);
-			flush_cache_entry (i, false);
-			lock_release (&buffer_cache[i].lock);
+			holding_lock = lock_held_by_current_thread(&buffer_cache[i].lock);
+			if (!holding_lock)
+				lock_acquire (&buffer_cache[i].lock);
+			if (buffer_cache[i].dirty) {
+				flush_cache_entry (i, false);
+			}
+			if (!holding_lock)
+				lock_release (&buffer_cache[i].lock);
 		}
 	}
 }
@@ -576,11 +582,16 @@ static void write_behind_daemon(void *aux UNUSED) {
 /* flush all cache entries to disk, used when filesys is done*/
 void force_flush_all_cache(void) {
 	int i;
-
+	bool holding_lock;
 	for (i = 0; i < CACHE_SIZE; i++) {
-		lock_acquire (&buffer_cache[i].lock);
-		flush_cache_entry (i, true);
-		lock_release (&buffer_cache[i].lock);
+		holding_lock = lock_held_by_current_thread(&buffer_cache[i].lock);
+		if (!holding_lock)
+			lock_acquire (&buffer_cache[i].lock);
+		if (buffer_cache[i].dirty) {
+			flush_cache_entry (i, true);
+		}
+		if (!holding_lock)
+			lock_release (&buffer_cache[i].lock);
 	}
 }
 
