@@ -298,6 +298,12 @@ static void sys_chdir_handler(struct intr_frame *f){
 
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(dir, tmp);
+	int len=strlen(tmp);
+	ASSERT(len<MAX_DIR_PATH-1);
+	if(len>0 && tmp[len-1]!='/'){
+		tmp[len]='/';
+		tmp[len+1]=0;
+	}
 	printf("chdir dir=%s\n",dir);
 	printf("chdir tmp=%s\n",tmp);
 	struct dir *d = path_to_dir(tmp);
