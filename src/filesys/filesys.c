@@ -131,8 +131,8 @@ filesys_open (const char *name)
   struct dir *dir = path_to_dir(tmp);
   if (dir == NULL || dir->inode == NULL)
 	  return NULL;
-  if (dir->inode->sector == ROOT_DIR_SECTOR) {
-	  /* open root directly if it's to open root */
+  if (dir->inode->sector == ROOT_DIR_SECTOR && strlen(tmp)==1 && tmp[0]=='/') {
+	  /* open root directly if it's just to open root */
 	  inode = dir->inode;
   } else {
 	  /* open a regular file or dir */

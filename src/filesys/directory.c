@@ -252,8 +252,9 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 /* /a/b/c  -> return dir struct dirctory b */
 /* /a/b/  -> return dir struct dirctory b  */
 struct dir* path_to_dir(char* path_){
+	ASSERT(path_ != NULL);
 	/*if root, return root dir*/
-	if(path_!=NULL && strlen(path_)==1 &&path_[0]=='/'){
+	if(strlen(path_)==1 &&path_[0]=='/'){
 		return dir_open_root ();
 	}
 
