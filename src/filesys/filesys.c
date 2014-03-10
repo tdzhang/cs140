@@ -126,14 +126,22 @@ struct file *
 filesys_open (const char *name)
 {
   static char tmp[MAX_DIR_PATH];
+  struct inode *inode = NULL;
   relative_path_to_absolute(name, tmp);
   struct dir *dir = path_to_dir(tmp);
-  char name_to_open[NAME_MAX + 1];
-  get_file_name_from_path(tmp, name_to_open);
-  struct inode *inode = NULL;
+  if (dir == NULL || dir->inode == NULL)
+	  return NULL;
+  if (dir->inode->sector == ROOT_DIR_SECTOR) {
+	  /* open root directly if it's to open root */
+	  inode = dir->inode;
+  } else {
+	  /* open a regular file or dir */
+	  char name_to_open[NAME_MAX + 1];
+	  get_file_name_from_path(tmp, name_to_open);
 
-  if (dir != NULL)
-    dir_lookup (dir, name_to_open, &inode);
+	  if (dir != NULL)
+		dir_lookup (dir, name_to_open, &inode);
+  }
   dir_close (dir);
 
   return file_open (inode);
