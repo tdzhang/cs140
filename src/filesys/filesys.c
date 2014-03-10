@@ -154,7 +154,7 @@ filesys_remove (const char *name)
 	get_file_name_from_path(tmp, name_to_remove);
 	printf("filesysremove name_to_remove=%s\n",name_to_remove);
 
-	bool success = dir != NULL && dir_remove (dir, name_to_remove);
+	bool success = (dir != NULL) && dir_remove (dir, name_to_remove);
 	dir_close (dir);
 
 	return success;
