@@ -291,9 +291,16 @@ struct dir* path_to_dir(char* path_){
 	struct inode *inode = NULL;
 	for(i=0;i<count;i++){
 		if (dir == NULL) return NULL;
-		if(!dir_lookup (dir, dirs[i], &inode)) return NULL;
-		/*if the intermiate path elem is not dir, return false*/
-		if(!inode->is_dir)return NULL;
+		if(!dir_lookup (dir, dirs[i], &inode)) {
+			dir_close (dir);
+			return NULL;
+		}
+		/*if the intermiate path elem is not dir or it's marked as removed,
+		 * fail it*/
+		if(!inode->is_dir || inode->removed) {
+			dir_close (dir);
+			return NULL;
+		}
 		dir_close (dir);
 		dir = dir_open (inode);
 	}

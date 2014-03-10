@@ -391,6 +391,7 @@ static void sys_remove_handler(struct intr_frame *f){
 		/*mark as deleted*/
 		gfb->is_deleted=true;
 		lock_release(&gfb->lock);
+		//TODO: Mark the inode removed
 		f->eax = true;
 	}
 }
