@@ -145,7 +145,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 	bool holding_global_lock = false;
 
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
-	lock_acquire(&buffer_cache[entry_index].lock);
+	ASSERT (lock_held_by_current_thread(&buffer_cache[entry_index].lock));
 
 	ASSERT(buffer_cache[entry_index].dirty);
 	/*if some process is writing or waiting to write into this entry
@@ -154,7 +154,6 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 			+buffer_cache[entry_index].writing_num > 0
 			|| buffer_cache[entry_index].flushing_out
 			|| buffer_cache[entry_index].loading_in) && !need_wait) {
-		lock_release(&buffer_cache[entry_index].lock);
 		return false;
 	}
 
@@ -175,7 +174,6 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
 		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
-		lock_release(&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -196,7 +194,6 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		/* after waiting period, it is possible that the entry is not dirty at more */
 		if (!buffer_cache[entry_index].dirty) {
-			lock_release(&buffer_cache[entry_index].lock);
 			return true;
 		}
 
@@ -212,7 +209,6 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
 		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
-		lock_release(&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -227,7 +223,7 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
 	ASSERT (sector_id != INVALID_SECTOR_ID);
-	lock_acquire(&buffer_cache[entry_index].lock);
+	ASSERT (lock_held_by_current_thread(&buffer_cache[entry_index].lock));
 
 	ASSERT(!buffer_cache[entry_index].dirty);
 	/*if some process is reading/writing or waiting to read/write from/to this entry
@@ -238,7 +234,6 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 			+buffer_cache[entry_index].writing_num > 0
 			|| buffer_cache[entry_index].flushing_out
 			|| buffer_cache[entry_index].loading_in) && !need_wait) {
-		lock_release(&buffer_cache[entry_index].lock);
 		return false;
 	}
 
@@ -261,7 +256,6 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
 		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
-		lock_release(&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -297,7 +291,6 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
 		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
-		lock_release(&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -324,7 +317,6 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	if (buffer_cache[slot].dirty) {
 		need_flush = true;
 	}
-	lock_release(&buffer_cache[slot].lock);
 
 
 	if (need_wait) {
@@ -342,7 +334,6 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 			if (!did_flushed) {
 				/*not able to flush the dirty cache,
 				 * return INVALID_ENTRY_INDEX*/
-				lock_acquire(&buffer_cache[slot].lock);
 				buffer_cache[slot].next_sector_id = INVALID_SECTOR_ID;
 				lock_release(&buffer_cache[slot].lock);
 				return INVALID_ENTRY_INDEX;
@@ -351,7 +342,6 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 		did_loaded = load_cache_entry(slot, new_sector, false);
 		if (!did_loaded) {
 			/*not able to load the cache, return INVALID_ENTRY_INDEX*/
-			lock_acquire(&buffer_cache[slot].lock);
 			buffer_cache[slot].next_sector_id = INVALID_SECTOR_ID;
 			lock_release(&buffer_cache[slot].lock);
 			return INVALID_ENTRY_INDEX;
@@ -359,7 +349,6 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	}
 
 	/*succeeded to flush-load, update the cache and return its index*/
-	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].sector_id = new_sector;
 	buffer_cache[slot].next_sector_id = INVALID_SECTOR_ID;
 	lock_release(&buffer_cache[slot].lock);
