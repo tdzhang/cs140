@@ -148,10 +148,12 @@ filesys_open (const char *name)
 		dir_lookup (dir, name_to_open, &inode);
   }
 
-  printf("filesys_open dir->inode->sector=%zu \n",dir->inode->sector);
+  if(!inode){
+  	  printf(">>filesys_open dir->inode->sector=%zu \n",inode->sector);
+    }
   dir_close (dir);
   if(!inode){
-	  printf("filesys_open dir->inode->sector=%zu \n",inode->sector);
+	  printf(">>filesys_open dir->inode->sector=%zu \n",inode->sector);
   }
   return file_open (inode);
 }
