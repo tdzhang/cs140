@@ -700,9 +700,15 @@ static void sys_write_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
+
+	/* if fd is corresponding to a dir, fail the write */
+	if (fib->f->inode->is_dir) {
+		f->eax = -1;
+		return;
+	}
 	/*write to file*/
 	int result = write_to_file(fib->f, buffer, *size_ptr);
-	f->eax= result;
+	f->eax = result;
 }
 
 /*handle sys_read*/
