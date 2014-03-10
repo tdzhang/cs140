@@ -169,6 +169,11 @@ filesys_open (const char *name)
 	  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
 	  dir_lookup (dir, name_to_open, &inode);
 	  if (inode == NULL) {
+		  dir_close (dir);
+		  return NULL;
+	  }
+	  if (inode->removed) {
+		  dir_close (dir);
 		  return NULL;
 	  }
 	  block_sector_t inumber = inode->sector;
