@@ -132,7 +132,6 @@ filesys_open (const char *name)
   static char tmp[MAX_DIR_PATH];
   struct inode *inode = NULL;
   relative_path_to_absolute(name, tmp);
-  printf("filesys_open relative_path_to_absolute=%s\n",tmp);
   struct dir *dir = path_to_dir(tmp);
   if (dir == NULL || dir->inode == NULL)
 	  return NULL;
@@ -143,18 +142,12 @@ filesys_open (const char *name)
 	  /* open a regular file or dir */
 	  char name_to_open[NAME_MAX + 1];
 	  get_file_name_from_path(tmp, name_to_open);
-	  printf("filesys_open name_to_open=%s\n",name_to_open);
+
 	  if (dir != NULL)
 		dir_lookup (dir, name_to_open, &inode);
   }
-
-  if(inode!=NULL){
-  	  printf(">>filesys_open inode->sector=%zu \n",inode->sector);
-   }
   dir_close (dir);
-  if(inode!=NULL){
-	  printf(">>filesys_open inode->sector=%zu \n",inode->sector);
-  }
+
   return file_open (inode);
 }
 
