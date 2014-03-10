@@ -707,3 +707,8 @@ inode_length (const struct inode *inode)
 {
   return inode->readable_length;
 }
+
+
+void inode_flush_cache(void) {
+	force_flush_all_cache();
+}

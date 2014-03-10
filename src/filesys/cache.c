@@ -573,6 +573,17 @@ static void write_behind_daemon(void *aux UNUSED) {
 }
 
 
+/* flush all cache entries to disk, used when filesys is done*/
+void force_flush_all_cache(void) {
+	int i;
+
+	for (i = 0; i < CACHE_SIZE; i++) {
+		lock_acquire (&buffer_cache[i].lock);
+		flush_cache_entry (i, true);
+		lock_release (&buffer_cache[i].lock);
+	}
+}
+
 
 
 
