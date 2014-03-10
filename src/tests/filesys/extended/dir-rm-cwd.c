@@ -33,8 +33,8 @@ test_main (void)
   a_fd0 = wrap_open ("/a");
   printf(">>>>>>a_fd0 = %d\n", a_fd0);
   CHECK (!readdir (a_fd0, name), "verify \"/a\" is empty");
-  printf(">>>>>>inumber (root_fd) = %d\n", inumber (root_fd));
-  printf(">>>>>>inumber (a_fd0) = %d\n", inumber (a_fd0));
+  printf(">>>>>>inumber (root_fd) = %zu\n", inumber (root_fd));
+  printf(">>>>>>inumber (a_fd0) = %zu\n", inumber (a_fd0));
   CHECK (inumber (root_fd) != inumber (a_fd0),
          "\"/\" and \"/a\" must have different inumbers");
 
