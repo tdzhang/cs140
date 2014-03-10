@@ -145,6 +145,9 @@ filesys_open (const char *name)
 
 	  if (dir != NULL)
 		dir_lookup (dir, name_to_open, &inode);
+	  if (inode != NULL) {
+		  inode = inode_reopen (inode);
+	  }
   }
   dir_close (dir);
 
