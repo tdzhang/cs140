@@ -170,6 +170,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
+		intr_enable ();
 		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
@@ -205,6 +206,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
+		intr_enable ();
 		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
