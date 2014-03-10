@@ -244,8 +244,9 @@ static void sys_readdir_handler(struct intr_frame *f){
 			if (!fib->f->inode->is_dir) {
 				f->eax = false;
 			} else {
-				strlcpy(dir, fib->file_name, READDIR_MAX_LEN + 1);
-				f->eax = true;
+				struct dir *d = dir_open(fib->f->inode);
+				f->eax = dir_readdir(d, dir);
+				dir_close(d);
 			}
 		}
 	}
