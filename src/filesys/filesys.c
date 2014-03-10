@@ -150,7 +150,9 @@ filesys_open (const char *name)
 
   printf("filesys_open dir->inode->sector=%zu",dir->inode->sector);
   dir_close (dir);
-  printf("filesys_open dir->inode->sector=%zu",inode->sector);
+  if(inode){
+	  printf("filesys_open dir->inode->sector=%zu",inode->sector);
+  }
   return file_open (inode);
 }
 
