@@ -137,7 +137,7 @@ filesys_open (const char *name)
 	  return NULL;
   if (dir->inode->sector == ROOT_DIR_SECTOR && strlen(tmp)==1 && tmp[0]=='/') {
 	  /* open root directly if it's just to open root */
-	  inode = dir->inode;
+	  inode = inode_open (dir->inode->sector);
   } else {
 	  /* open a regular file or dir */
 	  char name_to_open[NAME_MAX + 1];

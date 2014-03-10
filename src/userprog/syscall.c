@@ -491,14 +491,14 @@ static void sys_open_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-	printf(">>>>>>sys_open_handler   >>>file_name=%s\n",file_name);
+
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
 	if (file == NULL) {
 		f->eax = -1;
 		return;
 	}
-	printf(">>>>>>sys_open_handler  open success>>>file->inode->sector=%zu\n",file->inode->sector);
+
 
 
 	/*update global_file_block*/
@@ -507,14 +507,12 @@ static void sys_open_handler(struct intr_frame *f){
 	struct global_file_block *gfb = find_opened_file(&global_file_list,
 			file->inode->sector);
 	if (gfb != NULL) {
-		printf(">>sys_open_handler find gfb\n");
 		ASSERT (!lock_held_by_current_thread (&gfb->lock));
 		lock_acquire(&gfb->lock);
 	}
 	lock_release(&global_file_list_lock);
 
 	if (gfb == NULL) {
-
 		/*open a new file*/
 		gfb = malloc(sizeof(struct global_file_block));
 		gfb->inode_block_num = file->inode->sector;
@@ -522,7 +520,6 @@ static void sys_open_handler(struct intr_frame *f){
 		gfb->ref_num = 1;
 		lock_init(&gfb->lock);
 		list_push_back(&global_file_list, &gfb->elem);
-		printf(">>>>>>sys_open_handler no gfb found  >>>gfb->inode_block_num=%zu\n",gfb->inode_block_num);
 	} else {
 		ASSERT (lock_held_by_current_thread (&gfb->lock));
 		/*the file is marked as deleted, fail the open*/
@@ -535,7 +532,6 @@ static void sys_open_handler(struct intr_frame *f){
 		/*increase file reference number*/
 		gfb->ref_num++;
 		lock_release(&gfb->lock);
-		printf(">>>>>>sys_open_handler gfb found  >>>gfb->inode_block_num=%zu\n",gfb->inode_block_num);
 	}
 
 
