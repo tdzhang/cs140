@@ -216,14 +216,14 @@ static void sys_readdir_handler(struct intr_frame *f){
 	int *fd_ptr=(int *)(esp+1);
 
 	/*validate the 2nd argument*/
-	if(!is_user_address(esp+1, sizeof(void **))){
+	if(!is_user_address(esp+2, sizeof(void **))){
 		 /* exit with -1*/
 		 user_exit(-1);
 		 return;
 	}
 
 	/*get the dir name*/
-	char *dir=*(char **)(esp+1);
+	char *dir=*(char **)(esp+2);
 
 	/*verify string address*/
 	if(!is_string_address_valid(dir)){
