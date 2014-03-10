@@ -245,6 +245,7 @@ static void sys_readdir_handler(struct intr_frame *f){
 				f->eax = false;
 			} else {
 				strlcpy(dir, fib->file_name, READDIR_MAX_LEN + 1);
+				f->eax = true;
 			}
 		}
 	}
