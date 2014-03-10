@@ -53,15 +53,24 @@ filesys_done (void)
 
 /* mkdir a directory for a given dir. */
 bool filesys_mkdir (const char* dir) {
+	if (dir == NULL || strlen(dir) == 0) {
+		return false;
+	}
 	block_sector_t inode_sector = 0;
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(dir, tmp);
 
+	if (is_root_dir(tmp)) {
+		/* cannot remake root */
+		return false;
+	}
+
+	ASSERT (!has_end_slash(tmp));
 
 	struct dir *d = path_to_dir(tmp);
 	char name_to_create[NAME_MAX + 1];
 	get_file_name_from_path(tmp, name_to_create);
-
+	ASSERT (name_to_create != NULL && strlen(name_to_create) > 0);
 
 	bool success = (d != NULL
 	                  && free_map_allocate (1, &inode_sector)
@@ -101,19 +110,24 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   block_sector_t inode_sector = 0;
   static char tmp[MAX_DIR_PATH];
   relative_path_to_absolute(name, tmp);
+
+  if (is_root_dir(tmp)) {
+	/* cannot recreate root */
+	return false;
+  }
+  ASSERT (!has_end_slash(tmp));
+
   struct dir *dir = path_to_dir(tmp);
   char name_to_create[NAME_MAX + 1];
 
   /*if the file name is longer than the supported*/
   char *last_slash = strrchr(tmp, '/');
-  if(strlen(last_slash+1)>NAME_MAX)return false;
-
-  if (dir->inode->sector == ROOT_DIR_SECTOR && strlen(tmp)==1 && tmp[0]=='/') {
-  	  /* not allow to recreate root */
-  	  return false;
+  if(strlen(last_slash+1) > NAME_MAX) {
+	  return false;
   }
 
   get_file_name_from_path(tmp, name_to_create);
+  ASSERT (name_to_create != NULL && strlen(name_to_create) > 0);
 
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
@@ -139,27 +153,30 @@ filesys_open (const char *name)
   }
   static char tmp[MAX_DIR_PATH];
   struct inode *inode = NULL;
+  struct dir *dir = NULL;
   relative_path_to_absolute(name, tmp);
-  struct dir *dir = path_to_dir(tmp);
-  if (dir == NULL || dir->inode == NULL)
-	  return NULL;
-  if (dir->inode->sector == ROOT_DIR_SECTOR && strlen(tmp)==1 && tmp[0]=='/') {
-	  /* open root directly if it's just to open root */
-	  inode = inode_open (dir->inode->sector);
+
+  if (is_root_dir(tmp)) {
+	  inode = inode_open (ROOT_DIR_SECTOR);
+	  return file_open (inode);
   } else {
-	  /* open a regular file or dir */
+	  ASSERT (!has_end_slash(tmp));
+	  struct dir *dir = path_to_dir(tmp);
+	  if (dir == NULL || dir->inode == NULL)
+	  	  return NULL;
 	  char name_to_open[NAME_MAX + 1];
 	  get_file_name_from_path(tmp, name_to_open);
-
-	  if (dir != NULL)
-		dir_lookup (dir, name_to_open, &inode);
-	  if (inode != NULL) {
-		  inode = inode_reopen (inode);
+	  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
+	  dir_lookup (dir, name_to_open, &inode);
+	  if (inode == NULL) {
+		  return NULL;
 	  }
+	  block_sector_t inumber = inode->sector;
+	  dir_close (dir);
+	  //TODO: probably no need to open, should be opened in dir_lookup
+	  inode = inode_open(inumber);
+	  return file_open (inode);
   }
-  dir_close (dir);
-
-  return file_open (inode);
 }
 
 /* Deletes the file named NAME.
@@ -169,11 +186,24 @@ filesys_open (const char *name)
 bool
 filesys_remove (const char *name) 
 {
+	if (name == NULL || strlen(name) == 0) {
+		  return false;
+	  }
 	static char tmp[MAX_DIR_PATH];
 	relative_path_to_absolute(name, tmp);
+
+	if (is_root_dir(tmp)) {
+		/* cannot remove root*/
+		return false;
+	}
+
+	ASSERT (!has_end_slash(tmp));
+
 	struct dir *dir = path_to_dir(tmp);
 	char name_to_remove[NAME_MAX + 1];
 	get_file_name_from_path(tmp, name_to_remove);
+
+	ASSERT (name_to_remove != NULL && strlen(name_to_remove) > 0);
 
 	bool success = dir != NULL && dir_remove (dir, name_to_remove);
 	dir_close (dir);

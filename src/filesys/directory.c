@@ -250,9 +250,9 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 
 /*search absolute path to get a dir, open it, and return*/
 /* /a/b/c  -> return dir struct dirctory b */
-/* /a/b/  -> return dir struct dirctory b  */
 struct dir* path_to_dir(char* path_){
 	ASSERT(path_ != NULL);
+	ASSERT (is_root_dir(path_) || !has_end_slash(path_));
 	/*if root, return root dir*/
 	if(strlen(path_)==1 &&path_[0]=='/'){
 		return dir_open_root ();
@@ -308,14 +308,10 @@ struct dir* path_to_dir(char* path_){
 }
 
 /*function translate relative dir path to absolute dir path*/
-void relative_path_to_absolute(char* relative_path,char* result_path){
+void relative_path_to_absolute(char* relative_path, char* result_path){
 	ASSERT (strlen(relative_path) > 0);
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
-	bool is_end_slash=false;
-	if(strlen(relative_path)>0 && relative_path[strlen(relative_path)-1]=='/'){
-		is_end_slash=true;
-	}
 
 	/*if the relative_path is abs, do not cat*/
 	if(relative_path[0]=='/'){
@@ -374,10 +370,17 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 		strlcat(result_path, "/", MAX_DIR_PATH);
 	}
 
-	/*handle the last char*/
-	if(!is_end_slash){
-		if(strlen(result_path)>1){
-			result_path[strlen(result_path)-1]=0;
-		}
+	if (!is_root_dir(result_path) && has_end_slash(result_path)) {
+		result_path[strlen(result_path)-1]=0;
 	}
+}
+
+
+bool is_root_dir(char *dir) {
+	return (strlen(dir) == 1 && dir[0] == '/');
+}
+
+bool has_end_slash(char *dir) {
+	ASSERT (strlen(dir) > 0);
+	return (dir[strlen(dir)-1]=='/');
 }

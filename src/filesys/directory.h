@@ -48,5 +48,7 @@ bool dir_readdir (struct dir *, char name[NAME_MAX + 1]);
 
 void relative_path_to_absolute(char* relative_path,char* result_path);
 struct dir* path_to_dir(char* path_);
+bool is_root_dir(char *dir);
+bool has_end_slash(char *dir);
 
 #endif /* filesys/directory.h */
