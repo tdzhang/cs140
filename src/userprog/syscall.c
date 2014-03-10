@@ -498,24 +498,7 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
-	/*update current thread's opened_file_list*/
-	struct thread *cur = thread_current();
-	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
-	fib->f = file;
-	fib->fd = cur->next_fd_num++;
-	char *file_name_copy = malloc(NAME_MAX + 1);
-	if (file_name_copy == NULL) {
-		f->eax = -1;
-		free(fib);
-		file_close(file);
-		return;
-	}
 
-	get_file_name_from_path(file_name, file_name_copy);
-	fib->file_name = file_name_copy;
-	/*add file_info_block of the opened file into current thread's
-	  opened_file_list*/
-	list_push_back(&cur->opened_file_list, &fib->elem);
 
 	/*update global_file_block*/
 	ASSERT(!lock_held_by_current_thread (&global_file_list_lock));
@@ -538,7 +521,7 @@ static void sys_open_handler(struct intr_frame *f){
 		list_push_back(&global_file_list, &gfb->elem);
 	} else {
 		ASSERT (lock_held_by_current_thread (&gfb->lock));
-		/*the file is opened already*/
+		/*the file is marked as deleted, fail the open*/
 		if (gfb->is_deleted) {
 			f->eax = -1;
 			lock_release(&gfb->lock);
@@ -549,6 +532,37 @@ static void sys_open_handler(struct intr_frame *f){
 		gfb->ref_num++;
 		lock_release(&gfb->lock);
 	}
+
+
+	/*update current thread's opened_file_list*/
+	struct thread *cur = thread_current();
+	struct file_info_block *fib = malloc(sizeof(struct file_info_block));
+	fib->f = file;
+	fib->fd = cur->next_fd_num++;
+	char *file_name_copy = malloc(NAME_MAX + 1);
+	if (file_name_copy == NULL) {
+		f->eax = -1;
+		/* rollback gfb and global_file_list if necessary */
+		lock_acquire(&global_file_list_lock);
+		ASSERT (gfb->ref_num >= 1);
+		if (gfb->ref_num == 1) {
+			/* newly opened file, remove the gfb */
+			list_remove(&gfb->elem);
+			free(gfb);
+		} else {
+			gfb->ref_num--;
+		}
+		lock_release(&global_file_list_lock);
+		free(fib);
+		file_close(file);
+		return;
+	}
+
+	get_file_name_from_path(file_name, file_name_copy);
+	fib->file_name = file_name_copy;
+	/*add file_info_block of the opened file into current thread's
+	  opened_file_list*/
+	list_push_back(&cur->opened_file_list, &fib->elem);
 
 
 	f->eax=fib->fd;
