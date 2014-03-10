@@ -309,6 +309,7 @@ struct dir* path_to_dir(char* path_){
 
 /*function translate relative dir path to absolute dir path*/
 void relative_path_to_absolute(char* relative_path,char* result_path){
+	ASSERT (strlen(relative_path) > 0);
 	static char path[MAX_DIR_PATH];
 	struct thread* t=thread_current();
 	bool is_end_slash=false;
@@ -320,6 +321,7 @@ void relative_path_to_absolute(char* relative_path,char* result_path){
 	if(relative_path[0]=='/'){
 		strlcpy(path, relative_path,strlen(relative_path)+1);
 	}else{
+		ASSERT (t->cwd[strlen(t->cwd)-1] == '/');
 		strlcpy(path, t->cwd,strlen(t->cwd)+1);
 		strlcat(path, relative_path, MAX_DIR_PATH);
 	}

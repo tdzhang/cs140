@@ -309,6 +309,7 @@ static void sys_chdir_handler(struct intr_frame *f){
 	struct dir *d = path_to_dir(tmp);
 	if (d != NULL) {
 		strlcpy(thread_current()->cwd, tmp, strlen(tmp)+1);
+		ASSERT (thread_current()->cwd[strlen(thread_current()->cwd)-1] == '/');
 		dir_close(d);
 		f->eax = true;
 		return;

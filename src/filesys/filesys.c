@@ -95,6 +95,9 @@ void get_file_name_from_path(char *path, char *file_name) {
 bool
 filesys_create (const char *name, off_t initial_size, bool is_dir)
 {
+  if (name == NULL || strlen(name) == 0) {
+	  return false;
+  }
   block_sector_t inode_sector = 0;
   static char tmp[MAX_DIR_PATH];
   relative_path_to_absolute(name, tmp);
@@ -104,6 +107,11 @@ filesys_create (const char *name, off_t initial_size, bool is_dir)
   /*if the file name is longer than the supported*/
   char *last_slash = strrchr(tmp, '/');
   if(strlen(last_slash+1)>NAME_MAX)return false;
+
+  if (dir->inode->sector == ROOT_DIR_SECTOR && strlen(tmp)==1 && tmp[0]=='/') {
+  	  /* not allow to recreate root */
+  	  return false;
+  }
 
   get_file_name_from_path(tmp, name_to_create);
 
