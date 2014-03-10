@@ -526,7 +526,7 @@ static void sys_open_handler(struct intr_frame *f){
 	static char tmp[MAX_DIR_PATH];
 	struct inode *inode = NULL;
 	struct dir *dir = NULL;
-	relative_path_to_absolute(name, tmp);
+	relative_path_to_absolute(file_name, tmp);
 
 	if (is_root_dir(tmp)) {
 	  /* set name_to_open to "/" */
