@@ -610,6 +610,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 	}
 	/*update the physical length info*/
 	id->length=end_pos;
+	cache_write(inode->sector, id, 0, BLOCK_SECTOR_SIZE);
 	free(record_sectors);
 	return true;
 
