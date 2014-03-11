@@ -660,6 +660,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   while (size > 0)
     {
       /* Sector to write, starting byte offset within sector. */
+	  printf("(((     offset=%zu  inode.secot=%zu \n",offset,inode->sector);
       block_sector_t sector_idx = byte_to_sector_no_check (inode, offset);
       printf(">>in inode_write_at>>sector_idx=%zu to write at\n",sector_idx);
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
