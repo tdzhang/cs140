@@ -458,8 +458,10 @@ inode_close (struct inode *inode)
 
   ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
   lock_acquire(&open_inodes_lock);
-  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
-  lock_acquire(&inode->inode_lock);
+  bool holding_inode_lock = lock_held_by_current_thread (&inode->inode_lock);
+  if (!holding_inode_lock) {
+	  lock_acquire(&inode->inode_lock);
+  }
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
   {
@@ -512,7 +514,7 @@ inode_close (struct inode *inode)
   	  lock_release(&open_inodes_lock);
   }
   if (inode != NULL) {
-	  if (lock_held_by_current_thread (&inode->inode_lock)) {
+	  if (!holding_inode_lock) {
 		  lock_release(&inode->inode_lock);
 	  }
   }
