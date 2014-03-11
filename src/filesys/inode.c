@@ -515,6 +515,7 @@ inode_close (struct inode *inode)
   }
   if (inode != NULL) {
 	  if (!holding_inode_lock) {
+		  ASSERT(lock_held_by_current_thread (&inode->inode_lock));
 		  lock_release(&inode->inode_lock);
 	  }
   }
