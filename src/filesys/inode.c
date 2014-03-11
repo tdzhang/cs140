@@ -612,6 +612,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 		record_sectors[i]=new_sector;
 	}
 	/*update the physical length info*/
+	printf(">>in zero_padding>>finishe pading, inode->sector=%zu, id->length=%zu\n",inode->sector,id->length);
 	id->length=end_pos;
 	cache_write(inode->sector, id, 0, BLOCK_SECTOR_SIZE);
 	free(record_sectors);
@@ -640,12 +641,12 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   off_t len_within, len_extend;
   struct inode_disk id;
   lock_acquire(&inode->inode_lock);
-  printf(">>in inode_write_at>>try to got id\n");
+  printf(">>in inode_write_at>>try to got id in %zu\n",inode->sector);
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-  printf(">>in inode_write_at>>got id.length=%d\n",id.length);
+  printf(">>in inode_write_at>>got id.length=%zu\n",id.length);
   off_t phy_length = id.length;
   if (offset + size > phy_length) {
-	  printf(">>in inode_write_at>>need to zeropadding, offset+size=%d\n",offset+size);
+	  printf(">>in inode_write_at>>need to zeropadding, offset+size=%zu\n",offset+size);
 	  if(!zero_padding(inode, &id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
 		  return 0;
