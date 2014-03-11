@@ -1,6 +1,7 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include <string.h>
 #include "lib/user/syscall.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -677,7 +678,9 @@ static void sys_create_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-
+	if(strcmp(file_name,"/0/1/1/2")==0){
+		printf("wahaha");
+	}
 	bool success = filesys_create(file_name, *file_size, false);
 	/*return the value returned by filesys_create*/
 	f->eax=success;
