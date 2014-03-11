@@ -91,7 +91,7 @@ inode_init (void)
 /* set the new_sector to the first non-allocated sector in the inode
  * must acquire inode lock before calling it */
 bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
-	size_t sectors = bytes_to_sectors(id->length);
+	int sectors = (int)bytes_to_sectors(id->length);
 	static struct indirect_block ib;
 	static struct indirect_block db;
 	if (sectors <= DIRECT_INDEX_NUM) {
@@ -476,7 +476,7 @@ inode_close (struct inode *inode)
           struct inode_disk id;
           cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
 
-          size_t sectors = bytes_to_sectors (id.length);
+          int sectors = (int)bytes_to_sectors (id.length);
 
           int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
           int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
@@ -589,7 +589,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 	}
 
 	/* padding full sectors until end_pos-1 */
-	off_t extra_sectors = bytes_to_sectors(end_pos)-bytes_to_sectors(start_pos);
+	int extra_sectors = (int)bytes_to_sectors(end_pos)-(int)bytes_to_sectors(start_pos);
 	off_t* record_sectors=malloc(sizeof(off_t) * extra_sectors);
 	off_t i,j;
 	block_sector_t new_sector=-1;
@@ -610,6 +610,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 		}
 		cache_write(new_sector, zeros, 0, BLOCK_SECTOR_SIZE);
 		record_sectors[i]=new_sector;
+		id->length += BLOCK_SECTOR_SIZE;
 	}
 	/*update the physical length info*/
 	id->length=end_pos;
