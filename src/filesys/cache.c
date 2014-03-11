@@ -406,6 +406,7 @@ off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 	lock_acquire(&buffer_cache_lock);
 
 	int slot = get_entry_index(sector);
+	printf("=====>in cache_read: get_entry_index=%zu\n",slot);
 	if (slot == INVALID_ENTRY_INDEX) {
 		slot = switch_cache_entry(sector, true);
 	}
@@ -455,8 +456,9 @@ off_t cache_write(block_sector_t sector, void *buffer,
 		off_t sector_offset, off_t write_bytes) {
 	ASSERT (sector != INVALID_SECTOR_ID);
 	lock_acquire(&buffer_cache_lock);
-
+	printf("[[=====>in cache_write:  write sector=%zu\n",sector);
 	int slot = get_entry_index(sector);
+	printf("[[=====>in cache_write:  get_entry_index=%zu\n",slot);
 	if (slot == INVALID_ENTRY_INDEX) {
 		slot = switch_cache_entry(sector, true);
 	}
@@ -488,6 +490,7 @@ off_t cache_write(block_sector_t sector, void *buffer,
 	buffer_cache[slot].writing_num --;
 	buffer_cache[slot].accessed = true;
 	buffer_cache[slot].dirty = true;
+	printf("[[=====>in cache_write:  finish write sector=%zu\n",sector);
 	cond_broadcast(&buffer_cache[slot].ready, &buffer_cache[slot].lock);
 	lock_release(&buffer_cache[slot].lock);
 
