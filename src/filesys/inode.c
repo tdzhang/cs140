@@ -507,15 +507,17 @@ inode_close (struct inode *inode)
           free_map_release (inode->sector, 1);
       }
 
-      free (inode); 
+      if (lock_held_by_current_thread (&inode->inode_lock)) {
+    	  	  lock_release(&inode->inode_lock);
+      }
+      free (inode);
   }
 
   if (lock_held_by_current_thread (&open_inodes_lock)) {
   	  lock_release(&open_inodes_lock);
   }
   if (inode != NULL) {
-	  if (!holding_inode_lock) {
-		  ASSERT(lock_held_by_current_thread (&inode->inode_lock));
+	  if (!holding_inode_lock && lock_held_by_current_thread (&inode->inode_lock)) {
 		  lock_release(&inode->inode_lock);
 	  }
   }
