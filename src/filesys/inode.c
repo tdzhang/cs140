@@ -52,6 +52,7 @@ byte_to_sector_no_check (const struct inode *inode, off_t pos)
 		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
 	}
 
+	printf("!!!!!!!!in double indirect sector\n");
 	/*sector_pos in the range of double indirect index*/
 	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) / INDEX_PER_SECTOR;
 	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) % INDEX_PER_SECTOR;
