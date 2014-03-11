@@ -178,8 +178,6 @@ filesys_open (const char *name)
 	  }
 	  block_sector_t inumber = inode->sector;
 	  dir_close (dir);
-	  //TODO: probably no need to open, should be opened in dir_lookup
-	  inode = inode_open(inumber);
 	  return file_open (inode);
   }
 }
