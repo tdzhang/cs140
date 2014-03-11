@@ -27,14 +27,10 @@ test_main (void)
   char name[READDIR_MAX_LEN + 1];
 
   root_fd = wrap_open ("/");
-  printf(">>>>>>root_fd = %d\n", root_fd);
   CHECK (mkdir ("a"), "mkdir \"a\"");
 
   a_fd0 = wrap_open ("/a");
-  printf(">>>>>>a_fd0 = %d\n", a_fd0);
   CHECK (!readdir (a_fd0, name), "verify \"/a\" is empty");
-  printf(">>>>>>inumber (root_fd) = %zu\n", inumber (root_fd));
-  printf(">>>>>>inumber (a_fd0) = %zu\n", inumber (a_fd0));
   CHECK (inumber (root_fd) != inumber (a_fd0),
          "\"/\" and \"/a\" must have different inumbers");
 
