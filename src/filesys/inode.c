@@ -640,13 +640,17 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   off_t len_within, len_extend;
   struct inode_disk id;
   lock_acquire(&inode->inode_lock);
+  printf(">>in inode_write_at>>try to got id\n");
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+  printf(">>in inode_write_at>>got id.length=%d\n",id.length);
   off_t phy_length = id.length;
-  if (offset + size - phy_length >0) {
+  if (offset + size > phy_length) {
+	  printf(">>in inode_write_at>>need to zeropadding, offset+size=%d\n",offset+size);
 	  if(!zero_padding(inode, &id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
 		  return 0;
 	  }
+	  printf(">>in inode_write_at>>finish zeropadding\n");
   }
 
 
@@ -675,6 +679,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     }
 
   inode->readable_length=id.length;
+  printf(">>in inode_write_at>>done writing with inode->readable_length=%d\n",inode->readable_length);
   lock_release(&inode->inode_lock);
   return bytes_written;
 }

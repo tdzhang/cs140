@@ -762,14 +762,16 @@ static void sys_write_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-
+	printf(">>in sys_write_handler>> find fib->filename=%s \n",fib->file_name);
 	/* if fd is corresponding to a dir, fail the write */
 	if (fib->f->inode->is_dir) {
 		f->eax = -1;
 		return;
 	}
+	printf(">>in sys_write_handler>>start write to file \n");
 	/*write to file*/
 	int result = write_to_file(fib->f, buffer, *size_ptr);
+	printf(">>in sys_write_handler>>done write, return %d \n",result);
 	f->eax = result;
 }
 
