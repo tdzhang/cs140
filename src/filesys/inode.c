@@ -52,7 +52,6 @@ byte_to_sector_no_check (const struct inode *inode, off_t pos)
 		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
 	}
 
-	printf("!!!!!!!!in double indirect sector\n");
 	/*sector_pos in the range of double indirect index*/
 	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) / INDEX_PER_SECTOR;
 	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) % INDEX_PER_SECTOR;
@@ -613,9 +612,7 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 		record_sectors[i]=new_sector;
 	}
 	/*update the physical length info*/
-
 	id->length=end_pos;
-	printf(">>in zero_padding>>finishe pading, inode->sector=%zu, id->length=%zu\n",inode->sector,id->length);
 	cache_write(inode->sector, id, 0, BLOCK_SECTOR_SIZE);
 	free(record_sectors);
 	return true;
@@ -643,26 +640,20 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   off_t len_within, len_extend;
   struct inode_disk id;
   lock_acquire(&inode->inode_lock);
-  printf(">>in inode_write_at>>try to got id in %zu\n",inode->sector);
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-  printf(">>in inode_write_at>>got id.length=%zu\n",id.length);
   off_t phy_length = id.length;
   if (offset + size > phy_length) {
-	  printf(">>in inode_write_at>>need to zeropadding for sector=%zu, phy_length=%zu,offset+size=%zu\n",inode->sector,phy_length,offset+size);
 	  if(!zero_padding(inode, &id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
 		  return 0;
 	  }
-	  printf(">>in inode_write_at>>finish zeropadding\n");
   }
 
 
   while (size > 0)
     {
       /* Sector to write, starting byte offset within sector. */
-	  printf("(((     offset=%zu  inode.secot=%zu \n",offset,inode->sector);
       block_sector_t sector_idx = byte_to_sector_no_check (inode, offset);
-      printf(">>in inode_write_at>>sector_idx=%zu to write at\n",sector_idx);
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
       /* Bytes left in inode, bytes left in sector, lesser of the two. */
@@ -684,7 +675,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     }
 
   inode->readable_length=id.length;
-  printf(">>in inode_write_at>>done writing with inode->readable_length=%d\n",inode->readable_length);
   lock_release(&inode->inode_lock);
   return bytes_written;
 }

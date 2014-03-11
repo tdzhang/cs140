@@ -762,16 +762,14 @@ static void sys_write_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-	printf(">>in sys_write_handler>> find fib->filename=%s \n",fib->file_name);
+
 	/* if fd is corresponding to a dir, fail the write */
 	if (fib->f->inode->is_dir) {
 		f->eax = -1;
 		return;
 	}
-	printf(">>in sys_write_handler>>start write to file \n");
 	/*write to file*/
 	int result = write_to_file(fib->f, buffer, *size_ptr);
-	printf(">>in sys_write_handler>>done write, return %d \n",result);
 	f->eax = result;
 }
 
@@ -1008,7 +1006,6 @@ static int read_from_file(struct file* f, void *buffer, int size) {
 
 /*write to file with buffer of size*/
 static int write_to_file(struct file *file, char *buffer, size_t size){
-	printf(">>in write_to_file>>start file_write with size %d \n",size);
 	return file_write (file, buffer, size);
 }
 
