@@ -311,6 +311,8 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 		lock_acquire(&buffer_cache_lock);
 	}
 */
+
+	printf("=====>in switch_cache_entry: new_sector=%zu, need_wait=%d",new_sector,need_wait);
 	bool need_flush = false;
 	bool did_flushed = false;
 	bool did_loaded = false;
