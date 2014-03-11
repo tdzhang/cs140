@@ -317,6 +317,7 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	bool did_flushed = false;
 	bool did_loaded = false;
 	int slot = evict_cache_entry();
+	printf("=====>in switch_cache_entry: evict_cache_entry=%zu",slot);
 	ASSERT (slot >= 0 && slot < CACHE_SIZE);
 	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].next_sector_id = new_sector;
