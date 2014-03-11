@@ -154,6 +154,25 @@ filesys_open (const char *name)
   static char tmp[MAX_DIR_PATH];
   struct inode *inode = NULL;
   struct dir *dir = NULL;
+
+
+  /*validate cwd if the name is a relative path*/
+  if(name[0]!='/'){
+	  struct thread* cur=thread_current();
+	  static char dummy_cwd[MAX_DIR_PATH];
+	  strlcpy(dummy_cwd, cur->cwd,MAX_DIR_PATH-2);
+	  dummy_cwd[strlen(cur->cwd)]="z";
+	  dummy_cwd[strlen(cur->cwd)+1]=0;
+	  struct dir * dummy_dir=path_to_dir(dummy_cwd);
+	  if(dummy_dir==NULL){
+		  /*fail, return */
+		  return NULL;
+	  }
+	  else{
+		  dir_close(dummy_dir);
+	  }
+  }
+
   relative_path_to_absolute(name, tmp);
 
   if (is_root_dir(tmp)) {
