@@ -634,13 +634,14 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     return 0;
 
   off_t len_within, len_extend;
-  struct inode_disk id;
+  struct inode_disk *id = malloc(sizeof(struct inode_disk));
   lock_acquire(&inode->inode_lock);
-  cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-  off_t phy_length = id.length;
+  cache_read(inode->sector, INVALID_SECTOR_ID, id, 0, BLOCK_SECTOR_SIZE);
+  off_t phy_length = id->length;
   if (offset + size - phy_length >0) {
-	  if(!zero_padding(inode, &id, phy_length, offset+size)){
+	  if(!zero_padding(inode, id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
+		  free(id);
 		  return 0;
 	  }
   }
@@ -671,6 +672,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     }
 
   inode->readable_length=id.length;
+  free(id);
   lock_release(&inode->inode_lock);
   return bytes_written;
 }
