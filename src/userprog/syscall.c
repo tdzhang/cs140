@@ -1008,6 +1008,7 @@ static int read_from_file(struct file* f, void *buffer, int size) {
 
 /*write to file with buffer of size*/
 static int write_to_file(struct file *file, char *buffer, size_t size){
+	printf(">>in write_to_file>>start file_write with size %d \n",size);
 	return file_write (file, buffer, size);
 }
 
