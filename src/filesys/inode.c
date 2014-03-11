@@ -671,7 +671,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       bytes_written += chunk_size;
     }
 
-  inode->readable_length=id.length;
+  inode->readable_length=id->length;
   free(id);
   lock_release(&inode->inode_lock);
   return bytes_written;
