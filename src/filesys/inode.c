@@ -646,7 +646,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   printf(">>in inode_write_at>>got id.length=%zu\n",id.length);
   off_t phy_length = id.length;
   if (offset + size > phy_length) {
-	  printf(">>in inode_write_at>>need to zeropadding, offset+size=%zu\n",offset+size);
+	  printf(">>in inode_write_at>>need to zeropadding for sector=%zu, phy_length=%zu,offset+size=%zu\n",inode->sector,phy_length,offset+size);
 	  if(!zero_padding(inode, &id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
 		  return 0;
