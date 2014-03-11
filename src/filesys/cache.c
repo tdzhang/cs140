@@ -312,12 +312,12 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	}
 */
 
-	printf("=====>in switch_cache_entry: new_sector=%zu, need_wait=%d",new_sector,need_wait);
+	printf("=====>in switch_cache_entry: new_sector=%zu, need_wait=%d\n",new_sector,need_wait);
 	bool need_flush = false;
 	bool did_flushed = false;
 	bool did_loaded = false;
 	int slot = evict_cache_entry();
-	printf("=====>in switch_cache_entry: evict_cache_entry=%zu",slot);
+	printf("=====>in switch_cache_entry: evict_cache_entry=%zu\n",slot);
 	ASSERT (slot >= 0 && slot < CACHE_SIZE);
 	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].next_sector_id = new_sector;
@@ -358,6 +358,7 @@ int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	/*succeeded to flush-load, update the cache and return its index*/
 	buffer_cache[slot].sector_id = new_sector;
 	buffer_cache[slot].next_sector_id = INVALID_SECTOR_ID;
+	printf("=====>in switch_cache_entry: finish switch new_sector=%zu\n",new_sector);
 	lock_release(&buffer_cache[slot].lock);
 
 	return slot;
@@ -401,6 +402,7 @@ static inline void clock_next(void) {
 off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 		void *buffer, off_t sector_offset, off_t read_bytes) {
 	ASSERT (sector != INVALID_SECTOR_ID);
+	printf("=====>in cache_read: sector=%zu\n",sector);
 	lock_acquire(&buffer_cache_lock);
 
 	int slot = get_entry_index(sector);
@@ -434,8 +436,8 @@ off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 	buffer_cache[slot].reading_num --;
 	buffer_cache[slot].accessed = true;
 	cond_broadcast(&buffer_cache[slot].ready, &buffer_cache[slot].lock);
+	printf("=====>in cache_read: finish read sector=%zu\n",sector);
 	lock_release(&buffer_cache[slot].lock);
-
 	/* trigger read-ahead, next_sector cannot be INVALID_SECTOR_ID
 	 * or 0 (freemap sector) */
 	if (next_sector != INVALID_SECTOR_ID
