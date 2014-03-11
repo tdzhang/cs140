@@ -20,15 +20,26 @@ make_tree (int at, int bt, int ct, int dt)
   quiet = true;
   for (a = 0; a < at; a++) 
     {
+	  printf(">>try to mkdir %d\n",a);
       do_mkdir ("/%d", a);
+      printf(">>done mkdir %d\n",a);
       for (b = 0; b < bt; b++) 
         {
+    	  	  printf("try to mkdir %d:%d\n",a,b);
           do_mkdir ("/%d/%d", a, b);
+          printf("done mkdir %d:%d\n",a,b);
           for (c = 0; c < ct; c++) 
             {
+        	  	  printf("try to mkdir %d:%d:%d\n",a,b,c);
               do_mkdir ("/%d/%d/%d", a, b, c);
-              for (d = 0; d < dt; d++)
-                do_touch ("/%d/%d/%d/%d", a, b, c, d);
+              printf("done mkdir %d:%d:%d\n",a,b,c);
+              for (d = 0; d < dt; d++){
+            	  printf("try to do touch %d:%d:%d:%d\n",a,b,c,d);
+            	  do_touch ("/%d/%d/%d/%d", a, b, c, d);
+            	  printf("done do touch %d:%d:%d:%d\n",a,b,c,d);
+              }
+
+
             }
         }
     }
