@@ -66,8 +66,6 @@ static block_sector_t
 byte_to_sector (const struct inode *inode, off_t pos)
 {
   ASSERT (inode != NULL);
-  //TODO: remove assert after double indirect implemented
-  ASSERT (pos >= 0 && pos < 512*251-1);
 
   if (pos < inode->readable_length) {
 	  return byte_to_sector_no_check (inode, pos);
