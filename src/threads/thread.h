@@ -28,7 +28,7 @@ typedef int tid_t;
 #define NICE_MAX 20   /*the highest nice value*/
 #define NICE_MIN -20  /*the lowest nice value*/
 
-#define MAX_DIR_PATH 200  /*the upper limit of the length of a path*/
+#define MAX_DIR_PATH 100  /*the upper limit of the length of a path*/
 
 /* A kernel thread or user process.
 
