@@ -375,6 +375,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		/*if the intermiate path elem is not dir or it's marked as removed,
 		 * fail it*/
 		if(!inode->is_dir || inode->removed) {
+			inode_close(inode);
 			dir_close (dir);
 			return NULL;
 		}
