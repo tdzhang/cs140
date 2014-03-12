@@ -531,20 +531,21 @@ static void sys_open_handler(struct intr_frame *f){
 		f->eax = -1;
 		return;
 	}
-	static char tmp[MAX_DIR_PATH];
+
 	struct inode *inode = NULL;
 	struct dir *dir = NULL;
-	relative_path_to_absolute(file_name, tmp);
 
-	if (is_root_dir(tmp)) {
-	  /* set name_to_open to "/" */
-	  name_to_open[0] = '/';
-	  name_to_open[0] = '\0';
-	} else {
-	  ASSERT (!has_end_slash(tmp));
-	  get_file_name_from_path(tmp, name_to_open);
-	  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
+	dir = path_to_dir(file_name,name_to_open);
+
+	if(dir==NULL){
+	  f->eax = -1;
+			return;
 	}
+	if(strlen(name_to_open)==0){
+	  /* set name_to_open to "/" */
+		  name_to_open[0] = '/';
+		  name_to_open[0] = '\0';
+  }
 
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/
@@ -552,8 +553,6 @@ static void sys_open_handler(struct intr_frame *f){
 		f->eax = -1;
 		return;
 	}
-
-
 
 	/*update global_file_block*/
 	ASSERT(!lock_held_by_current_thread (&global_file_list_lock));
@@ -679,9 +678,6 @@ static void sys_create_handler(struct intr_frame *f){
 
 	char *file_name=*(char **)(esp+1);
 
-	if (strcmp(file_name, "file50") == 0) {
-		printf ("lalala");
-	}
 
 	int *file_size=(int *)(esp+2);
 
