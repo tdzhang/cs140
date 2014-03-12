@@ -635,20 +635,21 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
    (Normally a write at end of file would extend the inode, but
    growth is not yet implemented.) */
 off_t
-inode_write_at (struct inode *inode, const void *buffer_, off_t size,
-                off_t offset) 
+inode_write_at (struct inode *inode, const void *buffer_, off_t size_,
+                off_t offset_)
 {
   const uint8_t *buffer = buffer_;
-  off_t bytes_written = 0;
+  int bytes_written = 0;
+  int size=(int) size_;
+  int offset=(int)offset_;
 
   if (inode->deny_write_cnt)
     return 0;
 
-  off_t len_within, len_extend;
   struct inode_disk id;
   lock_acquire(&inode->inode_lock);
   cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-  off_t phy_length = id.length;
+  int phy_length = (int)id.length;
   if (offset + size > phy_length) {
 	  if(!zero_padding(inode, &id, phy_length, offset+size)){
 		  lock_release(&inode->inode_lock);
