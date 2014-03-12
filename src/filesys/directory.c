@@ -243,7 +243,7 @@ dir_remove (struct dir *dir, const char *name)
 	  struct dir_entry entry;
 	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset) == sizeof entry;
 			  offset += sizeof entry) {
-	      if (entry.in_use){
+	      if (entry.in_use && (strcmp(entry.name, ".") != 0 || strcmp(entry.name, "..") != 0)){
 	          goto done;
 	      }
 	  }
