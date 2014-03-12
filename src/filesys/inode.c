@@ -724,6 +724,86 @@ void inode_flush_cache(void) {
 	force_flush_all_cache();
 }
 
+void
+inode_force_close (struct inode *inode)
+{
+  /* Ignore null pointer. */
+  if (inode == NULL)
+    return;
+
+  bool holding_open_inodes_lock = lock_held_by_current_thread (&open_inodes_lock);
+  if (!holding_open_inodes_lock) {
+	  lock_acquire(&open_inodes_lock);
+  }
+
+  bool holding_inode_lock = lock_held_by_current_thread (&inode->inode_lock);
+  if (!holding_inode_lock) {
+	  lock_acquire(&inode->inode_lock);
+  }
+  /* Release resources if this was the last opener. */
+  inode->open_cnt=0
+
+  /* Remove from inode list and release lock. */
+  list_remove (&inode->elem);
+  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+		  lock_release(&open_inodes_lock);
+  }
+  /* Deallocate blocks if removed. */
+  if (inode->removed)
+  {
+		  /* retrieve inode_disk(metadata) from sector */
+	  struct inode_disk id;
+	  cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+
+	  int sectors = (int)bytes_to_sectors (id.length);
+
+	  int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
+	  int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
+	  int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+
+	  int i;
+	  /* release data sectors */
+	  free_map_release_direct(&id, direct_sector_num);
+
+	  if (indirect_sector_num > 0){
+			  static struct indirect_block ib;
+			  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			  free_map_release_single_indirect(&ib, indirect_sector_num);
+			  free_map_release (id.single_idx, 1);
+	  }
+
+	  if (double_indirect_sector_num > 0) {
+			  static struct indirect_block db;
+			  cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
+			  off_t double_level_end_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
+			  off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
+			  free_map_release_double_indirect(&db, double_level_end_idx, single_level_end_idx+1);
+			  free_map_release (id.double_idx, 1);
+	  }
+
+
+	  /* release inode_disk(metadata) sector */
+	  free_map_release (inode->sector, 1);
+  }
+
+  if (lock_held_by_current_thread (&inode->inode_lock)) {
+		  lock_release(&inode->inode_lock);
+  }
+  free (inode);
+  inode=NULL;
+
+
+  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+	  lock_release(&open_inodes_lock);
+  }
+
+  if (inode != NULL) {
+	  if (!holding_inode_lock && lock_held_by_current_thread (&inode->inode_lock)) {
+		  lock_release(&inode->inode_lock);
+	  }
+  }
+}
+
 /*close all open inode before filesystem close*/
 void force_close_all_open_inodes(void){
 	struct list_elem *e;
@@ -737,9 +817,7 @@ void force_close_all_open_inodes(void){
 	{
 	  inode = list_entry (e, struct inode, elem);
 	  /*try to close inode*/
-	  while(inode!=NULL){
-			  inode_close(inode);
-	  }
+		inode_force_close(inode);
 	}
 	lock_release(&open_inodes_lock);
 }
