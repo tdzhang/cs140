@@ -806,18 +806,22 @@ inode_force_close (struct inode *inode)
 
 /*close all open inode before filesystem close*/
 void force_close_all_open_inodes(void){
-	struct list_elem *e;
+	struct list_elem *elem;
+	struct list_elem *next;
 	struct inode *inode;
 
 	/* Iterate through all the open inodes */
 	ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
 	lock_acquire(&open_inodes_lock);
-	for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
-	   e = list_next (e))
+	elem = list_begin (&open_inodes);
+	next = list_next (elem);
+	for (elem = list_begin (&open_inodes);
+	elem != list_end (&open_inodes); elem = next)
 	{
-	  inode = list_entry (e, struct inode, elem);
-	  /*try to close inode*/
+		next = list_next (elem);
+		inode = list_entry (elem, struct inode, elem);
 		inode_force_close(inode);
 	}
+
 	lock_release(&open_inodes_lock);
 }
