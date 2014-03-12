@@ -47,9 +47,9 @@ filesys_init (bool format)
 void
 filesys_done (void) 
 {
-  force_close_all_open_inodes();
-  inode_flush_cache();
 
+  inode_flush_cache();
+  force_close_all_open_inodes();
   free_map_close ();
 }
 
