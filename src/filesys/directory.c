@@ -334,7 +334,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		last_slash[0]=0;
 		strlcpy(file_name_out, (last_slash+1), NAME_MAX + 1);
 	}
-	ASSERT(strlen(file_name)>0);
+	ASSERT(strlen(file_name_out)>0);
 
 
 	/*find out how many args are there*/
