@@ -57,20 +57,10 @@ bool filesys_mkdir (const char* dir) {
 		return false;
 	}
 	block_sector_t inode_sector = 0;
-	static char tmp[MAX_DIR_PATH];
-	relative_path_to_absolute(dir, tmp);
 
-	if (is_root_dir(tmp)) {
-		/* cannot remake root */
-		return false;
-	}
-
-	ASSERT (!has_end_slash(tmp));
-
-	struct dir *d = path_to_dir(tmp);
 	char name_to_create[NAME_MAX + 1];
-	get_file_name_from_path(tmp, name_to_create);
-	ASSERT (name_to_create != NULL && strlen(name_to_create) > 0);
+	struct dir *d = path_to_dir(dir,name_to_create);
+
 
 	bool success = (d != NULL
 	                  && free_map_allocate (1, &inode_sector)
@@ -87,11 +77,32 @@ bool filesys_mkdir (const char* dir) {
 
 /* get file name from a given path, i.e. the substring after the last '/'
  * if no slash in path, copy path into file_name directly*/
-void get_file_name_from_path(char *path, char *file_name) {
+void get_file_name_from_path(char *path_, char *file_name) {
+	char path[MAX_DIR_PATH];
+	strlcpy(path, path_,strlen(path_)+1);
+	int i;
+	/*erase the last continuous slash*/
+	i=strlen(path);
+	while(i>0){
+		i--;
+		if(path[i]!='/') break;
+	}
+	path[i+1]=0;
+
+	/
+	/
+	..
+	.
+	..
+
 	char *last_slash = strrchr(path, '/');
 	if (last_slash == NULL) {
+		if(strlen(path)>NAME_MAX)file_name=NULL;
+
 		strlcpy(file_name, path, NAME_MAX + 1);
 	} else {
+		if(strlen(last_slash+1)>NAME_MAX)file_name=NULL;
+
 		strlcpy(file_name, (last_slash+1), NAME_MAX + 1);
 	}
 }
@@ -102,37 +113,24 @@ void get_file_name_from_path(char *path, char *file_name) {
    Fails if a file named NAME already exists,
    or if internal memory allocation fails. */
 bool
-filesys_create (const char *name, off_t initial_size, bool is_dir)
+filesys_create (const char *name, off_t initial_size)
 {
   if (name == NULL || strlen(name) == 0) {
 	  return false;
   }
   block_sector_t inode_sector = 0;
-  static char tmp[MAX_DIR_PATH];
-  relative_path_to_absolute(name, tmp);
-
-  if (is_root_dir(tmp)) {
-	/* cannot recreate root */
-	return false;
-  }
-  ASSERT (!has_end_slash(tmp));
-
-  struct dir *dir = path_to_dir(tmp);
   char name_to_create[NAME_MAX + 1];
+  struct dir *dir = path_to_dir(name,name_to_create);
 
-  /*if the file name is longer than the supported*/
-  char *last_slash = strrchr(tmp, '/');
-  if(strlen(last_slash+1) > NAME_MAX) {
+  if(dir==NULL||strlen(name_to_create)==0){
+	  dir_close(dir);
 	  return false;
   }
 
-  get_file_name_from_path(tmp, name_to_create);
-  ASSERT (name_to_create != NULL && strlen(name_to_create) > 0);
-
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size, is_dir)
-                  && dir_add (dir, name_to_create, inode_sector, is_dir));
+                  && inode_create (inode_sector, initial_size, false)
+                  && dir_add (dir, name_to_create, inode_sector, false));
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
   dir_close (dir);

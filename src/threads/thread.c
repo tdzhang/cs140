@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "threads/flags.h"
+#include "filesys/filesys.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
 #include "threads/palloc.h"
@@ -258,7 +259,7 @@ thread_create (const char *name, int priority,
     }
 #endif
     /*init the current working directory to root*/
-    strlcpy(t->cwd, "/", 2);
+    t->cwd_sector=ROOT_DIR_SECTOR;
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -617,7 +618,7 @@ init_thread (struct thread *t, const char *name, int priority)
 #endif
 
   t->magic = THREAD_MAGIC;
-  strlcpy(t->cwd, "/", 2);
+  t->cwd_sector=ROOT_DIR_SECTOR;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

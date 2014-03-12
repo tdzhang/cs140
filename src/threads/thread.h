@@ -135,7 +135,7 @@ struct thread
 
     /*file sys*/
     char cwd[MAX_DIR_PATH];
-
+    block_sector_t cwd_sector;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

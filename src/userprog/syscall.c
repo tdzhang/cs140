@@ -685,7 +685,7 @@ static void sys_create_handler(struct intr_frame *f){
 		user_exit(-1);
 		return;
 	}
-	bool success = filesys_create(file_name, *file_size, false);
+	bool success = filesys_create(file_name, *file_size);
 	/*return the value returned by filesys_create*/
 	f->eax=success;
 }

@@ -166,6 +166,43 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
   strlcpy (e.name, name, sizeof e.name);
   e.inode_sector = inode_sector;
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
+  if(!success) goto done;
+
+  /*if is_dir, need to create .. and . for the new dir*/
+  if(is_dir){
+	  struct inode *new_inode = inode_open(inode_sector);
+	  /*create ..*/
+	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+	         ofs += sizeof e)
+	      if (!e.in_use)
+	        break;
+	  e.in_use = true;
+	  e.is_dir = true;
+	  strlcpy (e.name, "..", 3);
+	  e.inode_sector = dir->inode->sector;
+	  success = inode_write_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+	  if(!success) {
+		  inode_close(new_inode);
+		  goto done;
+	  }
+
+	  /*create .*/
+	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+			 ofs += sizeof e)
+		  if (!e.in_use)
+			break;
+	  e.in_use = true;
+	  e.is_dir = true;
+	  strlcpy (e.name, ".", 3);
+	  e.inode_sector = new_inode->sector;
+	  success = inode_write_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+
+	  if(!success) {
+	  		  inode_close(new_inode);
+	  		  goto done;
+	  }
+	  inode_close(new_inode);
+  }
 
  done:
   return success;
@@ -248,15 +285,15 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 
 /*self defined function*/
 
-/*search absolute path to get a dir, open it, and return*/
+/*search path to get a dir, open it, and return*/
 /* /a/b/c  -> return dir struct dirctory b */
-struct dir* path_to_dir(char* path_){
-	ASSERT(path_ != NULL);
-	ASSERT (is_root_dir(path_) || !has_end_slash(path_));
-	/*if root, return root dir*/
-	if(strlen(path_)==1 &&path_[0]=='/'){
-		return dir_open_root ();
-	}
+/* /a/b/c/  -> return dir struct dirctory b */
+struct dir* path_to_dir(char* path_, char* file_name_out){
+	ASSERT(path_ != NULL && path_[0]!=0);
+
+	/*bool var indicate relative/abs path*/
+	bool relative_path=false;
+	if(path_[0]!='/')relative_path=true;
 
 	/*parse path*/
 	char *token, *save_ptr;
@@ -265,12 +302,40 @@ struct dir* path_to_dir(char* path_){
 	int j=0;
 	char path[MAX_DIR_PATH];
 	strlcpy(path, path_,strlen(path_)+1);
-	for(i=strlen(path)-1;i>=0;i--){
-		if(path[i]=='/'){
-			path[i]='\0';
-			break;
-		}
+
+	/*erase the last continuous slash*/
+	i=strlen(path);
+	while(i>0){
+		i--;
+		if(path[i]!='/') break;
 	}
+	path[i+1]=0;
+
+	/*if root, return root dir*/
+	if(strlen(path_)==1 &&path_[0]=='/'){
+		file_name_out[0]=0;
+		return dir_open_root ();
+	}
+
+	/*return file_name_out*/
+	char *last_slash = strrchr(path, '/');
+	if (last_slash == NULL) {
+		if(strlen(path)>NAME_MAX){
+			file_name_out[0]=0;
+			return NULL;
+		}
+
+		strlcpy(file_name_out, path, NAME_MAX + 1);
+	} else {
+		if(strlen(last_slash+1)>NAME_MAX){
+			file_name_out[0]=0;
+			return NULL;
+		}
+		last_slash[0]=0;
+		strlcpy(file_name_out, (last_slash+1), NAME_MAX + 1);
+	}
+	ASSERT(strlen(file_name)>0);
+
 
 	/*find out how many args are there*/
 	for (token = strtok_r (path, "/", &save_ptr); token != NULL;
@@ -287,7 +352,13 @@ struct dir* path_to_dir(char* path_){
 	}
 
 	/*using dirs to get the directory inode sector*/
-	struct dir *dir = dir_open_root ();
+	struct dir *dir;
+	if(relative_path){
+		dir=dir_open(inode_open(thread_current()->cwd_sector));
+	}else{
+		dir= dir_open_root ();
+	}
+
 	struct inode *inode = NULL;
 	for(i=0;i<count;i++){
 		if (dir == NULL) return NULL;
