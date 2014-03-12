@@ -821,8 +821,11 @@ void force_close_all_open_inodes(void){
 	{
 		next = list_next (elem);
 		inode = list_entry (elem, struct inode, elem);
-		if(inode->sector!=0)
-			inode_force_close(inode);
+		if(inode->sector!=0){
+			/*inode_force_close(inode);*/
+			inode_close(inode);
+		}
+
 	}
 
 	lock_release(&open_inodes_lock);
