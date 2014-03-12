@@ -545,7 +545,7 @@ static void sys_open_handler(struct intr_frame *f){
 	  /* set name_to_open to "/" */
 		  name_to_open[0] = '/';
 		  name_to_open[0] = '\0';
-  }
+    }
 
 	struct file *file = filesys_open(file_name);
 	/*return -1 if failed to open the file*/

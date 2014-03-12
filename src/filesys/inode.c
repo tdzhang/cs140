@@ -449,12 +449,13 @@ inode_get_inumber (const struct inode *inode)
 /* Closes INODE and writes it to disk.
    If this was the last reference to INODE, frees its memory.
    If INODE was also a removed inode, frees its blocks. */
-void
+bool
 inode_close (struct inode *inode) 
 {
+	bool inode_freed = false;
   /* Ignore null pointer. */
   if (inode == NULL)
-    return;
+    return inode_freed;
 
   bool holding_open_inodes_lock = lock_held_by_current_thread (&open_inodes_lock);
   if (!holding_open_inodes_lock) {
@@ -515,7 +516,7 @@ inode_close (struct inode *inode)
     	  	  lock_release(&inode->inode_lock);
       }
       free (inode);
-      inode=NULL;
+      inode_freed = true;
   }
 
   if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
@@ -527,6 +528,8 @@ inode_close (struct inode *inode)
 		  lock_release(&inode->inode_lock);
 	  }
   }
+
+  return inode_freed;
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
@@ -823,11 +826,19 @@ void force_close_all_open_inodes(void){
 		inode = list_entry (elem, struct inode, elem);
 		if(inode->sector!=FREE_MAP_SECTOR){
 			/*inode_force_close(inode);*/
-			inode_close(inode);
+			inode_close_set_null(&inode);
 			ASSERT (inode==NULL);
 		}
 
 	}
 
 	lock_release(&open_inodes_lock);
+}
+
+
+void inode_close_set_null(struct inode **d_inode) {
+	bool inode_freed = inode_close(*d_inode);
+	if (inode_freed) {
+		*d_inode = NULL;
+	}
 }
