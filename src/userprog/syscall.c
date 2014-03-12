@@ -673,6 +673,11 @@ static void sys_create_handler(struct intr_frame *f){
 	}
 
 	char *file_name=*(char **)(esp+1);
+
+	if (strcmp(file_name, "file50") == 0) {
+		printf ("lalala");
+	}
+
 	int *file_size=(int *)(esp+2);
 
 	/* verify file_name string */
