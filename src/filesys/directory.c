@@ -360,6 +360,11 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		dir= dir_open_root ();
 	}
 
+	if (!dir->inode->is_dir || dir->inode->removed) {
+		dir_close (dir);
+		return NULL;
+	}
+
 	struct inode *inode = NULL;
 	for(i=0;i<count;i++){
 		if (dir == NULL) return NULL;
