@@ -326,6 +326,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		}
 
 		strlcpy(file_name_out, path, NAME_MAX + 1);
+		path[0]=0;
 	} else {
 		if(strlen(last_slash+1)>NAME_MAX){
 			file_name_out[0]=0;
