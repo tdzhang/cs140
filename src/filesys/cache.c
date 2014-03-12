@@ -82,11 +82,10 @@ bool buffer_cache_init(void) {
 
 
 	/*create write-behind daemon thread*/
-	/*
 	tid_t write_t = thread_create ("write_behind_daemon", PRI_DEFAULT,
 			write_behind_daemon, NULL);
 	if (write_t == TID_ERROR) return false;
-	*/
+
 	lock_init(&read_ahead_lock);
 	list_init(&read_ahead_list);
 	cond_init(&read_ahead_list_ready);
