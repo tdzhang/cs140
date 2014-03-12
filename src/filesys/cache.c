@@ -147,7 +147,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
 	ASSERT (lock_held_by_current_thread(&buffer_cache[entry_index].lock));
 
-	ASSERT(buffer_cache[entry_index].dirty);
+	/*ASSERT(buffer_cache[entry_index].dirty);*/
 	/*if some process is writing or waiting to write into this entry
 	 * and no need to wait, return immediately*/
 	if ((buffer_cache[entry_index].wait_writing_num
@@ -194,10 +194,11 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 			cond_wait(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
 		}
 		/* after waiting period, it is possible that the entry is not dirty at more */
+		/*
 		if (!buffer_cache[entry_index].dirty) {
 			return true;
 		}
-
+	    */
 		/*release all locks it's holding in I/O period*/
 		if (lock_held_by_current_thread(&buffer_cache_lock)) {
 			holding_global_lock = true;
@@ -579,9 +580,9 @@ void force_flush_all_cache(void) {
 		holding_lock = lock_held_by_current_thread(&buffer_cache[i].lock);
 		if (!holding_lock)
 			lock_acquire (&buffer_cache[i].lock);
-		if (buffer_cache[i].dirty) {
+		/*if (buffer_cache[i].dirty) {*/
 			flush_cache_entry (i, true);
-		}
+		/*}*/
 		if (!holding_lock)
 			lock_release (&buffer_cache[i].lock);
 	}
