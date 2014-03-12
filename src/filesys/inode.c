@@ -821,9 +821,10 @@ void force_close_all_open_inodes(void){
 	{
 		next = list_next (elem);
 		inode = list_entry (elem, struct inode, elem);
-		if(inode->sector!=0){
+		if(inode->sector!=FREE_MAP_SECTOR){
 			/*inode_force_close(inode);*/
 			inode_close(inode);
+			ASSERT (inode==NULL);
 		}
 
 	}
