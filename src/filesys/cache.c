@@ -577,14 +577,16 @@ void force_flush_all_cache(void) {
 	int i;
 	bool holding_lock;
 	for (i = 0; i < CACHE_SIZE; i++) {
+		printf(">>>>>>>i = %d\n", i);
 		holding_lock = lock_held_by_current_thread(&buffer_cache[i].lock);
 		if (!holding_lock)
 			lock_acquire (&buffer_cache[i].lock);
-		/*if (buffer_cache[i].dirty) {*/
+		if (buffer_cache[i].dirty) {
 			flush_cache_entry (i, true);
-		/*}*/
+		}
 		if (!holding_lock)
 			lock_release (&buffer_cache[i].lock);
+		timer_msleep(5 * 1000);
 	}
 }
 
