@@ -456,8 +456,11 @@ inode_close (struct inode *inode)
   if (inode == NULL)
     return;
 
-  ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
-  lock_acquire(&open_inodes_lock);
+  bool holding_open_inodes_lock = lock_held_by_current_thread (&open_inodes_lock);
+  if (!holding_open_inodes_lock) {
+	  lock_acquire(&open_inodes_lock);
+  }
+
   bool holding_inode_lock = lock_held_by_current_thread (&inode->inode_lock);
   if (!holding_inode_lock) {
 	  lock_acquire(&inode->inode_lock);
@@ -467,8 +470,9 @@ inode_close (struct inode *inode)
   {
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
-      lock_release(&open_inodes_lock);
-
+      if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+    	  	  lock_release(&open_inodes_lock);
+      }
       /* Deallocate blocks if removed. */
       if (inode->removed) 
       {
@@ -513,9 +517,10 @@ inode_close (struct inode *inode)
       free (inode);
   }
 
-  if (lock_held_by_current_thread (&open_inodes_lock)) {
-  	  lock_release(&open_inodes_lock);
+  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+	  lock_release(&open_inodes_lock);
   }
+
   if (inode != NULL) {
 	  if (!holding_inode_lock && lock_held_by_current_thread (&inode->inode_lock)) {
 		  lock_release(&inode->inode_lock);
