@@ -192,7 +192,45 @@ filesys_remove (const char *name)
 	return success;
 }
 
-void
+/*init the 2 entries of root dir*/
+void root_dir_init(){
+   /*create .. and . for the root directory*/
+  struct dir_entry e;
+  off_t ofs;
+  bool success = false;
+  struct inode *new_inode = inode_open(ROOT_DIR_SECTOR);
+    /*create ..*/
+    for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+           ofs += sizeof e)
+        if (!e.in_use)
+          break;
+    e.in_use = true;
+    e.is_dir = true;
+    strlcpy (e.name, "..", 3);
+    e.inode_sector = ROOT_DIR_SECTOR;
+    success = inode_write_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+    if(!success) {
+      inode_close(new_inode);
+     PANIC ("root directory creation failed at .. entry");
+    }
+
+    /*create .*/
+    for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+       ofs += sizeof e)
+      if (!e.in_use)
+      break;
+    e.in_use = true;
+    e.is_dir = true;
+    strlcpy (e.name, ".", 3);
+    e.inode_sector = ROOT_DIR_SECTOR;
+    success = inode_write_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+
+    if(!success) {
+          inode_close(new_inode);
+         PANIC ("root directory creation failed at . entry");
+    }
+    inode_close(new_inode);
+}
 /* Formats the file system. */
 static void
 do_format (void)
@@ -203,7 +241,6 @@ do_format (void)
     PANIC ("root directory creation failed");
 
   root_dir_init();
-
 
   free_map_close ();
   printf ("done.\n");
