@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "devices/block.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -134,7 +135,6 @@ struct thread
 #endif
 
     /*file sys*/
-    char cwd[MAX_DIR_PATH];
     block_sector_t cwd_sector;
 
     /* Owned by thread.c. */
