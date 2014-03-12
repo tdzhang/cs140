@@ -515,6 +515,7 @@ inode_close (struct inode *inode)
     	  	  lock_release(&inode->inode_lock);
       }
       free (inode);
+      inode=NULL;
   }
 
   if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
@@ -721,4 +722,24 @@ inode_length (const struct inode *inode)
 
 void inode_flush_cache(void) {
 	force_flush_all_cache();
+}
+
+/*close all open inode before filesystem close*/
+void force_close_all_open_inodes(void){
+	struct list_elem *e;
+	struct inode *inode;
+
+	/* Iterate through all the open inodes */
+	ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
+	lock_acquire(&open_inodes_lock);
+	for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
+	   e = list_next (e))
+	{
+	  inode = list_entry (e, struct inode, elem);
+	  /*try to close inode*/
+	  while(inode!=NULL){
+			  inode_close(inode);
+	  }
+	}
+	lock_release(&open_inodes_lock);
 }

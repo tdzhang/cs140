@@ -48,6 +48,7 @@ void
 filesys_done (void) 
 {
   inode_flush_cache();
+  force_close_all_open_inodes();
   free_map_close ();
 }
 
