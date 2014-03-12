@@ -246,7 +246,9 @@ static void sys_readdir_handler(struct intr_frame *f){
 				f->eax = false;
 			} else {
 				struct dir *d = dir_open(inode_reopen(fib->f->inode));
+				d->pos = fib->f->pos;
 				f->eax = dir_readdir(d, dir);
+				fib->f->pos = d->pos;
 				dir_close(d);
 			}
 		}
