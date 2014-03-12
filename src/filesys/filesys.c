@@ -155,6 +155,7 @@ filesys_open (const char *name)
 		  return NULL;
 	  }
 	  if (inode->removed) {
+		  inode_close(inode);
 		  dir_close (dir);
 		  return NULL;
 	  }
