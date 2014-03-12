@@ -301,42 +301,47 @@ static void sys_chdir_handler(struct intr_frame *f){
 		return;
 	}
 
-	static char tmp[MAX_DIR_PATH];
-	relative_path_to_absolute(dir, tmp);
-	if (is_root_dir(tmp)) {
-		strlcpy(thread_current()->cwd, "/", NAME_MAX);
-		f->eax = true;
-	} else {
-		ASSERT (!has_end_slash(tmp));
-		struct dir *d = path_to_dir(tmp);
-		if (d == NULL) {
-			f->eax = false;
-		} else {
-			char name_to_change[NAME_MAX + 1];
-			get_file_name_from_path(tmp, name_to_change);
 
-			ASSERT (name_to_change != NULL && strlen(name_to_change) > 0);
-			struct inode *inode = NULL;
-			dir_lookup (d, name_to_change, &inode);
-			if (inode == NULL) {
-				f->eax = false;
-			} else if (!inode->is_dir){
-				f->eax = false;
-			} else {
-				int len=strlen(tmp);
-				ASSERT(len < MAX_DIR_PATH-1);
-				if(len > 0 && tmp[len-1]!='/'){
-					tmp[len]='/';
-					tmp[len+1]=0;
-				}
-				strlcpy(thread_current()->cwd, tmp, MAX_DIR_PATH);
-				ASSERT (thread_current()->cwd[strlen(thread_current()->cwd)-1] == '/');
-				dir_close(d);
-				f->eax = true;
-			}
-		}
-
+	if (dir == NULL || strlen(dir) == 0) {
+		f->eax = false;
+		return;
 	}
+	  struct inode *inode = NULL;
+	  struct dir *d = NULL;
+	  char name_to_open[NAME_MAX + 1];
+
+	  d = path_to_dir(dir,name_to_open);
+
+	  if(d==NULL){
+		  f->eax = false;
+		  return;
+	  }
+
+	  /*if open root, file open the root*/
+	  if(strlen(name_to_open)==0){
+		thread_current()->cwd_sector=ROOT_DIR_SECTOR;
+		f->eax = true;
+	  }else{
+		  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
+		  dir_lookup (d, name_to_open, &inode);
+		  if (inode == NULL) {
+			  dir_close (d);
+			  f->eax = false;
+			  return;
+		  }
+		  if (inode->removed) {
+			  dir_close (d);
+			  inode_close(inode);
+			  f->eax = false;
+			  return;
+		  }
+		  dir_close (d);
+		  thread_current()->cwd_sector=inode->sector;
+		  inode_close(inode);
+		  f->eax=true;
+	  }
+
+	  dir_close (d);
 }
 
 /*handle sys_exec*/
