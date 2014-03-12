@@ -321,6 +321,7 @@ static void sys_chdir_handler(struct intr_frame *f){
 	  if(strlen(name_to_open)==0){
 		thread_current()->cwd_sector=ROOT_DIR_SECTOR;
 		f->eax = true;
+		dir_close (d);
 	  }else{
 		  ASSERT (name_to_open != NULL && strlen(name_to_open) > 0);
 		  dir_lookup (d, name_to_open, &inode);
@@ -335,13 +336,12 @@ static void sys_chdir_handler(struct intr_frame *f){
 			  f->eax = false;
 			  return;
 		  }
-		  dir_close (d);
 		  thread_current()->cwd_sector=inode->sector;
 		  inode_close(inode);
 		  f->eax=true;
+		  dir_close (d);
 	  }
 
-	  dir_close (d);
 }
 
 /*handle sys_exec*/
