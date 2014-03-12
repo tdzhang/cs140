@@ -741,7 +741,7 @@ inode_force_close (struct inode *inode)
 	  lock_acquire(&inode->inode_lock);
   }
   /* Release resources if this was the last opener. */
-  inode->open_cnt=0
+  inode->open_cnt=0;
 
   /* Remove from inode list and release lock. */
   list_remove (&inode->elem);
