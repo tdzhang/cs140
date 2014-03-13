@@ -827,7 +827,7 @@ void force_close_all_open_inodes(void){
 		if(inode->sector!=FREE_MAP_SECTOR){
 			/*inode_force_close(inode);*/
 			inode_close_set_null(&inode);
-			ASSERT (inode==NULL);
+			/*ASSERT (inode==NULL);*/
 		}
 
 	}
