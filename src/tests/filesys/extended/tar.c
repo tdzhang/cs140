@@ -106,15 +106,17 @@ archive_file (char file_name[], size_t file_name_size,
         {
     	  	  printf ("   ------>archive_file>> in inumber (file_fd)%zu != inumber (archive_fd)%zu\n",inumber (file_fd),inumber (archive_fd));
           if (!isdir (file_fd)){
+        	  	  printf ("   ------>archive_file>> !isdir (file_fd)\n");
         	  	  success = archive_ordinary_file (file_name, file_fd,
         	                                               archive_fd, write_error);
-              printf ("   ------>archive_file>> !isdir (file_fd)\n");
+
           }
 
           else{
+        	  	  printf ("   ------>archive_file>> isdir (file_fd)\n");
         	  	  success = archive_directory (file_name, file_name_size, file_fd,
         	                                           archive_fd, write_error);
-        	  	  printf ("   ------>archive_file>> isdir (file_fd)\n");
+
           }
 
         }
@@ -178,23 +180,33 @@ archive_directory (char file_name[], size_t file_name_size, int file_fd,
 {
   size_t dir_len;
   bool success = true;
-
+  printf ("       ===>archive_directory>> geting in\n");
+  printf ("       ===>archive_directory>> file_name=%s file_name_size=%zu file_fd=%d archive_fd=%d\n",file_name,file_name_size,file_fd,archive_fd);
   dir_len = strlen (file_name);
+  printf ("       ===>archive_directory>> strlen (file_name)=%d\n",dir_len);
   if (dir_len + 1 + READDIR_MAX_LEN + 1 > file_name_size) 
     {
       printf ("%s: file name too long\n", file_name);
       return false;
     }
 
+  printf ("       ===>archive_directory>> before write_header\n");
   if (!write_header (file_name, USTAR_DIRECTORY, 0, archive_fd, write_error))
     return false;
-      
+  printf ("       ===>archive_directory>> after write_header\n");
   file_name[dir_len] = '/';
-  while (readdir (file_fd, &file_name[dir_len + 1])) 
-    if (!archive_file (file_name, file_name_size, archive_fd, write_error))
-      success = false;
-  file_name[dir_len] = '\0';
+  printf ("       ===>archive_directory>> file_name=%s\n", file_name);
 
+  printf ("       ===>archive_directory>> while (readdir)\n");
+  while (readdir (file_fd, &file_name[dir_len + 1])) {
+	  printf ("       ===>archive_directory>>  in while (readdir)\n");
+	  printf ("       -------------------file_name=%s file_name_size=%s, archive_fd=%d\n",file_name,file_name_size,archive_fd);
+	  if (!archive_file (file_name, file_name_size, archive_fd, write_error))
+	        success = false;
+  }
+  printf ("       ===>archive_directory>> out while (readdir)\n");
+  file_name[dir_len] = '\0';
+  printf ("       ===>archive_directory>> geting out success=%d\n",success);
   return success;
 }
 
