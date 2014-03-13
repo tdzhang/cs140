@@ -513,7 +513,11 @@ inode_close (struct inode *inode)
 
           if (indirect_sector_num > 0){
         	  	  static struct indirect_block ib;
-        	  	  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+        	  	  if (double_indirect_sector_num > 0) {
+        	  		  cache_read(id.single_idx, id.double_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+        	  	  } else {
+        	  		  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+        	  	  }
         	  	  free_map_release_single_indirect(&ib, indirect_sector_num);
         	  	  free_map_release (id.single_idx, 1);
           }
