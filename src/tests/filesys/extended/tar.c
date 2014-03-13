@@ -48,40 +48,45 @@ static bool do_write (int fd, const char *buffer, int size, bool *write_error);
 static bool
 make_tar_archive (const char *archive_name, char *files[], size_t file_cnt) 
 {
+	printf (">>>>>make_tar_archive>> archive_name=%s, file cnt=%d \n", archive_name,file_cnt);
   static const char zeros[512];
   int archive_fd;
   bool success = true;
   bool write_error = false;
   size_t i;
-  
+  printf (">>>>>make_tar_archive>> before create (archive_name, 0) \n");
   if (!create (archive_name, 0)) 
     {
       printf ("%s: create failed\n", archive_name);
       return false;
     }
+  printf (">>>>>make_tar_archive>> after create (archive_name, 0) \n");
+
   archive_fd = open (archive_name);
+  printf (">>>>>make_tar_archive>> after open (archive_name) \n");
   if (archive_fd < 0)
     {
       printf ("%s: open failed\n", archive_name);
       return false;
     }
-
+  printf (">>>>>make_tar_archive>> before for (i = 0; i < file_cnt; i++) \n");
   for (i = 0; i < file_cnt; i++) 
     {
       char file_name[128];
       
       strlcpy (file_name, files[i], sizeof file_name);
+      printf (">>>>>make_tar_archive>> archive_file %d name=%s \n",i,file_name);
       if (!archive_file (file_name, sizeof file_name,
                          archive_fd, &write_error))
         success = false;
     }
-
+  printf (">>>>>make_tar_archive>> before do_write (archive_fd, zeros, 512, &write_error \n");
   if (!do_write (archive_fd, zeros, 512, &write_error)
       || !do_write (archive_fd, zeros, 512, &write_error)) 
     success = false;
-
+  printf (">>>>>make_tar_archive>> after do_write (archive_fd, zeros, 512, &write_error \n");
   close (archive_fd);
-
+  printf (">>>>>make_tar_archive>> after close (archive_fd) \n");
   return success;
 }
 
