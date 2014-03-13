@@ -145,6 +145,7 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 			}
 			ib.sectors[0]=new_sector;
 			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR], &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_write(id->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
 		}else{
 			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
 			cache_read(db.sectors[sectors_left/INDEX_PER_SECTOR],INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
