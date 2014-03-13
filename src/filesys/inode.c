@@ -88,6 +88,18 @@ inode_init (void)
   list_init (&open_inodes);
 }
 
+/*get the next sector, used by read ahead*/
+block_sector_t get_next_sector_id(struct inode_disk *id, block_sector_t cur_sector) {
+	int sectors = (int)bytes_to_sectors(id->length);
+	static struct indirect_block ib;
+	static struct indirect_block db;
+
+
+
+
+	return INVALID_SECTOR_ID;
+}
+
 
 /* set the new_sector to the first non-allocated sector in the inode
  * must acquire inode lock before calling it */
@@ -339,6 +351,11 @@ static void free_map_release_double_indirect (struct indirect_block *db, int dou
 	static struct indirect_block ib;
 
 	for (i = 0; i < double_level_end_idx; i++) {
+		block_sector_t next_id = INVALID_SECTOR_ID;
+		if (single_level_end_idx <= 0  && i < (double_level_end_idx-1)) {
+
+		}
+		block_sector_t next_id = (i==(double_level_end_idx-1))? INVALID_SECTOR_ID:
 		cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 		free_map_release_all_single_indirect(&ib);
 	}
