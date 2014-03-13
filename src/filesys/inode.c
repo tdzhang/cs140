@@ -34,8 +34,6 @@ byte_to_sector_no_check (const struct inode *inode, off_t pos)
 {
 	ASSERT (inode != NULL);
 
-	ASSERT (pos >= 0 && pos < 512*251-1);
-
 	/* sector_pos starts from 0 */
 	off_t sector_pos = pos/BLOCK_SECTOR_SIZE;
 
@@ -69,7 +67,6 @@ byte_to_sector (const struct inode *inode, off_t pos)
 {
   ASSERT (inode != NULL);
 
-  ASSERT (pos >= 0 && pos < 512*251-1);
 
   if (pos < inode->readable_length) {
 	  return byte_to_sector_no_check (inode, pos);
