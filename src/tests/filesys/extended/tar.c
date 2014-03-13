@@ -200,7 +200,7 @@ archive_directory (char file_name[], size_t file_name_size, int file_fd,
   printf ("       ===>archive_directory%s>> while (readdir)\n",file_name);
   while (readdir (file_fd, &file_name[dir_len + 1])) {
 	  printf ("       ===>archive_directory%s>>  in while (readdir)\n",file_name);
-	  printf ("       -------------------file_name=%s file_name_size=%s, archive_fd=%d\n",file_name,file_name_size,archive_fd);
+	  printf ("       -------------------file_name=%s file_name_size=%d, archive_fd=%d\n",file_name,file_name_size,archive_fd);
 	  if (!archive_file (file_name, file_name_size, archive_fd, write_error))
 	        success = false;
   }
