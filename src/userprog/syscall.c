@@ -777,6 +777,7 @@ static void sys_write_handler(struct intr_frame *f){
 		return;
 	}
 	/*write to file*/
+	printf(" - - - - - -%zu- - - - - ",fib->f->pos);
 	int result = write_to_file(fib->f, buffer, *size_ptr);
 	f->eax = result;
 }

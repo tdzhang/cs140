@@ -158,7 +158,7 @@ archive_ordinary_file (const char *file_name, int file_fd,
   printf ("       =---=>archive_ordinary_file%s>> before while (file_size > 0)\n",file_name);
   while (file_size > 0) 
     {
-	  if(file_size==2948){
+	  if(file_size<=2996){
 		  printf("wahah\n");
 	  }
 	  printf ("       -----=>archive_ordinary_file%s>> in while (file_size > 0)\n",file_name);
