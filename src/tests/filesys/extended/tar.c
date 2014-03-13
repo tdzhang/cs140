@@ -142,16 +142,24 @@ static bool
 archive_ordinary_file (const char *file_name, int file_fd,
                        int archive_fd, bool *write_error)
 {
+	 printf ("       =---=>archive_ordinary_file%s>> geting in\n",file_name);
+	 printf ("       =---=>archive_ordinary_file%s>> file_fd=%d archive_fd=%d\n",file_name,file_fd,archive_fd);
   bool read_error = false;
   bool success = true;
   int file_size = filesize (file_fd);
+  printf ("       =---=>archive_ordinary_file%s>> filesize (file_fd)=%d\n",file_name,file_size);
 
+  printf ("       =---=>archive_ordinary_file%s>> before write header\n",file_name);
   if (!write_header (file_name, USTAR_REGULAR, file_size,
                      archive_fd, write_error))
     return false;
+  printf ("       =---=>archive_ordinary_file%s>> after write header\n",file_name);
 
+  printf ("       =---=>archive_ordinary_file%s>> before while (file_size > 0)\n",file_name);
   while (file_size > 0) 
     {
+	  printf ("       =-----=>archive_ordinary_file%s>> in while (file_size > 0)\n",file_name);
+	  printf ("       =-----=>archive_ordinary_file%s>> file_size=%d\n",file_name,file_size);
       static char buf[512];
       int chunk_size = file_size > 512 ? 512 : file_size;
       int read_retval = read (file_fd, buf, chunk_size);
@@ -163,14 +171,15 @@ archive_ordinary_file (const char *file_name, int file_fd,
           read_error = true;
           success = false;
         }
-
+      printf ("       =-----=>archive_ordinary_file%s>> before memset\n",file_name);
       memset (buf + bytes_read, 0, 512 - bytes_read);
+      printf ("       =-----=>archive_ordinary_file%s>> after memset before do write\n",file_name);
       if (!do_write (archive_fd, buf, 512, write_error))
         success = false;
-
+      printf ("       =-----=>archive_ordinary_file%s>> after do write\n",file_name);
       file_size -= chunk_size;
     }
-
+  printf ("       =---=>archive_ordinary_file%s>> return success=%d\n",file_name,success);
   return success;
 }
 
