@@ -9,7 +9,7 @@
 #include "filesys/cache.h"
 #include "threads/thread.h"
 
-
+/*define the max num of entries a dir can have*/
 #define MAX_ENTRIES_PER_DIR 16
 
 /* Partition that contains the file system. */
@@ -60,6 +60,7 @@ bool filesys_mkdir (const char* dir) {
 	}
 	block_sector_t inode_sector = 0;
 
+	/*get opened dir and file name to create*/
 	char name_to_create[NAME_MAX + 1];
 	struct dir *d = path_to_dir(dir,name_to_create);
 
@@ -68,6 +69,7 @@ bool filesys_mkdir (const char* dir) {
 		  return false;
 	 }
 
+	/*allocate the new metadata and data sectors*/
 	bool success = (d != NULL
 	                  && free_map_allocate (1, &inode_sector)
 	                  && dir_create (inode_sector, MAX_ENTRIES_PER_DIR)
@@ -94,6 +96,7 @@ filesys_create (const char *name, off_t initial_size)
 	  return false;
   }
   block_sector_t inode_sector = 0;
+  /*get opened dir and file name to create*/
   char name_to_create[NAME_MAX + 1];
   struct dir *dir = path_to_dir(name,name_to_create);
 
@@ -101,7 +104,7 @@ filesys_create (const char *name, off_t initial_size)
 	  dir_close(dir);
 	  return false;
   }
-
+  /*allocate the new metadata and data sectors*/
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, false)
@@ -184,6 +187,7 @@ filesys_remove (const char *name)
 
 	struct inode *inode = NULL;
 	struct dir *dir = NULL;
+	/*get opened dir and file name to remove*/
 	char name_to_remove[NAME_MAX + 1];
 	dir = path_to_dir(name,name_to_remove);
 
@@ -247,7 +251,7 @@ do_format (void)
   free_map_create ();
   if (!dir_create (ROOT_DIR_SECTOR, MAX_ENTRIES_PER_DIR))
     PANIC ("root directory creation failed");
-
+  /*init the root dir, create . and .. entries*/
   root_dir_init();
 
   free_map_close ();

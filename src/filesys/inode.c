@@ -26,7 +26,7 @@ bytes_to_sectors (off_t size)
 }
 
 /* Returns the block device sector that contains byte offset POS
-   within INODE.
+   within INODE without checking pos less than inode's readable_length
    Returns -1 if INODE does not contain data for a byte at offset
    POS. */
 static block_sector_t
@@ -88,18 +88,6 @@ inode_init (void)
   list_init (&open_inodes);
 }
 
-/*get the next sector, used by read ahead*/
-block_sector_t get_next_sector_id(struct inode_disk *id, block_sector_t cur_sector) {
-	int sectors = (int)bytes_to_sectors(id->length);
-	static struct indirect_block ib;
-	static struct indirect_block db;
-
-
-
-
-	return INVALID_SECTOR_ID;
-}
-
 
 /* set the new_sector to the first non-allocated sector in the inode
  * must acquire inode lock before calling it */
@@ -107,10 +95,13 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	int sectors = (int)bytes_to_sectors(id->length);
 	static struct indirect_block ib;
 	static struct indirect_block db;
+
 	if (sectors <= DIRECT_INDEX_NUM) {
 		if (sectors < DIRECT_INDEX_NUM) {
+			/*within direct index part*/
 			id->direct_idx[sectors] = new_sector;
 		} else {
+			/*use up direct index part, start using single indirect index*/
 			if (!free_map_allocate (1, &id->single_idx)) {
 				return false;
 			}
@@ -119,10 +110,12 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 		}
 	} else if (sectors <= DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
 		if (sectors < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
+			/*within single indirect index part*/
 			cache_read(id->single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 			ib.sectors[sectors-DIRECT_INDEX_NUM] = new_sector;
 			cache_write(id->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
 		} else {
+			/*use up single indirect index part, start using double indirect index*/
 			if (!free_map_allocate (1, &id->double_idx)) {
 				return false;
 			}
@@ -138,7 +131,7 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	} else {
 		size_t sectors_left=sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
 		if(sectors_left%INDEX_PER_SECTOR ==0){
-			/*on the edge*/
+			/*on the edge of one double indirect index, need to allocate another single indirect index in the double indirect index*/
 			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
 			if (!free_map_allocate (1, &db.sectors[sectors_left/INDEX_PER_SECTOR])) {
 				return false;
@@ -169,7 +162,6 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
   struct inode_disk *disk_inode = NULL;
 
   ASSERT (length >= 0);
-  ASSERT (length <= 251*512);
   /* If this assertion fails, the inode structure is not exactly
      one sector in size, and you should fix that. */
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
@@ -409,7 +401,6 @@ inode_open (block_sector_t sector)
   struct inode *inode;
 
   /* Check whether this inode is already open. */
-  ASSERT(!lock_held_by_current_thread (&open_inodes_lock));
   lock_acquire(&open_inodes_lock);
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e)) 
@@ -452,7 +443,6 @@ struct inode *
 inode_reopen (struct inode *inode)
 {
   if (inode != NULL) {
-	  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
 	  lock_acquire(&inode->inode_lock);
 	  inode->open_cnt++;
 	  lock_release(&inode->inode_lock);
@@ -467,7 +457,7 @@ inode_get_inumber (const struct inode *inode)
   return inode->sector;
 }
 
-/* Closes INODE and writes it to disk.
+/* Closes INODE and writes it to disk. return if the inode is freed
    If this was the last reference to INODE, frees its memory.
    If INODE was also a removed inode, frees its blocks. */
 bool
@@ -563,7 +553,6 @@ void
 inode_remove (struct inode *inode) 
 {
   ASSERT (inode != NULL);
-  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
   lock_acquire(&inode->inode_lock);
   inode->removed = true;
   lock_release(&inode->inode_lock);
@@ -598,7 +587,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       int chunk_size = size < min_left ? size : min_left;
       if (chunk_size <= 0)
         break;
-      /*cache_read(sector_idx, next_sector_idx, buffer+bytes_read, sector_ofs, chunk_size);*/
+
       cache_read(sector_idx, INVALID_SECTOR_ID, buffer+bytes_read, sector_ofs, chunk_size);
       
       /* Advance. */
@@ -721,7 +710,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size_,
 void
 inode_deny_write (struct inode *inode) 
 {
-  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
   lock_acquire(&inode->inode_lock);
   inode->deny_write_cnt++;
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
@@ -734,7 +722,6 @@ inode_deny_write (struct inode *inode)
 void
 inode_allow_write (struct inode *inode) 
 {
-  ASSERT(!lock_held_by_current_thread (&inode->inode_lock));
   lock_acquire(&inode->inode_lock);
   ASSERT (inode->deny_write_cnt > 0);
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
@@ -749,90 +736,11 @@ inode_length (const struct inode *inode)
   return inode->readable_length;
 }
 
-
+/* flush all caches into disk */
 void inode_flush_cache(void) {
 	force_flush_all_cache();
 }
 
-void
-inode_force_close (struct inode *inode)
-{
-  /* Ignore null pointer. */
-  if (inode == NULL)
-    return;
-
-  bool holding_open_inodes_lock = lock_held_by_current_thread (&open_inodes_lock);
-  if (!holding_open_inodes_lock) {
-	  lock_acquire(&open_inodes_lock);
-  }
-
-  bool holding_inode_lock = lock_held_by_current_thread (&inode->inode_lock);
-  if (!holding_inode_lock) {
-	  lock_acquire(&inode->inode_lock);
-  }
-  /* Release resources if this was the last opener. */
-  inode->open_cnt=0;
-
-  /* Remove from inode list and release lock. */
-  list_remove (&inode->elem);
-  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
-		  lock_release(&open_inodes_lock);
-  }
-  /* Deallocate blocks if removed. */
-  if (inode->removed)
-  {
-		  /* retrieve inode_disk(metadata) from sector */
-	  struct inode_disk id;
-	  cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
-
-	  int sectors = (int)bytes_to_sectors (id.length);
-
-	  int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-	  int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
-	  int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
-
-	  int i;
-	  /* release data sectors */
-	  free_map_release_direct(&id, direct_sector_num);
-
-	  if (indirect_sector_num > 0){
-			  static struct indirect_block ib;
-			  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
-			  free_map_release_single_indirect(&ib, indirect_sector_num);
-			  free_map_release (id.single_idx, 1);
-	  }
-
-	  if (double_indirect_sector_num > 0) {
-			  static struct indirect_block db;
-			  cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
-			  off_t double_level_end_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
-			  off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
-			  free_map_release_double_indirect(&db, double_level_end_idx, single_level_end_idx+1);
-			  free_map_release (id.double_idx, 1);
-	  }
-
-
-	  /* release inode_disk(metadata) sector */
-	  free_map_release (inode->sector, 1);
-  }
-
-  if (lock_held_by_current_thread (&inode->inode_lock)) {
-		  lock_release(&inode->inode_lock);
-  }
-  free (inode);
-  inode=NULL;
-
-
-  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
-	  lock_release(&open_inodes_lock);
-  }
-
-  if (inode != NULL) {
-	  if (!holding_inode_lock && lock_held_by_current_thread (&inode->inode_lock)) {
-		  lock_release(&inode->inode_lock);
-	  }
-  }
-}
 
 /*close all open inode before filesystem close*/
 void force_close_all_open_inodes(void){
@@ -861,7 +769,7 @@ void force_close_all_open_inodes(void){
 	lock_release(&open_inodes_lock);
 }
 
-
+/* close an inode and set the inode to null if it's already freed*/
 void inode_close_set_null(struct inode **d_inode) {
 	bool inode_freed = inode_close(*d_inode);
 	if (inode_freed) {

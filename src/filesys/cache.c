@@ -193,12 +193,7 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 				|| buffer_cache[entry_index].loading_in) {
 			cond_wait(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
 		}
-		/* after waiting period, it is possible that the entry is not dirty at more */
-		/*
-		if (!buffer_cache[entry_index].dirty) {
-			return true;
-		}
-	    */
+
 		/*release all locks it's holding in I/O period*/
 		if (lock_held_by_current_thread(&buffer_cache_lock)) {
 			holding_global_lock = true;
@@ -206,7 +201,6 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		/*intr_enable ();*/
 		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
@@ -305,11 +299,6 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 /* switch cache entry */
 int switch_cache_entry(block_sector_t new_sector, bool need_wait) {
 	ASSERT(lock_held_by_current_thread(&buffer_cache_lock));
-/*
-	if (!lock_held_by_current_thread(&buffer_cache_lock)) {
-		lock_acquire(&buffer_cache_lock);
-	}
-*/
 	bool need_flush = false;
 	bool did_flushed = false;
 	bool did_loaded = false;

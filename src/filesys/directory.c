@@ -259,7 +259,7 @@ dir_remove (struct dir *dir, const char *name)
   }
 
   if (inode->is_dir) {
-	  /* check if the dir is empty, if not, goto done */
+	  /* check if the dir is empty (other than . or ..), if not, goto done */
 	  off_t offset;
 	  struct dir_entry entry;
 	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset) == sizeof entry;
@@ -287,8 +287,8 @@ dir_remove (struct dir *dir, const char *name)
   return success;
 }
 
-/* Reads the next directory entry in DIR and stores the name in
-   NAME.  Returns true if successful, false if the directory
+/* Reads the next directory entry (other than . or ..) in DIR and stores the
+   name in NAME.  Returns true if successful, false if the directory
    contains no more entries. */
 bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
@@ -316,9 +316,9 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
   return false;
 }
 
-/*self defined function*/
+/*helper function*/
 
-/*search path to get a dir, open it, and return*/
+/*traverse the given path to get a opened dir and file base name*/
 /* /a/b/c  -> return dir struct dirctory b */
 /* /a/b/c/  -> return dir struct dirctory b */
 struct dir* path_to_dir(char* path_, char* file_name_out){
@@ -328,7 +328,6 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 	bool relative_path=false;
 	if(path_[0]!='/')relative_path=true;
 
-	/*parse path*/
 	char *token, *save_ptr;
 	int count=0;
 	int i=0;
@@ -350,7 +349,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		return dir_open_root ();
 	}
 
-	/*return file_name_out*/
+	/*store file base name in file_name_out*/
 	char *last_slash = strrchr(path, '/');
 	if (last_slash == NULL) {
 		if(strlen(path)>NAME_MAX){
@@ -385,7 +384,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		while(path[j]!='\0'){j++;}
 	}
 
-	/*using dirs to get the directory inode sector*/
+	/*set the starting point of dir traversing*/
 	struct dir *dir;
 	if(relative_path){
 		dir=dir_open(inode_open(thread_current()->cwd_sector));
@@ -393,6 +392,7 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		dir= dir_open_root ();
 	}
 
+	/*if the starting dir is not dir or it's marked as removed fail it*/
 	if (!dir->inode->is_dir || dir->inode->removed) {
 		dir_close (dir);
 		return NULL;

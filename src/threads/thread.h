@@ -134,8 +134,8 @@ struct thread
                                           file for this thread*/
 #endif
 
-    /*file sys*/
-    block_sector_t cwd_sector;
+
+    block_sector_t cwd_sector;     /*current working directory*/
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

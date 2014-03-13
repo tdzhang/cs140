@@ -618,6 +618,7 @@ init_thread (struct thread *t, const char *name, int priority)
 #endif
 
   t->magic = THREAD_MAGIC;
+  /*init the current working directory to root*/
   t->cwd_sector=ROOT_DIR_SECTOR;
 
   old_level = intr_disable ();
