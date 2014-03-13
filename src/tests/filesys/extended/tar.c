@@ -94,22 +94,33 @@ static bool
 archive_file (char file_name[], size_t file_name_size,
               int archive_fd, bool *write_error) 
 {
+	printf ("   ------>archive_file>> getting in \n");
+	printf ("   ------>archive_file>> open file_name=%s\n",file_name);
   int file_fd = open (file_name);
+  	  printf ("   ------>archive_file>> open file_fd=%d\n",file_fd);
   if (file_fd >= 0) 
     {
       bool success;
-
+      printf ("   ------>archive_file>> archive_fd=%d\n",archive_fd);
       if (inumber (file_fd) != inumber (archive_fd)) 
         {
-          if (!isdir (file_fd))
-            success = archive_ordinary_file (file_name, file_fd,
-                                             archive_fd, write_error);
-          else
-            success = archive_directory (file_name, file_name_size, file_fd,
-                                         archive_fd, write_error);      
+    	  	  printf ("   ------>archive_file>> in inumber (file_fd)%zu != inumber (archive_fd)%zu\n",inumber (file_fd),inumber (archive_fd));
+          if (!isdir (file_fd)){
+        	  	  success = archive_ordinary_file (file_name, file_fd,
+        	                                               archive_fd, write_error);
+              printf ("   ------>archive_file>> !isdir (file_fd)\n");
+          }
+
+          else{
+        	  	  success = archive_directory (file_name, file_name_size, file_fd,
+        	                                           archive_fd, write_error);
+        	  	  printf ("   ------>archive_file>> isdir (file_fd)\n");
+          }
+
         }
       else
         {
+    	  printf ("   ------>archive_file>> in inumber (file_fd)%zu == inumber (archive_fd)%zu\n",inumber (file_fd),inumber (archive_fd));
           /* Nothing to do: don't try to archive the archive file. */
           success = true;
         }
