@@ -106,8 +106,11 @@ filesys_create (const char *name, off_t initial_size)
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, false)
                   && dir_add (dir, name_to_create, inode_sector, false));
-  if (!success && inode_sector != 0) 
-    free_map_release (inode_sector, 1);
+  if (!success && inode_sector != 0) {
+	  struct inode *inode = inode_open(inode_sector);
+	  inode_remove(inode);
+	  inode_close(inode);
+  }
   dir_close (dir);
 
   return success;

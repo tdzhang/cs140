@@ -584,6 +584,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
     {
       /* Disk sector to read, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
+      block_sector_t next_sector_idx = byte_to_sector (inode, offset+BLOCK_SECTOR_SIZE);
 
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
@@ -596,8 +597,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       int chunk_size = size < min_left ? size : min_left;
       if (chunk_size <= 0)
         break;
-      //TODO: pass next_sector_id
-      cache_read(sector_idx, INVALID_SECTOR_ID, buffer+bytes_read, sector_ofs, chunk_size);
+      cache_read(sector_idx, next_sector_idx, buffer+bytes_read, sector_ofs, chunk_size);
       
       /* Advance. */
       size -= chunk_size;
