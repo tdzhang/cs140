@@ -352,16 +352,18 @@ static void free_map_release_double_indirect (struct indirect_block *db, int dou
 
 	for (i = 0; i < double_level_end_idx; i++) {
 		block_sector_t next_id = INVALID_SECTOR_ID;
-		if (single_level_end_idx <= 0  && i < (double_level_end_idx-1)) {
-
+		if (single_level_end_idx <= 0  && i == (double_level_end_idx-1)) {
+			cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+		} else {
+			cache_read(db->sectors[i], db->sectors[i+1], &ib, 0, BLOCK_SECTOR_SIZE);
 		}
-		block_sector_t next_id = (i==(double_level_end_idx-1))? INVALID_SECTOR_ID:
-		cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 		free_map_release_all_single_indirect(&ib);
 	}
 
-	for (i = 0; i < single_level_end_idx; i++) {
+	if (single_level_end_idx > 0) {
 		cache_read(db->sectors[double_level_end_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+	}
+	for (i = 0; i < single_level_end_idx; i++) {
 		free_map_release_single_indirect(&ib, single_level_end_idx);
 	}
 
