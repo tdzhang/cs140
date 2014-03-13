@@ -48,45 +48,40 @@ static bool do_write (int fd, const char *buffer, int size, bool *write_error);
 static bool
 make_tar_archive (const char *archive_name, char *files[], size_t file_cnt) 
 {
-	printf (">>>>>make_tar_archive%s>> archive_name=%s, file cnt=%d \n", archive_name,archive_name,file_cnt);
   static const char zeros[512];
   int archive_fd;
   bool success = true;
   bool write_error = false;
   size_t i;
-  printf (">>>>>make_tar_archive%s>> before create (archive_name, 0) \n",archive_name);
+  
   if (!create (archive_name, 0)) 
     {
       printf ("%s: create failed\n", archive_name);
       return false;
     }
-  printf (">>>>>make_tar_archive%s>> after create (archive_name, 0) \n",archive_name);
-
   archive_fd = open (archive_name);
-  printf (">>>>>make_tar_archive%s>> after open (archive_name) \n",archive_name);
   if (archive_fd < 0)
     {
       printf ("%s: open failed\n", archive_name);
       return false;
     }
-  printf (">>>>>make_tar_archive%s>> before for (i = 0; i < file_cnt; i++) \n",archive_name);
+
   for (i = 0; i < file_cnt; i++) 
     {
       char file_name[128];
       
       strlcpy (file_name, files[i], sizeof file_name);
-      printf (">>>>>make_tar_archive%s>> archive_file %d name=%s \n",archive_name,i,file_name);
       if (!archive_file (file_name, sizeof file_name,
                          archive_fd, &write_error))
         success = false;
     }
-  printf (">>>>>make_tar_archive%s>> before do_write (archive_fd, zeros, 512, &write_error \n",archive_name);
+
   if (!do_write (archive_fd, zeros, 512, &write_error)
       || !do_write (archive_fd, zeros, 512, &write_error)) 
     success = false;
-  printf (">>>>>make_tar_archive%s>> after do_write (archive_fd, zeros, 512, &write_error \n",archive_name);
+
   close (archive_fd);
-  printf (">>>>>make_tar_archive%s>> after close (archive_fd) \n",archive_name);
+
   return success;
 }
 
@@ -94,35 +89,22 @@ static bool
 archive_file (char file_name[], size_t file_name_size,
               int archive_fd, bool *write_error) 
 {
-	printf ("   ------>archive_file%s>> getting in \n",file_name);
-	printf ("   ------>archive_file%s>> open file_name=%s\n",file_name,file_name);
   int file_fd = open (file_name);
-  	  printf ("   ------>archive_file%s>> open file_fd=%d\n",file_name,file_fd);
   if (file_fd >= 0) 
     {
       bool success;
-      printf ("   ------>archive_file%s>> archive_fd=%d\n",file_name,archive_fd);
+
       if (inumber (file_fd) != inumber (archive_fd)) 
         {
-    	  	  printf ("   ------>archive_file%s>> in inumber (file_fd)%zu != inumber (archive_fd)%zu\n",file_name,inumber (file_fd),inumber (archive_fd));
-          if (!isdir (file_fd)){
-        	  	  printf ("   ------>archive_file%s>> !isdir (file_fd)\n",file_name);
-        	  	  success = archive_ordinary_file (file_name, file_fd,
-        	                                               archive_fd, write_error);
-
-          }
-
-          else{
-        	  	  printf ("   ------>archive_file%s>> isdir (file_fd)\n",file_name);
-        	  	  success = archive_directory (file_name, file_name_size, file_fd,
-        	                                           archive_fd, write_error);
-
-          }
-
+          if (!isdir (file_fd))
+            success = archive_ordinary_file (file_name, file_fd,
+                                             archive_fd, write_error);
+          else
+            success = archive_directory (file_name, file_name_size, file_fd,
+                                         archive_fd, write_error);      
         }
       else
         {
-    	  printf ("   ------>archive_file%s>> in inumber (file_fd)%zu == inumber (archive_fd)%zu\n",file_name,inumber (file_fd),inumber (archive_fd));
           /* Nothing to do: don't try to archive the archive file. */
           success = true;
         }
@@ -142,27 +124,16 @@ static bool
 archive_ordinary_file (const char *file_name, int file_fd,
                        int archive_fd, bool *write_error)
 {
-	 printf ("       =---=>archive_ordinary_file%s>> geting in\n",file_name);
-	 printf ("       =---=>archive_ordinary_file%s>> file_fd=%d archive_fd=%d\n",file_name,file_fd,archive_fd);
   bool read_error = false;
   bool success = true;
   int file_size = filesize (file_fd);
-  printf ("       =---=>archive_ordinary_file%s>> filesize (file_fd)=%d\n",file_name,file_size);
 
-  printf ("       =---=>archive_ordinary_file%s>> before write header\n",file_name);
   if (!write_header (file_name, USTAR_REGULAR, file_size,
                      archive_fd, write_error))
     return false;
-  printf ("       =---=>archive_ordinary_file%s>> after write header\n",file_name);
 
-  printf ("       =---=>archive_ordinary_file%s>> before while (file_size > 0)\n",file_name);
   while (file_size > 0) 
     {
-	  if(file_size<=2996){
-		  printf("wahah\n");
-	  }
-	  printf ("       -----=>archive_ordinary_file%s>> in while (file_size > 0)\n",file_name);
-	  printf ("       -----=>archive_ordinary_file%s>> file_size=%d\n",file_name,file_size);
       static char buf[512];
       int chunk_size = file_size > 512 ? 512 : file_size;
       int read_retval = read (file_fd, buf, chunk_size);
@@ -174,15 +145,14 @@ archive_ordinary_file (const char *file_name, int file_fd,
           read_error = true;
           success = false;
         }
-      printf ("       -----=>archive_ordinary_file%s>> before memset\n",file_name);
+
       memset (buf + bytes_read, 0, 512 - bytes_read);
-      printf ("       -----=>archive_ordinary_file%s>> after memset before do write bytes_read=%d\n",file_name,bytes_read);
       if (!do_write (archive_fd, buf, 512, write_error))
         success = false;
-      printf ("       -----=>archive_ordinary_file%s>> after do write\n",file_name);
+
       file_size -= chunk_size;
     }
-  printf ("       ---=>archive_ordinary_file%s>> return success=%d\n",file_name,success);
+
   return success;
 }
 
@@ -192,33 +162,23 @@ archive_directory (char file_name[], size_t file_name_size, int file_fd,
 {
   size_t dir_len;
   bool success = true;
-  printf ("       ===>archive_directory%s>> geting in\n",file_name);
-  printf ("       ===>archive_directory%s>> file_name=%s file_name_size=%zu file_fd=%d archive_fd=%d\n",file_name,file_name,file_name_size,file_fd,archive_fd);
+
   dir_len = strlen (file_name);
-  printf ("       ===>archive_directory%s>> strlen (file_name)=%d\n",file_name,dir_len);
   if (dir_len + 1 + READDIR_MAX_LEN + 1 > file_name_size) 
     {
       printf ("%s: file name too long\n", file_name);
       return false;
     }
 
-  printf ("       ===>archive_directory%s>> before write_header\n",file_name);
   if (!write_header (file_name, USTAR_DIRECTORY, 0, archive_fd, write_error))
     return false;
-  printf ("       ===>archive_directory%s>> after write_header\n",file_name);
+      
   file_name[dir_len] = '/';
-  printf ("       ===>archive_directory%s>> file_name=%s\n", file_name,file_name);
-
-  printf ("       ===>archive_directory%s>> while (readdir)\n",file_name);
-  while (readdir (file_fd, &file_name[dir_len + 1])) {
-	  printf ("       ===>archive_directory%s>>  in while (readdir)\n",file_name);
-	  printf ("       -------------------file_name=%s file_name_size=%d, archive_fd=%d\n",file_name,file_name_size,archive_fd);
-	  if (!archive_file (file_name, file_name_size, archive_fd, write_error))
-	        success = false;
-  }
-  printf ("       ===>archive_directory%s>> out while (readdir)\n",file_name);
+  while (readdir (file_fd, &file_name[dir_len + 1])) 
+    if (!archive_file (file_name, file_name_size, archive_fd, write_error))
+      success = false;
   file_name[dir_len] = '\0';
-  printf ("       ===>archive_directory%s>> geting out success=%d\n",file_name,success);
+
   return success;
 }
 
