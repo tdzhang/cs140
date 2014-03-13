@@ -73,6 +73,7 @@ bool filesys_mkdir (const char* dir) {
 	                  && dir_create (inode_sector, MAX_ENTRIES_PER_DIR)
 	                  && dir_add (d, name_to_create, inode_sector, true));
 	if (!success && inode_sector != 0) {
+		//TODO: to be debugged
 		struct inode *inode = inode_open(inode_sector);
 		inode_remove(inode);
 		inode_close(inode);

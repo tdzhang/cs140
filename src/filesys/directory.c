@@ -116,12 +116,22 @@ dir_lookup (const struct dir *dir, const char *name,
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
+  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  if (!holding_dir_lock) {
+	  lock_acquire(&dir->inode->dir_lock);
+  }
+
   if (lookup (dir, name, &e, NULL))
     *inode = inode_open (e.inode_sector);
   else
     *inode = NULL;
 
-  return *inode != NULL;
+  bool result = *inode != NULL;
+
+  if (!holding_dir_lock) {
+	  lock_release(&dir->inode->dir_lock);
+  }
+  return result;
 }
 
 /* Adds a file named NAME to DIR, which must not already contain a
@@ -144,6 +154,10 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
   if (*name == '\0' || strlen (name) > NAME_MAX)
     return false;
 
+  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  if (!holding_dir_lock) {
+    lock_acquire(&dir->inode->dir_lock);
+  }
   /* Check that NAME is not in use. */
   if (lookup (dir, name, NULL, NULL))
     goto done;
@@ -205,6 +219,9 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
   }
 
  done:
+  if (!holding_dir_lock) {
+ 	  lock_release(&dir->inode->dir_lock);
+  }
   return success;
 }
 
@@ -222,6 +239,10 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
+  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  if (!holding_dir_lock) {
+	  lock_acquire(&dir->inode->dir_lock);
+  }
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
     goto done;
@@ -260,6 +281,9 @@ dir_remove (struct dir *dir, const char *name)
 
  done:
   inode_close (inode);
+  if (!holding_dir_lock) {
+	  lock_release(&dir->inode->dir_lock);
+  }
   return success;
 }
 
@@ -270,16 +294,25 @@ bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 {
   struct dir_entry e;
-
+  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  if (!holding_dir_lock) {
+	  lock_acquire(&dir->inode->dir_lock);
+  }
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e) 
     {
       dir->pos += sizeof e;
       if (e.in_use && strcmp(e.name, ".") != 0 && strcmp(e.name, "..") != 0)
         {
           strlcpy (name, e.name, NAME_MAX + 1);
+          if (!holding_dir_lock) {
+          	  lock_release(&dir->inode->dir_lock);
+          }
           return true;
         } 
     }
+  if (!holding_dir_lock) {
+  	  lock_release(&dir->inode->dir_lock);
+  }
   return false;
 }
 
@@ -383,13 +416,4 @@ struct dir* path_to_dir(char* path_, char* file_name_out){
 		dir = dir_open (inode);
 	}
 	return dir;
-}
-
-bool is_root_dir(char *dir) {
-	return (strlen(dir) == 1 && dir[0] == '/');
-}
-
-bool has_end_slash(char *dir) {
-	ASSERT (strlen(dir) > 0);
-	return (dir[strlen(dir)-1]=='/');
 }
