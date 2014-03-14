@@ -461,14 +461,13 @@ finished reading.
  
  
  2. When a thread wants to write on a cache block, it will call function
-cache_write
- , and if writing_num+reading_num>0, namely, some other process is writing on
-or reading the block, currently process will increase wait_writing_num with 1
-and condition wait until all the writing/reading operations are done. When
-the thread starts to write on the block, it will decrease the
-wait_writing_num and increase writing_num. After the writing operation is
-done, the process will decrease the writing_num indicates that it has
-finished writing.
+cache_write, and if writing_num+reading_num>0, namely, some other process 
+is writing on or reading the block, currently process will increase
+wait_writing_num with 1 and condition wait until all the writing/reading
+operations are done. When the thread starts to write on the block, it 
+will decrease the wait_writing_num and increase writing_num. After the
+writing operation is done, the process will decrease the writing_num 
+indicates that it has finished writing.
  
  
  >> C6: During the eviction of a block from the cache, how are other
@@ -534,12 +533,11 @@ time efficient than disk.
  
  For read-ahead:
  A very large file on the disk needs to be read in and perform some
-calculation on it
-  sequentially. If not using read-ahead, for every sector, the system has to
-wait for disk IO to load the content and then do the calculation on it. With
-the help of read-ahead, when doing calculation for a previous sector, the
-next sector is loaded into memory simultaneously, a lot of time will be
-saved. 
+calculation on it sequentially. If not using read-ahead, for every sector, 
+the system has to wait for disk IO to load the content and then do the
+ calculation on it. With the help of read-ahead, when doing calculation
+ for a previous sector, the next sector is loaded into memory simultaneously,
+ a lot of time will be saved. 
  
  For write-behind:
  A possible scenario that will benefit from the write-behind is that a
