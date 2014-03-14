@@ -9,34 +9,50 @@
 #include <debug.h>
 
 #define CACHE_SIZE 64          /* the buffer cache size */
-#define WRITE_BEHIND_CYCLE (int64_t)(30 * 1000)    /* write-behind happens every 30 sec */
+#define WRITE_BEHIND_CYCLE (int64_t)(30 * 1000)    /* write-behind
+											happens every 30 sec */
 #define INVALID_ENTRY_INDEX -1
 
 /* structure for cache entry */
 struct cache_entry
 {
   block_sector_t sector_id;        /* sector id */
-  block_sector_t next_sector_id;   /* keep track of sector id to be loaded after flush */
-  bool dirty;                      /* whether the cache entry is dirty */
-  bool accessed;                   /* whether the cache entry is accessed recently */
-  bool flushing_out;               /* whether the cache entry is being flushed out */
-  bool loading_in;                 /* whether the cache entry is being loaded in */
-  uint32_t writing_num;            /* the number of processes writing data */
-  uint32_t reading_num;            /* the number of processes reading data */
-  uint32_t wait_writing_num;       /* the number of processes waiting to write data */
-  uint32_t wait_reading_num;       /* the number of processes waiting to read data */
+  block_sector_t next_sector_id;   /* keep track of sector id
+  	  	  	  	  	  	  	  	  to be loaded after flush */
+  bool dirty;                      /* whether the cache entry
+  	  	  	  	  	  	  	  	  is dirty */
+  bool accessed;                   /* whether the cache entry
+  	  	  	  	  	  	  	  	  	  is accessed recently */
+  bool flushing_out;               /* whether the cache entry
+   	   	   	   	   	   	   	   	   	   is being flushed out */
+  bool loading_in;                 /* whether the cache entry
+  	  	  	  	  	  	  	  	  	  is being loaded in */
+  uint32_t writing_num;            /* the number of processes
+  	  	  	  	  	  	  	  	  	  	  writing data */
+  uint32_t reading_num;            /* the number of processes
+  	  	  	  	  	  	  	  	  	  reading data */
+  uint32_t wait_writing_num;       /* the number of processes
+  	  	  	  	  	  	  	  	  	  waiting to write data */
+  uint32_t wait_reading_num;       /* the number of processes
+  	  	  	  	  	  	  	  	  	  	  waiting to read data */
   struct lock lock;                /* lock for the cache entry */
-  struct condition ready;          /* condition var to indicate whether the cache entry is ready for read/write */
-  uint8_t sector_data[BLOCK_SECTOR_SIZE]; /* the data in this sector */
+  struct condition ready;          /* condition var to indicate
+  	  	  	  	  whether the cache entry is ready for read/write */
+  uint8_t sector_data[BLOCK_SECTOR_SIZE]; /* the data in this
+  	  	  	  	  	  	  	  	  	  	  sector */
 };
 
-static struct cache_entry buffer_cache[CACHE_SIZE];  /* the buffer cache */
-static int clock_hand;                    /* clock hand for clock algorithm */
-static struct lock buffer_cache_lock;  /* the global lock for buffer cache */
+static struct cache_entry buffer_cache[CACHE_SIZE];  /* the buffer
+														cache */
+static int clock_hand;                    /* clock hand for clock
+ 	 	 	 	 	 	 	 	 	 	 	 	 	 algorithm */
+static struct lock buffer_cache_lock;  /* the global lock for
+ 	 	 	 	 	 	 	 	 	 	 	 	 buffer cache */
 
-static struct list read_ahead_list;     /* the queue for read-ahead */
-static struct lock read_ahead_lock;     /* the lock for read_ahead_list */
-static struct condition read_ahead_list_ready; /* condition var to indicate whether read_ahead_list is ready */
+static struct list read_ahead_list;   /* the queue for read-ahead*/
+static struct lock read_ahead_lock; /*the lock for read_ahead_list*/
+static struct condition read_ahead_list_ready; /* condition var
+                    to indicate whether read_ahead_list is ready */
 
 /* element structure in read_ahead_list */
 struct read_ahead_elem
@@ -50,7 +66,8 @@ struct read_ahead_elem
 bool flush_cache_entry(int entry_index, bool need_wait);
 int get_entry_index(block_sector_t searching_sector_id);
 int evict_cache_entry(void);
-bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait);
+bool load_cache_entry(int entry_index, block_sector_t sector_id,
+		bool need_wait);
 int switch_cache_entry(block_sector_t new_sector, bool need_wait);
 static inline void clock_next(void);
 static void read_ahead_daemon(void *aux UNUSED);
@@ -82,16 +99,16 @@ bool buffer_cache_init(void) {
 
 
 	/*create write-behind daemon thread*/
-	tid_t write_t = thread_create ("write_behind_daemon", PRI_DEFAULT,
-			write_behind_daemon, NULL);
+	tid_t write_t = thread_create ("write_behind_daemon",
+			PRI_DEFAULT,write_behind_daemon, NULL);
 	if (write_t == TID_ERROR) return false;
 
 	lock_init(&read_ahead_lock);
 	list_init(&read_ahead_list);
 	cond_init(&read_ahead_list_ready);
 	/*create read-ahead daemon thread*/
-	tid_t reader_t = thread_create ("read_ahead_daemon", PRI_DEFAULT,
-            read_ahead_daemon, NULL);
+	tid_t reader_t = thread_create ("read_ahead_daemon",
+			PRI_DEFAULT,read_ahead_daemon, NULL);
 	if (reader_t == TID_ERROR) return false;
 
 	return true;
@@ -105,7 +122,8 @@ int get_entry_index(block_sector_t searching_sector_id) {
 	ASSERT(lock_held_by_current_thread(&buffer_cache_lock));
 	int i;
 	for (i = 0; i < CACHE_SIZE; i++) {
-		/*find a cache entry's sector_id matching the searching_sector_id*/
+		/*find a cache entry's sector_id matching the
+		 *  searching_sector_id*/
 		if (buffer_cache[i].sector_id == searching_sector_id) {
 			lock_acquire(&buffer_cache[i].lock);
 			/*wait until flushing is done*/
@@ -120,12 +138,16 @@ int get_entry_index(block_sector_t searching_sector_id) {
 				return INVALID_ENTRY_INDEX;
 			}
 
-		} else if (buffer_cache[i].next_sector_id == searching_sector_id) {
-			/*find a cache entry's next_sector_id matching the searching_sector_id*/
+		} else if (buffer_cache[i].next_sector_id
+				== searching_sector_id) {
+			/*find a cache entry's next_sector_id matching
+			 *  the searching_sector_id*/
 			lock_acquire(&buffer_cache[i].lock);
 			/*wait until flushing and loading are done*/
-			while (buffer_cache[i].flushing_out || buffer_cache[i].loading_in) {
-				cond_wait(&buffer_cache[i].ready, &buffer_cache[i].lock);
+			while (buffer_cache[i].flushing_out ||
+					buffer_cache[i].loading_in) {
+				cond_wait(&buffer_cache[i].ready,
+						&buffer_cache[i].lock);
 			}
 			if (buffer_cache[i].sector_id == searching_sector_id) {
 				lock_release(&buffer_cache[i].lock);
@@ -139,13 +161,16 @@ int get_entry_index(block_sector_t searching_sector_id) {
 	return INVALID_ENTRY_INDEX;
 }
 
-/* flush the data in the cache entry to disk, return whether really flushed */
+/* flush the data in the cache entry to disk, return
+ * whether really flushed */
 bool flush_cache_entry(int entry_index, bool need_wait) {
-	ASSERT(buffer_cache[entry_index].sector_id != INVALID_SECTOR_ID);
+	ASSERT(buffer_cache[entry_index].sector_id !=
+			INVALID_SECTOR_ID);
 	bool holding_global_lock = false;
 
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
-	ASSERT (lock_held_by_current_thread(&buffer_cache[entry_index].lock));
+	ASSERT (lock_held_by_current_thread
+			(&buffer_cache[entry_index].lock));
 
 	/*ASSERT(buffer_cache[entry_index].dirty);*/
 	/*if some process is writing or waiting to write into this entry
@@ -157,7 +182,8 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		return false;
 	}
 
-	/* if no process is writing or waiting to write, call block_write and return*/
+	/* if no process is writing or waiting to write, call
+	 * block_write and return*/
 	if (buffer_cache[entry_index].wait_writing_num
 			+buffer_cache[entry_index].writing_num == 0
 			&& !buffer_cache[entry_index].flushing_out
@@ -170,11 +196,13 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
 		intr_enable ();
-		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].sector_id,
+				buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
-		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+		cond_broadcast(&buffer_cache[entry_index].ready,
+				&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -191,7 +219,8 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 				+buffer_cache[entry_index].writing_num > 0
 				|| buffer_cache[entry_index].flushing_out
 				|| buffer_cache[entry_index].loading_in) {
-			cond_wait(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+			cond_wait(&buffer_cache[entry_index].ready,
+					&buffer_cache[entry_index].lock);
 		}
 
 		/*release all locks it's holding in I/O period*/
@@ -201,11 +230,13 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 		}
 		buffer_cache[entry_index].flushing_out = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index].sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].sector_id,
+				buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].flushing_out = false;
-		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+		cond_broadcast(&buffer_cache[entry_index].ready,
+				&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -215,7 +246,8 @@ bool flush_cache_entry(int entry_index, bool need_wait) {
 }
 
 /* load data from disk to cache entry */
-bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait) {
+bool load_cache_entry(int entry_index, block_sector_t sector_id,
+		bool need_wait) {
 	bool holding_global_lock = false;
 
 	ASSERT (entry_index >= 0 && entry_index < CACHE_SIZE);
@@ -223,8 +255,8 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 	ASSERT (lock_held_by_current_thread(&buffer_cache[entry_index].lock));
 
 	ASSERT(!buffer_cache[entry_index].dirty);
-	/*if some process is reading/writing or waiting to read/write from/to this entry
-	 * and no need to wait, return immediately*/
+	/*if some process is reading/writing or waiting to read/write
+	 * from/to this entry and no need to wait, return immediately*/
 	if ((buffer_cache[entry_index].wait_reading_num
 			+buffer_cache[entry_index].reading_num
 			+buffer_cache[entry_index].wait_writing_num
@@ -234,7 +266,8 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		return false;
 	}
 
-	/* if no process is reading/writing or waiting to read/write call block_write and return*/
+	/* if no process is reading/writing or waiting to read/write call
+	 * block_write and return*/
 	if (buffer_cache[entry_index].wait_reading_num
 			+buffer_cache[entry_index].reading_num
 			+buffer_cache[entry_index].wait_writing_num
@@ -248,19 +281,21 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_read(fs_device, buffer_cache[entry_index].next_sector_id, buffer_cache[entry_index].sector_data);
+		block_read(fs_device, buffer_cache[entry_index].next_sector_id,
+				buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
-		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+		cond_broadcast(&buffer_cache[entry_index].ready,
+				&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
 		return true;
 	}
 
-	/*if some process is reading/writing or waiting to read/write into this entry
-	 * and need to wait, wait until ready */
+	/*if some process is reading/writing or waiting to read/write
+	 * into this entry and need to wait, wait until ready */
 	if ((buffer_cache[entry_index].wait_reading_num
 			+buffer_cache[entry_index].reading_num
 			+buffer_cache[entry_index].wait_writing_num
@@ -273,7 +308,8 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 				+buffer_cache[entry_index].writing_num > 0
 				|| buffer_cache[entry_index].flushing_out
 				|| buffer_cache[entry_index].loading_in) {
-			cond_wait(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+			cond_wait(&buffer_cache[entry_index].ready,
+					&buffer_cache[entry_index].lock);
 		}
 
 		/*release all locks it's holding in I/O period*/
@@ -283,11 +319,13 @@ bool load_cache_entry(int entry_index, block_sector_t sector_id, bool need_wait)
 		}
 		buffer_cache[entry_index].loading_in = true;
 		lock_release(&buffer_cache[entry_index].lock);
-		block_write(fs_device, buffer_cache[entry_index].next_sector_id, buffer_cache[entry_index].sector_data);
+		block_write(fs_device, buffer_cache[entry_index].next_sector_id,
+				buffer_cache[entry_index].sector_data);
 		lock_acquire(&buffer_cache[entry_index].lock);
 		buffer_cache[entry_index].dirty = false;
 		buffer_cache[entry_index].loading_in = false;
-		cond_broadcast(&buffer_cache[entry_index].ready, &buffer_cache[entry_index].lock);
+		cond_broadcast(&buffer_cache[entry_index].ready,
+				&buffer_cache[entry_index].lock);
 		if (holding_global_lock) {
 			lock_acquire(&buffer_cache_lock);
 		}
@@ -413,7 +451,8 @@ off_t cache_read(block_sector_t sector, block_sector_t next_sector,
 
 	lock_release(&buffer_cache[slot].lock);
 	/*memory copy from cached data to buffer*/
-	memcpy (buffer, buffer_cache[slot].sector_data+sector_offset, read_bytes);
+	memcpy (buffer, buffer_cache[slot].sector_data+sector_offset,
+			read_bytes);
 
 	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].reading_num --;
@@ -465,7 +504,8 @@ off_t cache_write(block_sector_t sector, void *buffer,
 
 	lock_release(&buffer_cache[slot].lock);
 	/*memory copy from cached data to buffer*/
-	memcpy (buffer_cache[slot].sector_data+sector_offset, buffer, write_bytes);
+	memcpy (buffer_cache[slot].sector_data+sector_offset, buffer,
+			write_bytes);
 
 	lock_acquire(&buffer_cache[slot].lock);
 	buffer_cache[slot].writing_num --;
@@ -511,7 +551,7 @@ static void read_ahead_daemon(void *aux UNUSED) {
 		lock_acquire(&buffer_cache_lock);
 		slot = get_entry_index(e->sector_id);
 		if (slot != INVALID_ENTRY_INDEX) {
-			/* the next sector is already in cache, no need to load again */
+			/*the next sector is already in cache, no need to load again */
 			ASSERT (slot >= 0 && slot < CACHE_SIZE);
 			lock_acquire(&buffer_cache[slot].lock);
 			lock_release(&buffer_cache_lock);
@@ -547,7 +587,8 @@ static void write_behind_daemon(void *aux UNUSED) {
 	while(true) {
 		timer_msleep(WRITE_BEHIND_CYCLE);
 		for (i = 0; i < CACHE_SIZE; i++) {
-			holding_lock = lock_held_by_current_thread(&buffer_cache[i].lock);
+			holding_lock = lock_held_by_current_thread(
+					&buffer_cache[i].lock);
 			if (!holding_lock)
 				lock_acquire (&buffer_cache[i].lock);
 			if (buffer_cache[i].dirty) {
