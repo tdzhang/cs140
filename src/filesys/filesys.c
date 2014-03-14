@@ -16,6 +16,7 @@
 struct block *fs_device;
 
 static void do_format (void);
+void root_dir_init(void);
 
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
@@ -185,7 +186,6 @@ filesys_remove (const char *name)
 	  return false;
 	}
 
-	struct inode *inode = NULL;
 	struct dir *dir = NULL;
 	/*get opened dir and file name to remove*/
 	char name_to_remove[NAME_MAX + 1];
@@ -205,7 +205,7 @@ filesys_remove (const char *name)
 }
 
 /*init the 2 entries of root dir*/
-void root_dir_init(){
+void root_dir_init(void){
    /*create .. and . for the root directory*/
   struct dir_entry e;
   off_t ofs;
