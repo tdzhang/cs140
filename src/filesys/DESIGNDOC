@@ -412,7 +412,7 @@ the read_ahead_list into buffer cache.
  
  For the normal buffer cache read function cache_read(block_sector_t sector,
 block_sector_t next_sector, void *buffer, off_t sector_offset, off_t
-read_bytes), the parameter “next_sector” is provided if the thread know
+read_bytes), the parameter 'next_sector' is provided if the thread know
 what next sector is without extra disk IO. This is because the read-ahead is
 the approach to minimize disk IO waiting time, we trigger read-ahead only if
 we know the next sector already. After provided the next_sector, it will add
