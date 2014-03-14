@@ -28,7 +28,8 @@ static int get_user (const uint8_t *uaddr);
 /*info for opened files in the entire system*/
 struct global_file_block {
 	block_sector_t inode_block_num;/*identification for file*/
-	int ref_num;                   /*the number of threads holding this file*/
+	int ref_num;                   /*the number of threads holding this
+									file*/
 	bool is_deleted;               /*indicates the file is to be removed*/
 	struct list_elem elem;         /*list elem for global_file_list*/
 	struct lock lock;
@@ -494,7 +495,8 @@ void close_file_by_fib(struct file_info_block *fib) {
 
 		/*close the file*/
 		file_close(fib->f);
-		/*delete the file_info_block from opened_file_list in current thread*/
+		/*delete the file_info_block from opened_file_list in current
+		 * thread*/
 		list_remove(&fib->elem);
 		free(fib->file_name);
 		free(fib);

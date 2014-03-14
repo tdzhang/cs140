@@ -116,7 +116,8 @@ dir_lookup (const struct dir *dir, const char *name,
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  bool holding_dir_lock = lock_held_by_current_thread (
+		  &dir->inode->dir_lock);
   if (!holding_dir_lock) {
 	  lock_acquire(&dir->inode->dir_lock);
   }
@@ -141,7 +142,8 @@ dir_lookup (const struct dir *dir, const char *name,
    Fails if NAME is invalid (i.e. too long) or a disk or memory
    error occurs. */
 bool
-dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is_dir)
+dir_add (struct dir *dir, const char *name, block_sector_t inode_sector,
+		bool is_dir)
 {
   struct dir_entry e;
   off_t ofs;
@@ -154,7 +156,8 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
   if (*name == '\0' || strlen (name) > NAME_MAX)
     return false;
 
-  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  bool holding_dir_lock = lock_held_by_current_thread (
+		  &dir->inode->dir_lock);
   if (!holding_dir_lock) {
     lock_acquire(&dir->inode->dir_lock);
   }
@@ -186,7 +189,8 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
   if(is_dir){
 	  struct inode *new_inode = inode_open(inode_sector);
 	  /*create ..*/
-	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs)
+			  == sizeof e;
 	         ofs += sizeof e)
 	      if (!e.in_use)
 	        break;
@@ -201,7 +205,8 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector, bool is
 	  }
 
 	  /*create .*/
-	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs) == sizeof e;
+	  for (ofs = 0; inode_read_at (new_inode, &e, sizeof e, ofs)
+			  == sizeof e;
 			 ofs += sizeof e)
 		  if (!e.in_use)
 			break;
@@ -239,7 +244,8 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  bool holding_dir_lock = lock_held_by_current_thread (
+		  &dir->inode->dir_lock);
   if (!holding_dir_lock) {
 	  lock_acquire(&dir->inode->dir_lock);
   }
@@ -259,12 +265,15 @@ dir_remove (struct dir *dir, const char *name)
   }
 
   if (inode->is_dir) {
-	  /* check if the dir is empty (other than . or ..), if not, goto done */
+	  /* check if the dir is empty (other than . or ..), if not,
+	   *  goto done */
 	  off_t offset;
 	  struct dir_entry entry;
-	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset) == sizeof entry;
+	  for (offset = 0; inode_read_at (inode, &entry, sizeof entry, offset)
+			  == sizeof entry;
 			  offset += sizeof entry) {
-	      if (entry.in_use && strcmp(entry.name, ".") != 0 && strcmp(entry.name, "..") != 0){
+	      if (entry.in_use && strcmp(entry.name, ".") != 0 &&
+	    		  strcmp(entry.name, "..") != 0){
 	          goto done;
 	      }
 	  }
@@ -294,14 +303,16 @@ bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 {
   struct dir_entry e;
-  bool holding_dir_lock = lock_held_by_current_thread (&dir->inode->dir_lock);
+  bool holding_dir_lock = lock_held_by_current_thread (
+		  &dir->inode->dir_lock);
   if (!holding_dir_lock) {
 	  lock_acquire(&dir->inode->dir_lock);
   }
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e) 
     {
       dir->pos += sizeof e;
-      if (e.in_use && strcmp(e.name, ".") != 0 && strcmp(e.name, "..") != 0)
+      if (e.in_use && strcmp(e.name, ".") != 0 && strcmp(e.name, "..")
+      != 0)
         {
           strlcpy (name, e.name, NAME_MAX + 1);
           if (!holding_dir_lock) {

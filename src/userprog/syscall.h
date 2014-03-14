@@ -12,7 +12,8 @@ struct file_info_block {
 	struct file *f;                /*file structure for the opened file*/
 	char *file_name;               /*file_name for the opened file*/
 	int fd;                        /*file descriptor for the opened file*/
-	struct list_elem elem;         /*list elem for thread's opened_file_list*/
+	struct list_elem elem;         /*list elem for thread's
+	opened_file_list*/
 };
 
 void syscall_init (void);

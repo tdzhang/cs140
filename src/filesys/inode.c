@@ -13,9 +13,12 @@
 
 static void free_map_release_all_direct(struct inode_disk *disk_inode);
 static void free_map_release_all_single_indirect(struct indirect_block *ib);
-static void free_map_release_direct(struct inode_disk *disk_inode, int end_idx);
-static void free_map_release_single_indirect(struct indirect_block *ib, int end_idx);
-static void free_map_release_double_indirect (struct indirect_block *db, int double_level_end_idx, int single_level_end_idx);
+static void free_map_release_direct(struct inode_disk *disk_inode,
+		int end_idx);
+static void free_map_release_single_indirect(struct indirect_block *ib,
+		int end_idx);
+static void free_map_release_double_indirect (struct indirect_block *db,
+		int double_level_end_idx, int single_level_end_idx);
 
 /* Returns the number of sectors to allocate for an inode SIZE
    bytes long. */
@@ -38,7 +41,8 @@ byte_to_sector_no_check (const struct inode *inode, off_t pos)
 	off_t sector_pos = pos/BLOCK_SECTOR_SIZE;
 
 	struct inode_disk id;
-	cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+	cache_read(inode->sector, INVALID_SECTOR_ID,
+			&id, 0, BLOCK_SECTOR_SIZE);
 
 	/*sector_pos in the range of direct index*/
 	if (sector_pos < DIRECT_INDEX_NUM) {
@@ -48,17 +52,21 @@ byte_to_sector_no_check (const struct inode *inode, off_t pos)
 	/*sector_pos in the range of single indirect index*/
 	if (sector_pos < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
 		static struct indirect_block ib;
-		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+		cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0,
+				BLOCK_SECTOR_SIZE);
 		return ib.sectors[sector_pos-DIRECT_INDEX_NUM];
 	}
 
 	/*sector_pos in the range of double indirect index*/
-	off_t double_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) / INDEX_PER_SECTOR;
-	off_t single_level_idx = (sector_pos-(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) % INDEX_PER_SECTOR;
+	off_t double_level_idx = (sector_pos-
+			(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) / INDEX_PER_SECTOR;
+	off_t single_level_idx = (sector_pos-
+			(DIRECT_INDEX_NUM+INDEX_PER_SECTOR)) % INDEX_PER_SECTOR;
 	static struct indirect_block db;
 	cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
 	static struct indirect_block ib;
-	cache_read(db.sectors[double_level_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+	cache_read(db.sectors[double_level_idx],
+			INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 	return ib.sectors[single_level_idx];
 }
 
@@ -91,7 +99,8 @@ inode_init (void)
 
 /* set the new_sector to the first non-allocated sector in the inode
  * must acquire inode lock before calling it */
-bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
+bool append_sector_to_inode(struct inode_disk *id,
+		block_sector_t new_sector) {
 	int sectors = (int)bytes_to_sectors(id->length);
 	static struct indirect_block ib;
 	static struct indirect_block db;
@@ -111,11 +120,13 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	} else if (sectors <= DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
 		if (sectors < DIRECT_INDEX_NUM+INDEX_PER_SECTOR) {
 			/*within single indirect index part*/
-			cache_read(id->single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_read(id->single_idx, INVALID_SECTOR_ID,
+					&ib, 0, BLOCK_SECTOR_SIZE);
 			ib.sectors[sectors-DIRECT_INDEX_NUM] = new_sector;
 			cache_write(id->single_idx, &ib, 0, BLOCK_SECTOR_SIZE);
 		} else {
-			/*use up single indirect index part, start using double indirect index*/
+			/*use up single indirect index part, start using
+			 * double indirect index*/
 			if (!free_map_allocate (1, &id->double_idx)) {
 				return false;
 			}
@@ -131,19 +142,27 @@ bool append_sector_to_inode(struct inode_disk *id, block_sector_t new_sector) {
 	} else {
 		size_t sectors_left=sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
 		if(sectors_left%INDEX_PER_SECTOR ==0){
-			/*on the edge of one double indirect index, need to allocate another single indirect index in the double indirect index*/
-			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
-			if (!free_map_allocate (1, &db.sectors[sectors_left/INDEX_PER_SECTOR])) {
+			/*on the edge of one double indirect index, need
+			 *  to allocate another single indirect index in
+			 *  the double indirect index*/
+			cache_read(id->double_idx, INVALID_SECTOR_ID,
+					&db, 0, BLOCK_SECTOR_SIZE);
+			if (!free_map_allocate (1,
+					&db.sectors[sectors_left/INDEX_PER_SECTOR])) {
 				return false;
 			}
 			 ib.sectors[0]=new_sector;
-			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR], &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR],
+					&ib, 0, BLOCK_SECTOR_SIZE);
 			cache_write(id->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
 		}else{
-			cache_read(id->double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
-			cache_read(db.sectors[sectors_left/INDEX_PER_SECTOR],INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_read(id->double_idx, INVALID_SECTOR_ID,
+					&db, 0, BLOCK_SECTOR_SIZE);
+			cache_read(db.sectors[sectors_left/INDEX_PER_SECTOR],
+					INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
 			ib.sectors[sectors_left%INDEX_PER_SECTOR]=new_sector;
-			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR], &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_write(db.sectors[sectors_left/INDEX_PER_SECTOR],
+					&ib, 0, BLOCK_SECTOR_SIZE);
 		}
 
 	}
@@ -180,9 +199,13 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
       bool allocate_failed = false;
 
       /* allocate sectors for data and write all zeros to sectors*/
-      int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-      int indirect_sector_num = (sectors-DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
-      int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+      int direct_sector_num = sectors < DIRECT_INDEX_NUM ?
+    		  sectors : DIRECT_INDEX_NUM;
+      int indirect_sector_num = (sectors-DIRECT_INDEX_NUM) <
+    		  INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) :
+    				  INDEX_PER_SECTOR;
+      int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM
+    		  - INDEX_PER_SECTOR;
 
       /* allocate direct sectors */
       for (i = 0; i < direct_sector_num; i++) {
@@ -220,8 +243,8 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
 			  }
 			}
 
-			/* release all direct sectors and allocated single indirect sectors
-			 * when failed to allocate */
+			/* release all direct sectors and allocated single indirect
+			 * sectors when failed to allocate */
 			if (allocate_failed) {
 				free_map_release_all_direct(disk_inode);
 				free_map_release_single_indirect(&ib, i);
@@ -245,12 +268,15 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
     	  		  return false;
 		  }
 
-    	  	  off_t double_level_end_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
-    	      off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
+    	  	  off_t double_level_end_idx =
+    	  			  (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
+    	      off_t single_level_end_idx =
+    	    		  (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
     	      int i, j;
     	      /*double indirect index block*/
     	      static struct indirect_block db;
-    	      /*buffer the single indirect index block in double indirect index block*/
+    	      /*buffer the single indirect index block in double
+    	       * indirect index block*/
     	      static struct indirect_block single_ib;
     	      /* allocate all full single indirect block */
     	      for (i = 0; i < double_level_end_idx; i++) {
@@ -294,12 +320,14 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
 			  free_map_release_all_direct(disk_inode);
 			  free_map_release_all_single_indirect(&ib);
 			  free_map_release (disk_inode->single_idx, 1);
-			  free_map_release_double_indirect (&db, double_level_end_idx, 0);
+			  free_map_release_double_indirect (&db,
+					  double_level_end_idx, 0);
 			  free_map_release (disk_inode->double_idx, 1);
 			  free (disk_inode);
 			  return false;
     	      }
-    	      /* partially or fully (depend on single_level_end_idx) allocate the last single indirect block */
+    	      /* partially or fully (depend on single_level_end_idx)
+    	       * allocate the last single indirect block */
 		  for (j = 0; j <= single_level_end_idx; j++) {
 			  if (free_map_allocate (1, &sector_idx)) {
 				  single_ib.sectors[j] = sector_idx;
@@ -315,14 +343,17 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
 			  free_map_release_all_direct(disk_inode);
 			  free_map_release_all_single_indirect(&ib);
 			  free_map_release (disk_inode->single_idx, 1);
-			  free_map_release_double_indirect (&db, double_level_end_idx, j);
+			  free_map_release_double_indirect (&db,
+					  double_level_end_idx, j);
 			  free_map_release (disk_inode->double_idx, 1);
 			  free (disk_inode);
 			  return false;
 		  }
 
-		  cache_write(db.sectors[double_level_end_idx], &single_ib, 0, BLOCK_SECTOR_SIZE);
-		  /* update inode_disk(metadata) after successfully allocate all necessary sectors */
+		  cache_write(db.sectors[double_level_end_idx],
+				  &single_ib, 0, BLOCK_SECTOR_SIZE);
+		  /* update inode_disk(metadata) after successfully
+		   * allocate all necessary sectors */
 		  cache_write(disk_inode->double_idx, &db, 0, BLOCK_SECTOR_SIZE);
       }
 
@@ -337,30 +368,36 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
 
 
 
-/* help to free_map_release double indirect index sectors, from the beginning
+/* help to free_map_release double indirect index sectors,
+ * from the beginning
  * to db[double_level_idx][single_level_idx] (exclusive) */
-static void free_map_release_double_indirect (struct indirect_block *db, int double_level_end_idx, int single_level_end_idx) {
+static void free_map_release_double_indirect (struct indirect_block *db,
+		int double_level_end_idx, int single_level_end_idx) {
 	int i;
 	static struct indirect_block ib;
 
 	for (i = 0; i < double_level_end_idx; i++) {
 		block_sector_t next_id = INVALID_SECTOR_ID;
 		if (single_level_end_idx <= 0  && i == (double_level_end_idx-1)) {
-			cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0,
+					BLOCK_SECTOR_SIZE);
 		} else {
-			cache_read(db->sectors[i], db->sectors[i+1], &ib, 0, BLOCK_SECTOR_SIZE);
+			cache_read(db->sectors[i], db->sectors[i+1], &ib, 0,
+					BLOCK_SECTOR_SIZE);
 		}
 		free_map_release_all_single_indirect(&ib);
 	}
 
 	if (single_level_end_idx > 0) {
-		cache_read(db->sectors[double_level_end_idx], INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+		cache_read(db->sectors[double_level_end_idx], INVALID_SECTOR_ID,
+				&ib, 0, BLOCK_SECTOR_SIZE);
 	}
 	for (i = 0; i < single_level_end_idx; i++) {
 		free_map_release_single_indirect(&ib, single_level_end_idx);
 	}
 
-	free_map_release_single_indirect(db, (single_level_end_idx>0)?(double_level_end_idx+1):double_level_end_idx);
+	free_map_release_single_indirect(db, (single_level_end_idx>0)?
+			(double_level_end_idx+1):double_level_end_idx);
 }
 
 /* help to free_map_release all direct index sectors */
@@ -375,16 +412,20 @@ static void free_map_release_all_single_indirect(struct indirect_block *ib) {
 
 
 
-/* help to free_map_release direct index sectors from beginning to end_idx (exclusive) */
-static void free_map_release_direct(struct inode_disk *disk_inode, int end_idx) {
+/* help to free_map_release direct index sectors from beginning to
+ * end_idx (exclusive) */
+static void free_map_release_direct(struct inode_disk *disk_inode,
+		int end_idx) {
 	int i;
 	for (i = 0; i < end_idx; i++) {
 		free_map_release(disk_inode->direct_idx[i], 1);
 	}
 }
 
-/* help to free_map_release single indirect index sectors from beginning to end_idx (exclusive) */
-static void free_map_release_single_indirect(struct indirect_block *ib, int end_idx){
+/* help to free_map_release single indirect index sectors from beginning
+ *  to end_idx (exclusive) */
+static void free_map_release_single_indirect(struct indirect_block *ib,
+		int end_idx){
 	int i;
 	for (i = 0; i < end_idx; i++) {
 		free_map_release (ib->sectors[i], 1);
@@ -468,12 +509,14 @@ inode_close (struct inode *inode)
   if (inode == NULL)
     return inode_freed;
 
-  bool holding_open_inodes_lock = lock_held_by_current_thread (&open_inodes_lock);
+  bool holding_open_inodes_lock = lock_held_by_current_thread
+		  (&open_inodes_lock);
   if (!holding_open_inodes_lock) {
 	  lock_acquire(&open_inodes_lock);
   }
 
-  bool holding_inode_lock = lock_held_by_current_thread (&inode->inode_lock);
+  bool holding_inode_lock = lock_held_by_current_thread
+		  (&inode->inode_lock);
   if (!holding_inode_lock) {
 	  lock_acquire(&inode->inode_lock);
   }
@@ -482,7 +525,8 @@ inode_close (struct inode *inode)
   {
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
-      if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+      if (!holding_open_inodes_lock && lock_held_by_current_thread
+    		  (&open_inodes_lock)) {
     	  	  lock_release(&open_inodes_lock);
       }
       /* Deallocate blocks if removed. */
@@ -490,13 +534,18 @@ inode_close (struct inode *inode)
       {
     	  	  /* retrieve inode_disk(metadata) from sector */
           struct inode_disk id;
-          cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0, BLOCK_SECTOR_SIZE);
+          cache_read(inode->sector, INVALID_SECTOR_ID, &id, 0,
+        		  BLOCK_SECTOR_SIZE);
 
           int sectors = (int)bytes_to_sectors (id.length);
 
-          int direct_sector_num = sectors < DIRECT_INDEX_NUM ? sectors : DIRECT_INDEX_NUM;
-          int indirect_sector_num = (sectors - DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ? (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
-          int double_indirect_sector_num = sectors - DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
+          int direct_sector_num = sectors < DIRECT_INDEX_NUM ?
+        		  sectors : DIRECT_INDEX_NUM;
+          int indirect_sector_num = (sectors -
+        		  DIRECT_INDEX_NUM) < INDEX_PER_SECTOR ?
+        				  (sectors - DIRECT_INDEX_NUM) : INDEX_PER_SECTOR;
+          int double_indirect_sector_num = sectors -
+        		  DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
 
           int i;
           /* release data sectors */
@@ -505,9 +554,11 @@ inode_close (struct inode *inode)
           if (indirect_sector_num > 0){
         	  	  static struct indirect_block ib;
         	  	  if (double_indirect_sector_num > 0) {
-        	  		  cache_read(id.single_idx, id.double_idx, &ib, 0, BLOCK_SECTOR_SIZE);
+        	  		  cache_read(id.single_idx, id.double_idx, &ib,
+        	  				  0, BLOCK_SECTOR_SIZE);
         	  	  } else {
-        	  		  cache_read(id.single_idx, INVALID_SECTOR_ID, &ib, 0, BLOCK_SECTOR_SIZE);
+        	  		  cache_read(id.single_idx, INVALID_SECTOR_ID,
+        	  				  &ib, 0, BLOCK_SECTOR_SIZE);
         	  	  }
         	  	  free_map_release_single_indirect(&ib, indirect_sector_num);
         	  	  free_map_release (id.single_idx, 1);
@@ -515,10 +566,14 @@ inode_close (struct inode *inode)
 
           if (double_indirect_sector_num > 0) {
         	  	  static struct indirect_block db;
-        	  	  cache_read(id.double_idx, INVALID_SECTOR_ID, &db, 0, BLOCK_SECTOR_SIZE);
-        	  	  off_t double_level_end_idx = (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
-        	  	  off_t single_level_end_idx = (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
-        	  	  free_map_release_double_indirect(&db, double_level_end_idx, single_level_end_idx+1);
+        	  	  cache_read(id.double_idx, INVALID_SECTOR_ID,
+        	  			  &db, 0, BLOCK_SECTOR_SIZE);
+        	  	  off_t double_level_end_idx =
+        	  			  (double_indirect_sector_num-1) / INDEX_PER_SECTOR;
+        	  	  off_t single_level_end_idx =
+        	  			  (double_indirect_sector_num-1) % INDEX_PER_SECTOR;
+        	  	  free_map_release_double_indirect(&db,
+        	  			  double_level_end_idx, single_level_end_idx+1);
         	  	  free_map_release (id.double_idx, 1);
           }
 
@@ -534,12 +589,14 @@ inode_close (struct inode *inode)
       inode_freed = true;
   }
 
-  if (!holding_open_inodes_lock && lock_held_by_current_thread (&open_inodes_lock)) {
+  if (!holding_open_inodes_lock && lock_held_by_current_thread (
+		  &open_inodes_lock)) {
 	  lock_release(&open_inodes_lock);
   }
 
   if (inode != NULL) {
-	  if (!holding_inode_lock && lock_held_by_current_thread (&inode->inode_lock)) {
+	  if (!holding_inode_lock && lock_held_by_current_thread (
+			  &inode->inode_lock)) {
 		  lock_release(&inode->inode_lock);
 	  }
   }
@@ -562,7 +619,8 @@ inode_remove (struct inode *inode)
    Returns the number of bytes actually read, which may be less
    than SIZE if an error occurs or end of file is reached. */
 off_t
-inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset) 
+inode_read_at (struct inode *inode, void *buffer_, off_t size,
+		off_t offset)
 {
   if (size+offset > inode->readable_length) {
     	  return 0;
@@ -574,7 +632,8 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
     {
       /* Disk sector to read, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
-      block_sector_t next_sector_idx = byte_to_sector (inode, offset+BLOCK_SECTOR_SIZE);
+      block_sector_t next_sector_idx = byte_to_sector (inode,
+    		  offset+BLOCK_SECTOR_SIZE);
 
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
@@ -588,7 +647,8 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       if (chunk_size <= 0)
         break;
 
-      cache_read(sector_idx, INVALID_SECTOR_ID, buffer+bytes_read, sector_ofs, chunk_size);
+      cache_read(sector_idx, INVALID_SECTOR_ID, buffer+bytes_read,
+    		  sector_ofs, chunk_size);
       
       /* Advance. */
       size -= chunk_size;
@@ -601,7 +661,8 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 
 
 /* padding zeros from start_pos (inclusive) to end_pos (exclusive) */
-bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, off_t end_pos) {
+bool zero_padding(struct inode *inode, struct inode_disk *id,
+		off_t start_pos, off_t end_pos) {
 	ASSERT(lock_held_by_current_thread (&inode->inode_lock));
 	static char zeros[BLOCK_SECTOR_SIZE];
 	/* padding the first partial sector */
@@ -613,7 +674,8 @@ bool zero_padding(struct inode *inode, struct inode_disk *id, off_t start_pos, o
 	}
 
 	/* padding full sectors until end_pos-1 */
-	int extra_sectors = (int)bytes_to_sectors(end_pos)-(int)bytes_to_sectors(start_pos);
+	int extra_sectors = (int)bytes_to_sectors(end_pos)-
+			(int)bytes_to_sectors(start_pos);
 	off_t* record_sectors=malloc(sizeof(off_t) * extra_sectors);
 	off_t i,j;
 	block_sector_t new_sector=-1;
@@ -692,7 +754,8 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size_,
       if (chunk_size <= 0)
         break;
 
-      cache_write(sector_idx, (void *)(buffer+bytes_written), sector_ofs, chunk_size);
+      cache_write(sector_idx, (void *)(buffer+bytes_written),
+    		  sector_ofs, chunk_size);
 
       /* Advance. */
       size -= chunk_size;

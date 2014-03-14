@@ -27,23 +27,23 @@ struct inode_disk
     int is_dir;                         /* 1 if this inode is a dir,
                                                    0 otherwise. */
 	block_sector_t direct_idx [DIRECT_INDEX_NUM];/* Direct index. */
-	block_sector_t single_idx;                   /* Single indirect index. */
-	block_sector_t double_idx;                   /* Double indirect index. */
+	block_sector_t single_idx;                 /* Single indirect index. */
+	block_sector_t double_idx;                /* Double indirect index. */
   };
 
 
 
 /* In-memory inode. */
 struct inode {
-     block_sector_t sector;           /* sector id */
-     int open_cnt;                       /* Number of openers. */
-     bool removed;                 		/* True if deleted, false otherwise. */
-     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
-     off_t readable_length;              /* file size in bytes */
-     bool is_dir;                        /* whether the inode is for a dir */
-     struct lock inode_lock;             /* lock for the inode */
-     struct lock dir_lock;               /* lock for the corresponding dir */
-     struct list_elem elem;              /* Element in inode list. */
+     block_sector_t sector;         /* sector id */
+     int open_cnt;                  /* Number of openers. */
+     bool removed;                  /* True if deleted, false otherwise. */
+     int deny_write_cnt;            /* 0: writes ok, >0: deny writes. */
+     off_t readable_length;         /* file size in bytes */
+     bool is_dir;                   /* whether the inode is for a dir */
+     struct lock inode_lock;        /* lock for the inode */
+     struct lock dir_lock;          /* lock for the corresponding dir */
+     struct list_elem elem;         /* Element in inode list. */
 };
 
 
@@ -58,7 +58,8 @@ block_sector_t inode_get_inumber (const struct inode *);
 bool inode_close (struct inode *);
 void inode_remove (struct inode *);
 off_t inode_read_at (struct inode *, void *, off_t size, off_t offset);
-off_t inode_write_at (struct inode *, const void *, off_t size, off_t offset);
+off_t inode_write_at (struct inode *, const void *, off_t size,
+		 off_t offset);
 void inode_deny_write (struct inode *);
 void inode_allow_write (struct inode *);
 off_t inode_length (const struct inode *);
