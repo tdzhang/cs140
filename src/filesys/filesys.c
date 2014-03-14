@@ -98,7 +98,7 @@ filesys_create (const char *name, off_t initial_size)
   block_sector_t inode_sector = 0;
   /*get opened dir and file name to create*/
   char name_to_create[NAME_MAX + 1];
-  struct dir *dir = path_to_dir(name,name_to_create);
+  struct dir *dir = path_to_dir((char *)name,name_to_create);
 
   if(dir==NULL||strlen(name_to_create)==0){
 	  dir_close(dir);
@@ -147,7 +147,7 @@ filesys_open (const char *name)
 	  }
   }
 
-  dir = path_to_dir(name,name_to_open);
+  dir = path_to_dir((char *)name,name_to_open);
 
   if(dir==NULL){
 	  return NULL;

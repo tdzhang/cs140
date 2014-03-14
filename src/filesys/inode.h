@@ -65,5 +65,8 @@ void inode_allow_write (struct inode *);
 off_t inode_length (const struct inode *);
 void inode_flush_cache(void);
 void force_close_all_open_inodes(void);
-
+bool append_sector_to_inode(struct inode_disk *id,
+		block_sector_t new_sector);
+bool zero_padding(struct inode *inode, struct inode_disk *id,
+		off_t start_pos, off_t end_pos);
 #endif /* filesys/inode.h */

@@ -534,7 +534,6 @@ static void sys_open_handler(struct intr_frame *f){
 		return;
 	}
 
-	struct inode *inode = NULL;
 	struct dir *dir = NULL;
 
 	dir = path_to_dir(file_name,name_to_open);

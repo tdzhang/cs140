@@ -19,6 +19,7 @@ static void free_map_release_single_indirect(struct indirect_block *ib,
 		int end_idx);
 static void free_map_release_double_indirect (struct indirect_block *db,
 		int double_level_end_idx, int single_level_end_idx);
+void inode_close_set_null(struct inode **d_inode);
 
 /* Returns the number of sectors to allocate for an inode SIZE
    bytes long. */
@@ -377,7 +378,6 @@ static void free_map_release_double_indirect (struct indirect_block *db,
 	static struct indirect_block ib;
 
 	for (i = 0; i < double_level_end_idx; i++) {
-		block_sector_t next_id = INVALID_SECTOR_ID;
 		if (single_level_end_idx <= 0  && i == (double_level_end_idx-1)) {
 			cache_read(db->sectors[i], INVALID_SECTOR_ID, &ib, 0,
 					BLOCK_SECTOR_SIZE);
@@ -547,7 +547,6 @@ inode_close (struct inode *inode)
           int double_indirect_sector_num = sectors -
         		  DIRECT_INDEX_NUM - INDEX_PER_SECTOR;
 
-          int i;
           /* release data sectors */
           free_map_release_direct(&id, direct_sector_num);
 
