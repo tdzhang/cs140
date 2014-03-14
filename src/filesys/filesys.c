@@ -62,7 +62,7 @@ bool filesys_mkdir (const char* dir) {
 
 	/*get opened dir and file name to create*/
 	char name_to_create[NAME_MAX + 1];
-	struct dir *d = path_to_dir(dir,name_to_create);
+	struct dir *d = path_to_dir((char*)dir,name_to_create);
 
 	if(d==NULL||strlen(name_to_create)==0){
 		  dir_close(d);
