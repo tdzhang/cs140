@@ -189,7 +189,7 @@ filesys_remove (const char *name)
 	struct dir *dir = NULL;
 	/*get opened dir and file name to remove*/
 	char name_to_remove[NAME_MAX + 1];
-	dir = path_to_dir(name,name_to_remove);
+	dir = path_to_dir((char *)name,name_to_remove);
 
 	if(dir==NULL||strlen(name_to_remove)==0){
 	  dir_close(dir);
